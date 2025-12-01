@@ -4,12 +4,12 @@
 # Decoder: Transformer Decoder + (CTC/ATT joint) beamsearch + TransformerLM
 # Tokens: unigram
 # losses: CTC + KLdiv (Label Smoothing loss)
-# Training: Librispeech 960h
-# Authors: Xilin Jiang
+# Training: Librispeech 100h
+# Authors: Anshul Kumar
 # ############################################################################
 # Seed needs to be set at top of yaml, before objects with parameters are made
 
-seed: 7775
+seed: 7755
 __set_seed: !apply:torch.manual_seed [!ref <seed>]
 project: Mamba-ASR
 experiment: conmamba_S_S2S
@@ -50,7 +50,7 @@ no_lm: False
 # The global batch size is computed as batch_size * n_gpus * grad_accumulation_factor.
 # Empirically, we found that this value should be >= 128.
 # Please, set your parameters accordingly.
-number_of_epochs: 70
+number_of_epochs: 100
 batch_size: 16 # Optimized for 4x A6000 48GB
 ctc_weight: 0.3
 grad_accumulation_factor: 2
@@ -120,7 +120,7 @@ output_neurons: 5000
 
 # Outputs
 blank_index: 0
-label_smoothing: 0.1
+label_smoothing: 0.15
 pad_index: 0
 bos_index: 1
 eos_index: 2
@@ -277,7 +277,7 @@ seq_cost: !name:speechbrain.nnet.losses.kldiv_loss
 
 noam_annealing: !new:speechbrain.nnet.schedulers.NoamScheduler
     lr_initial: !ref <lr_adam>
-    n_warmup_steps: !ref 15000 // <grad_accumulation_factor>
+    n_warmup_steps: !ref 13000 // <grad_accumulation_factor>
 
 checkpointer: !new:speechbrain.utils.checkpoints.Checkpointer
     checkpoints_dir: !ref <save_folder>
@@ -301,7 +301,7 @@ speed_perturb: !new:speechbrain.augment.time_domain.SpeedPerturb
 time_drop_length_low: 15  # Min length for temporal chunk to drop in spectrogram
 time_drop_length_high: 25  # Max length for temporal chunk to drop in spectrogram
 time_drop_count_low: 4  # Min number of chunks to drop in time in the spectrogram
-time_drop_count_high: 4  # Max number of chunks to drop in time in the spectrogram
+time_drop_count_high: 5  # Max number of chunks to drop in time in the spectrogram
 time_drop_replace: "mean"  # Method of dropping chunks
 
 time_drop: !new:speechbrain.augment.freq_domain.SpectrogramDrop
@@ -316,7 +316,7 @@ time_drop: !new:speechbrain.augment.freq_domain.SpectrogramDrop
 freq_drop_length_low: 10  # Min length for chunks to drop in frequency in the spectrogram
 freq_drop_length_high: 20  # Max length for chunks to drop in frequency in the spectrogram
 freq_drop_count_low: 4  # Min number of chunks to drop in frequency in the spectrogram
-freq_drop_count_high: 4  # Max number of chunks to drop in frequency in the spectrogram
+freq_drop_count_high: 5  # Max number of chunks to drop in frequency in the spectrogram
 freq_drop_replace: "mean"  # Method of dropping chunks
 
 freq_drop: !new:speechbrain.augment.freq_domain.SpectrogramDrop

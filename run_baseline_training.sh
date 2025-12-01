@@ -2,18 +2,23 @@
 #
 # ConMamba Baseline Training Script
 # 4x A6000 GPUs, LibriSpeech-100h
-# Expected runtime: 4-5 hours
+# Expected runtime: 5-6 hours
 #
-
 set -e
 
-echo "=== ConMamba ASR Training ==="
+# Activate conda environment
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate hnetasr
+
+echo "=== ConMamba ASR Training (Inter-CTC) ==="
 echo "Configuration:"
 echo "  - Dataset: LibriSpeech train-clean-100 (100h)"
 echo "  - GPUs: 4x A6000 (48GB each)"
 echo "  - Global batch size: 16 × 4 × 2 = 128"
 echo "  - Precision: BF16"
-echo "  - Epochs: 70"
+echo "  - Epochs: 100"
+echo "  - Warmup: 8000 steps"
+echo "  - WandB: Disabled"
 echo ""
 
 # Navigate to Mamba-ASR directory
@@ -27,4 +32,4 @@ torchrun --nproc-per-node 4 \
 
 echo ""
 echo "=== Training Complete ==="
-echo "Check results in: Mamba-ASR/results/S2S/conmamba_S_S2S/7775/"
+echo "Check results in: Mamba-ASR/results/S2S/conmamba_S_S2S/4875/"
