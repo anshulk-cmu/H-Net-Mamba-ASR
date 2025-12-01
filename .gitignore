@@ -1,0 +1,34 @@
+# Data files
+data/
+*.tar.gz
+*.zip
+
+# Training outputs
+Mamba-ASR/results/
+Mamba-ASR/save/
+*.log
+*.ckpt
+*.pt
+*.pth
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.Python
+env/
+venv/
+
+# Conda
+.conda/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# System
+.DS_Store
+Thumbs.db
