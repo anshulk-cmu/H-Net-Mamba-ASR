@@ -34,22 +34,12 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Cloned repos - exclude source but keep configs
-# Mamba-ASR: Keep hparams/, modules/, scripts only
+# Cloned repos - exclude .git and heavy files only
+# Mamba-ASR: Keep everything except git history
 Mamba-ASR/.git
-Mamba-ASR/cache/
-Mamba-ASR/exp/
 
-# ESPnet: Too large, only keep if we modify configs
+# ESPnet: Keep everything except git history
 espnet/.git
-espnet/test/
-espnet/ci/
-espnet/doc/
-espnet/tools/
-espnet/egs/
-espnet/egs2/
 
-# H-Net: Keep modules we'll integrate
+# H-Net: Keep everything except git history
 hnet/.git
-hnet/exp/
-hnet/data/
