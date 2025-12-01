@@ -1,0 +1,18 @@
+{
+    "arch_layout": ["m4", ["T1m4", ["T26"], "m4T1"], "m4"],
+    "d_model": [1024, 1024, 1536],
+    "d_intermediate": [0, 2816, 4096],
+    "vocab_size": 256,
+    "ssm_cfg": {
+        "chunk_size": 256,
+        "d_conv": 4,
+        "d_state": 128,
+        "expand": 2
+    },
+    "attn_cfg": {
+        "num_heads": [16, 16, 16],
+        "rotary_emb_dim": [32, 32, 48],
+        "window_size": [1023, 1023, -1]
+    },
+    "tie_embeddings": false
+}
