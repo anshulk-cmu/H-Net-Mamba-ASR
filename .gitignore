@@ -6,6 +6,7 @@ data/
 # Training outputs
 Mamba-ASR/results/
 Mamba-ASR/save/
+espnet/egs*/
 *.log
 *.ckpt
 *.pt
@@ -32,3 +33,23 @@ venv/
 # System
 .DS_Store
 Thumbs.db
+
+# Cloned repos - exclude source but keep configs
+# Mamba-ASR: Keep hparams/, modules/, scripts only
+Mamba-ASR/.git
+Mamba-ASR/cache/
+Mamba-ASR/exp/
+
+# ESPnet: Too large, only keep if we modify configs
+espnet/.git
+espnet/test/
+espnet/ci/
+espnet/doc/
+espnet/tools/
+espnet/egs/
+espnet/egs2/
+
+# H-Net: Keep modules we'll integrate
+hnet/.git
+hnet/exp/
+hnet/data/
