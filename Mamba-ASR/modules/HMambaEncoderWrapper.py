@@ -197,19 +197,21 @@ class HMambaEncoderWrapper(nn.Module):
         # Apply final layer norm
         output = self.norm(output)
         
-        # ==================== Compute stats if requested ====================
+        # ==================== Compute and store DC loss + stats ====================
+        num_boundaries = router_output.boundary_mask.float().sum().item()
+        total_valid = validity_mask.float().sum().item()
+        compression_ratio = num_boundaries / total_valid if total_valid > 0 else 0
+        
+        # Always compute and store DC loss for training
+        self.last_dc_loss = load_balancing_loss(router_output, N=self.target_compression_N)
+        self.last_compression_ratio = compression_ratio
+        
         if return_stats:
-            num_boundaries = router_output.boundary_mask.float().sum().item()
-            total_valid = validity_mask.float().sum().item()
-            compression_ratio = num_boundaries / total_valid if total_valid > 0 else 0
-            
-            dc_loss = load_balancing_loss(router_output, N=self.target_compression_N)
-            
             stats = {
                 "compression_ratio": compression_ratio,
                 "num_chunks": max_chunks,
                 "avg_chunk_size": total_valid / num_boundaries if num_boundaries > 0 else 0,
-                "dc_loss": dc_loss,
+                "dc_loss": self.last_dc_loss,
                 "boundary_prob_mean": router_output.boundary_prob[..., 1].mean().item(),
             }
             return output, stats
