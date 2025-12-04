@@ -32,4 +32,3 @@ torchrun --nproc-per-node 4 \
 
 echo ""
 echo "=== Training Complete ==="
-echo "Check results in: Mamba-ASR/results/S2S/conmamba_S_S2S/4875/"

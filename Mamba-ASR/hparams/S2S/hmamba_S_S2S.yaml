@@ -49,7 +49,7 @@ no_lm: False
 hmamba_split_idx: 6          # Split layers: 0-5 for stage0, 6-11 for stage1
 hmamba_target_N: 2.0         # Target compression (N=2 → 50% frames kept)
 hmamba_headdim: 36           # Head dim for EMA (144/36 = 4 heads)
-hmamba_dc_loss_weight: 0.1   # Weight for DC load balancing loss (increased for new loss)
+hmamba_dc_loss_weight: 2.0   # Weight for DC load balancing loss (increased for new loss)
 hmamba_warmup_epochs: 20     # Epochs to warm-up from N=1 to target_N
 
 # H-Mamba Logger parameters
