@@ -41,12 +41,29 @@ class HMambaASR(sb.core.Brain):
     
     def on_fit_start(self):
         """Called at the beginning of fit(). Wrap encoder with H-Mamba."""
-        super().on_fit_start()
-        
-        # Wrap the ConMamba encoder with H-Mamba DC
+        # IMPORTANT: Wrap encoder BEFORE super().on_fit_start() so DC params are in optimizer
         if not hasattr(self, '_hmamba_initialized'):
             self._wrap_encoder_with_hmamba()
             self._hmamba_initialized = True
+        
+        # Now call super() which initializes optimizer with all modules (including DC)
+        super().on_fit_start()
+        
+        # Verify DC params are in optimizer
+        if hasattr(self, 'optimizer') and hasattr(self, 'hmamba_encoder'):
+            dc_param_ids = {id(p) for p in self.hmamba_encoder.routing_module.parameters()}
+            opt_param_ids = set()
+            for group in self.optimizer.param_groups:
+                for p in group['params']:
+                    opt_param_ids.add(id(p))
+            
+            dc_in_opt = dc_param_ids.issubset(opt_param_ids)
+            logger.info(f"[H-Mamba] DC params in optimizer: {dc_in_opt}")
+            if not dc_in_opt:
+                logger.warning("[H-Mamba] DC params NOT in optimizer! Adding them now...")
+                self.optimizer.add_param_group({
+                    'params': list(self.hmamba_encoder.routing_module.parameters())
+                })
         
         # Initialize H-Mamba logger
         if not hasattr(self, 'hmamba_logger'):
@@ -118,6 +135,12 @@ class HMambaASR(sb.core.Brain):
         }
         
         logger.info(f"[H-Mamba] Encoder wrapped with DC (split_idx={split_idx}, target_N={target_N})")
+        
+        # Verify DC parameters are in optimizer (one-time check)
+        dc_params = list(hmamba_encoder.routing_module.parameters())
+        logger.info(f"[H-Mamba] DC RoutingModule has {len(dc_params)} parameters")
+        for name, param in hmamba_encoder.routing_module.named_parameters():
+            logger.info(f"[H-Mamba]   - {name}: shape={param.shape}, requires_grad={param.requires_grad}")
     
     def _update_gumbel_temperature(self):
         """Anneal Gumbel-softmax temperature for sharper decisions over time."""
@@ -457,6 +480,15 @@ class HMambaASR(sb.core.Brain):
         
         if should_step:
             self.hparams.noam_annealing(self.optimizer)
+        
+        # Update bias gradient info AFTER backward pass (more accurate)
+        if hasattr(self, 'hmamba_encoder') and hasattr(self, 'current_dc_stats'):
+            routing = self.hmamba_encoder.routing_module
+            self.current_dc_stats['bias'] = routing.boundary_bias.item()
+            if routing.boundary_bias.grad is not None:
+                self.current_dc_stats['bias_grad'] = routing.boundary_bias.grad.item()
+            else:
+                self.current_dc_stats['bias_grad'] = 0.0
         
         # Log batch metrics
         if hasattr(self, 'hmamba_logger') and self.hmamba_logger is not None:
