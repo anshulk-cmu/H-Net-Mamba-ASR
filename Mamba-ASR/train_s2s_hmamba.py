@@ -286,11 +286,23 @@ class HMambaASR(sb.core.Brain):
                 'seq': loss_seq.item(),
                 'dc': loss_dc.item() if torch.is_tensor(loss_dc) else loss_dc,
             }
+            
+            # Get bias value and gradient for debugging
+            bias_val = 0.0
+            bias_grad = 0.0
+            if hasattr(self, 'hmamba_encoder'):
+                routing = self.hmamba_encoder.routing_module
+                bias_val = routing.boundary_bias.item()
+                if routing.boundary_bias.grad is not None:
+                    bias_grad = routing.boundary_bias.grad.item()
+            
             self.current_dc_stats = {
                 'compression_ratio': compression_ratio,
                 'num_chunks': getattr(self.hmamba_encoder, 'last_num_chunks', 0) if hasattr(self, 'hmamba_encoder') else 0,
                 'avg_chunk_size': 0.0,
                 'boundary_prob_mean': 0.0,
+                'bias': bias_val,
+                'bias_grad': bias_grad,
             }
 
         # Evaluation metrics

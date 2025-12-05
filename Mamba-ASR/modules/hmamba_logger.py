@@ -474,11 +474,18 @@ class HMambaLogger:
                 self._write_batch_tensorboard(metrics)
             
             if self.verbose:
+                # Format bias and bias_grad if available
+                bias_str = ""
+                if 'bias' in dc_stats:
+                    bias_val = dc_stats.get('bias', 0.0)
+                    bias_grad = dc_stats.get('bias_grad', 0.0)
+                    bias_str = f" | bias={bias_val:.3f} (grad={bias_grad:.4f})"
+                
                 self.logger.info(
                     f"E{epoch} B{batch_idx:04d} | "
                     f"loss={metrics.total_loss:.3f} "
                     f"(ctc={metrics.ctc_loss:.3f} seq={metrics.seq_loss:.3f} dc={metrics.dc_loss:.4f}) | "
-                    f"comp={metrics.compression_ratio:.3f} (target={1/target_N:.3f}) | "
+                    f"comp={metrics.compression_ratio:.3f} (target={1/target_N:.3f}){bias_str} | "
                     f"VRAM={metrics.vram_used_mb:.0f}MB | "
                     f"t={metrics.batch_time_ms:.0f}ms"
                 )
