@@ -88,8 +88,9 @@ class RoutingModule(nn.Module):
         
         # Learnable bias to CENTER the decision boundary
         # This is CRITICAL: allows boundary_prob to go below 0.5
-        # Initialize negative to start with fewer boundaries (conservative)
-        self.boundary_bias = nn.Parameter(torch.tensor(-0.5, **factory_kwargs))
+        # Initialize POSITIVE to start with MORE boundaries (keep more frames during warm-up)
+        # The model will learn to reduce this as target_N increases
+        self.boundary_bias = nn.Parameter(torch.tensor(0.5, **factory_kwargs))
         
         # Gumbel temperature for training (can be annealed)
         self.gumbel_tau = 1.0
@@ -392,13 +393,21 @@ def load_balancing_loss(router_output: RoutingModuleOutput, N: float) -> torch.T
     # =========================================================================
     # Loss 1: Soft probability target (main gradient signal)
     # =========================================================================
-    # Use BCE loss which provides stronger gradients than MSE when far from target
-    boundary_probs = boundary_prob[..., 1]  # P(boundary) for each position
-    target_probs = torch.full_like(boundary_probs, target_ratio)
+    # Get boundary probabilities and convert to logits for numerical stability
+    # This avoids the autocast issue with binary_cross_entropy
+    boundary_probs = boundary_prob[..., 1].float()  # P(boundary) for each position
     
-    # Binary cross-entropy pushes each probability toward target_ratio
-    # This gives per-position gradients, not just on the mean
-    bce_loss = F.binary_cross_entropy(boundary_probs, target_probs, reduction='mean')
+    # Clamp probabilities to avoid log(0) issues
+    boundary_probs_clamped = boundary_probs.clamp(min=1e-7, max=1-1e-7)
+    
+    # Convert probabilities to logits: logit = log(p / (1-p))
+    boundary_logits = torch.log(boundary_probs_clamped / (1 - boundary_probs_clamped))
+    
+    # Target probabilities (as tensor for BCE with logits)
+    target_probs = torch.full_like(boundary_logits, target_ratio)
+    
+    # BCE with logits is safe for autocast (BF16)
+    bce_loss = F.binary_cross_entropy_with_logits(boundary_logits, target_probs, reduction='mean')
     
     # =========================================================================
     # Loss 2: Mean probability matching (ensures global ratio)
@@ -419,8 +428,9 @@ def load_balancing_loss(router_output: RoutingModuleOutput, N: float) -> torch.T
     # Loss 4: Entropy regularization (prevent collapse)
     # =========================================================================
     # Encourage exploration by maintaining entropy in probability distribution
-    entropy = -(boundary_prob * (boundary_prob + 1e-8).log()).sum(dim=-1).mean()
-    max_entropy = -2 * (0.5 * torch.log(torch.tensor(0.5)))  # Max entropy for 2-class
+    boundary_prob_float = boundary_prob.float()
+    entropy = -(boundary_prob_float * (boundary_prob_float + 1e-8).log()).sum(dim=-1).mean()
+    max_entropy = -2 * (0.5 * torch.log(torch.tensor(0.5, device=entropy.device)))  # Max entropy for 2-class
     entropy_loss = F.relu(0.5 * max_entropy - entropy)  # Penalize if entropy too low
     
     # =========================================================================
