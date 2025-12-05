@@ -1,0 +1,545 @@
+2025-12-04 14:35:46,523 - speechbrain.core - INFO - Beginning experiment!
+2025-12-04 14:35:46,524 - speechbrain.core - INFO - Experiment folder: results/S2S/hmamba_S_S2S/7778
+2025-12-04 14:35:46,859 - speechbrain.utils.superpowers - DEBUG - annotated-types==0.7.0
+attrs==25.4.0
+audioread==3.1.0
+Automat==25.4.16
+buildtools==1.0.6
+causal-conv1d==1.1.3.post1
+certifi==2022.12.7
+cffi==2.0.0
+charset-normalizer==2.1.1
+click==8.1.8
+cmake==3.25.0
+constantly==23.10.4
+decorator==5.2.1
+docopt==0.6.2
+einops==0.8.1
+eval_type_backport==0.3.0
+filelock==3.13.1
+fsspec==2024.6.1
+furl==2.1.4
+gitdb==4.0.12
+GitPython==3.1.45
+greenlet==3.2.4
+hf-xet==1.2.0
+huggingface-hub==0.36.0
+hyperlink==21.0.0
+HyperPyYAML==1.2.2
+idna==3.4
+Incremental==24.11.0
+Jinja2==3.1.4
+joblib==1.5.2
+lazy_loader==0.4
+librosa==0.11.0
+lit==15.0.7
+llvmlite==0.43.0
+mamba-ssm==1.1.3.post1
+MarkupSafe==2.1.5
+mpmath==1.3.0
+msgpack==1.1.2
+networkx==3.2.1
+ninja==1.13.0
+numba==0.60.0
+numpy==1.26.3
+nvidia-cublas-cu12==12.1.3.1
+nvidia-cuda-cupti-cu12==12.1.105
+nvidia-cuda-nvrtc-cu12==12.1.105
+nvidia-cuda-runtime-cu12==12.1.105
+nvidia-cudnn-cu12==9.1.0.70
+nvidia-cufft-cu12==11.0.2.54
+nvidia-curand-cu12==10.3.2.106
+nvidia-cusolver-cu12==11.4.5.107
+nvidia-cusparse-cu12==12.1.0.106
+nvidia-nccl-cu12==2.21.5
+nvidia-nvjitlink-cu12==12.9.86
+nvidia-nvtx-cu12==12.1.105
+orderedmultidict==1.0.2
+packaging==25.0
+pillow==11.0.0
+platformdirs==4.4.0
+pooch==1.8.2
+protobuf==6.33.1
+psutil==7.1.3
+pycparser==2.23
+pydantic==2.12.5
+pydantic_core==2.41.5
+python-dateutil==2.9.0.post0
+PyYAML==6.0.3
+redo==3.0.0
+regex==2025.11.3
+requests==2.28.1
+ruamel.yaml==0.18.16
+ruamel.yaml.clib==0.2.15
+safetensors==0.7.0
+scikit-learn==1.6.1
+scipy==1.13.1
+sentencepiece==0.2.1
+sentry-sdk==2.46.0
+simplejson==3.20.2
+six==1.17.0
+smmap==5.0.2
+soundfile==0.13.1
+soxr==1.0.0
+speechbrain==1.0.0
+SQLAlchemy==2.0.44
+sympy==1.13.1
+threadpoolctl==3.6.0
+tokenizers==0.13.3
+tomli==2.3.0
+torch==2.0.1+cu118
+torchaudio==2.0.2+cu118
+torchvision==0.15.2+cu118
+tqdm==4.67.1
+transformers==4.30.0
+triton==2.0.0
+Twisted==25.5.0
+typing-inspection==0.4.2
+typing_extensions==4.15.0
+urllib3==1.26.13
+wandb==0.23.0
+zope.interface==8.0.1
+
+
+2025-12-04 14:35:46,881 - speechbrain.utils.superpowers - DEBUG - 31ec8db
+
+
+2025-12-04 14:35:46,889 - librispeech_prepare - INFO - Data_preparation...
+2025-12-04 14:35:48,418 - librispeech_prepare - INFO - Creating csv lists in  results/S2S/hmamba_S_S2S/7778/train-clean-100.csv...
+2025-12-04 14:35:51,043 - librispeech_prepare - INFO - results/S2S/hmamba_S_S2S/7778/train-clean-100.csv successfully created!
+2025-12-04 14:35:51,203 - librispeech_prepare - INFO - Creating csv lists in  results/S2S/hmamba_S_S2S/7778/dev-clean.csv...
+2025-12-04 14:35:52,234 - librispeech_prepare - INFO - results/S2S/hmamba_S_S2S/7778/dev-clean.csv successfully created!
+2025-12-04 14:35:52,382 - librispeech_prepare - INFO - Creating csv lists in  results/S2S/hmamba_S_S2S/7778/test-clean.csv...
+2025-12-04 14:35:53,395 - librispeech_prepare - INFO - results/S2S/hmamba_S_S2S/7778/test-clean.csv successfully created!
+2025-12-04 14:35:53,557 - librispeech_prepare - INFO - Creating csv lists in  results/S2S/hmamba_S_S2S/7778/test-other.csv...
+2025-12-04 14:35:54,622 - librispeech_prepare - INFO - results/S2S/hmamba_S_S2S/7778/test-other.csv successfully created!
+2025-12-04 14:35:54,652 - speechbrain.dataio.dataio - INFO - results/S2S/hmamba_S_S2S/7778/train.csv is created.
+2025-12-04 14:35:54,899 - speechbrain.dataio.sampler - INFO - Batch quantisation in latent space
+2025-12-04 14:35:54,900 - speechbrain.dataio.sampler - DEBUG - Latent bucket boundary - buckets: ['6.92', '8.88', '10.39', '11.67', '12.81', '13.87', '14.86', '15.79', '16.69', '17.55', '18.39', '19.21', '20.00', '20.78', '21.55', '22.30', '23.05', '23.78', '24.51', '25.23', '25.95', '26.66', '27.36', '28.07', '28.76', '29.46', '30.16', '30.85', '31.54', '32.23', '32.92', '33.61', '34.30', '34.99', '35.68', '36.37', '37.06', '37.76', '38.45', '39.15', '39.85', '40.55', '41.25', '41.96', '42.66', '43.38', '44.09', '44.81', '45.53', '46.25', '46.98', '47.71', '48.45', '49.19', '49.93', '50.68', '51.43', '52.19', '52.95', '53.72', '54.50', '55.27', '56.06', '56.85', '57.64', '58.44', '59.25', '60.07', '60.89', '61.71', '62.55', '63.39', '64.24', '65.09', '65.95', '66.82', '67.70', '68.59', '69.48', '70.39', '71.30', '72.22', '73.15', '74.09', '75.04', '76.00', '76.97', '77.94', '78.93', '79.93', '80.95', '81.97', '83.00', '84.05', '85.10', '86.17', '87.26', '88.35', '89.46', '90.58', '91.72', '92.87', '94.04', '95.22', '96.42', '97.63', '98.86', '100.10', '101.36', '102.64', '103.94', '105.26', '106.60', '107.95', '109.33', '110.72', '112.14', '113.58', '115.04', '116.53', '118.04', '119.57', '121.13', '122.72', '124.33', '125.98', '127.65', '129.35', '131.08', '132.84', '134.63', '136.46', '138.33', '140.23', '142.16', '144.14', '146.16', '148.22', '150.32', '152.46', '154.66', '156.90', '159.19', '161.54', '163.94', '166.40', '168.92', '171.50', '174.14', '176.85', '179.64', '182.49', '185.43', '188.45', '191.55', '194.74', '198.03', '201.42', '204.91', '208.52', '212.24', '216.08', '220.06', '224.18', '228.45', '232.87', '237.47', '242.24', '247.21', '252.39', '257.79', '263.44', '269.34', '275.53', '282.02', '288.85', '296.04', '303.64', '311.68', '320.21', '329.28', '338.97', '349.34', '360.48', '372.51', '385.56', '399.78', '415.37', '432.60', '451.77', '473.33', '497.84', '526.12', '559.30', '599.15', '648.47', '712.18', '799.98', '935.18', '1200.00'] - length multipliers: ['1.28', '1.17', '1.12', '1.10', '1.08', '1.07', '1.06', '1.06', '1.05', '1.05', '1.04', '1.04', '1.04', '1.04', '1.04', '1.03', '1.03', '1.03', '1.03', '1.03', '1.03', '1.03', '1.03', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.03', '1.03', '1.03', '1.03', '1.03', '1.03', '1.03', '1.03', '1.04', '1.04', '1.04', '1.04', '1.04', '1.05', '1.05', '1.06', '1.06', '1.07', '1.08', '1.10', '1.12', '1.17', '1.28']
+2025-12-04 14:35:54,900 - speechbrain.dataio.sampler - INFO - DynamicBatchSampler: Generating dynamic batches
+2025-12-04 14:35:54,952 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 0 with boundary 0.0-6.9 and batch_size 173: Num Examples 3147.0, Num Full Batches 11.000, Pad Factor 123.055.
+2025-12-04 14:35:54,952 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 1 with boundary 6.9-8.9 and batch_size 135: Num Examples 1342.0, Num Full Batches 8.000, Pad Factor 24.670.
+2025-12-04 14:35:54,952 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 2 with boundary 8.9-10.4 and batch_size 115: Num Examples 1209.0, Num Full Batches 9.000, Pad Factor 15.526.
+2025-12-04 14:35:54,952 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 3 with boundary 10.4-11.7 and batch_size 102: Num Examples 1498.0, Num Full Batches 13.000, Pad Factor 11.514.
+2025-12-04 14:35:54,952 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 4 with boundary 11.7-12.8 and batch_size 93: Num Examples 2457.0, Num Full Batches 25.000, Pad Factor 9.262.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 5 with boundary 12.8-13.9 and batch_size 86: Num Examples 3978.0, Num Full Batches 44.000, Pad Factor 7.844.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 6 with boundary 13.9-14.9 and batch_size 80: Num Examples 5732.0, Num Full Batches 68.000, Pad Factor 6.844.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 7 with boundary 14.9-15.8 and batch_size 75: Num Examples 6189.0, Num Full Batches 79.000, Pad Factor 6.070.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 8 with boundary 15.8-16.7 and batch_size 71: Num Examples 2690.0, Num Full Batches 36.000, Pad Factor 5.530.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 9 with boundary 16.7-17.6 and batch_size 68: Num Examples 292.0, Num Full Batches 4.000, Pad Factor 4.358.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 10 with boundary 17.6-18.4 and batch_size 65: Num Examples 2.0, Num Full Batches 0.000, Pad Factor 3.487.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 11 with boundary 18.4-19.2 and batch_size 62: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 12 with boundary 19.2-20.0 and batch_size 59: Num Examples 2.0, Num Full Batches 0.000, Pad Factor 3.513.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 13 with boundary 20.0-20.8 and batch_size 57: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 14 with boundary 20.8-21.5 and batch_size 55: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 15 with boundary 21.5-22.3 and batch_size 53: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 16 with boundary 22.3-23.0 and batch_size 52: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 17 with boundary 23.0-23.8 and batch_size 50: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 18 with boundary 23.8-24.5 and batch_size 48: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 19 with boundary 24.5-25.2 and batch_size 47: Num Examples 1.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 20 with boundary 25.2-25.9 and batch_size 46: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 21 with boundary 25.9-26.7 and batch_size 45: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 22 with boundary 26.7-27.4 and batch_size 43: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 23 with boundary 27.4-28.1 and batch_size 42: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 24 with boundary 28.1-28.8 and batch_size 41: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 25 with boundary 28.8-29.5 and batch_size 40: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 26 with boundary 29.5-30.2 and batch_size 39: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 27 with boundary 30.2-30.8 and batch_size 38: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 28 with boundary 30.8-31.5 and batch_size 38: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 29 with boundary 31.5-32.2 and batch_size 37: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 30 with boundary 32.2-32.9 and batch_size 36: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 31 with boundary 32.9-33.6 and batch_size 35: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 32 with boundary 33.6-34.3 and batch_size 34: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 33 with boundary 34.3-35.0 and batch_size 34: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 34 with boundary 35.0-35.7 and batch_size 33: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 35 with boundary 35.7-36.4 and batch_size 32: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 36 with boundary 36.4-37.1 and batch_size 32: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 37 with boundary 37.1-37.8 and batch_size 31: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 38 with boundary 37.8-38.5 and batch_size 31: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 39 with boundary 38.5-39.1 and batch_size 30: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 40 with boundary 39.1-39.8 and batch_size 30: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 41 with boundary 39.8-40.5 and batch_size 29: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 42 with boundary 40.5-41.3 and batch_size 29: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 43 with boundary 41.3-42.0 and batch_size 28: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 44 with boundary 42.0-42.7 and batch_size 28: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 45 with boundary 42.7-43.4 and batch_size 27: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 46 with boundary 43.4-44.1 and batch_size 27: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 47 with boundary 44.1-44.8 and batch_size 26: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 48 with boundary 44.8-45.5 and batch_size 26: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 49 with boundary 45.5-46.3 and batch_size 25: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 50 with boundary 46.3-47.0 and batch_size 25: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 51 with boundary 47.0-47.7 and batch_size 25: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 52 with boundary 47.7-48.4 and batch_size 24: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 53 with boundary 48.4-49.2 and batch_size 24: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 54 with boundary 49.2-49.9 and batch_size 24: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 55 with boundary 49.9-50.7 and batch_size 23: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 56 with boundary 50.7-51.4 and batch_size 23: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 57 with boundary 51.4-52.2 and batch_size 22: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 58 with boundary 52.2-53.0 and batch_size 22: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 59 with boundary 53.0-53.7 and batch_size 22: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 60 with boundary 53.7-54.5 and batch_size 22: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 61 with boundary 54.5-55.3 and batch_size 21: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 62 with boundary 55.3-56.1 and batch_size 21: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 63 with boundary 56.1-56.8 and batch_size 21: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 64 with boundary 56.8-57.6 and batch_size 20: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 65 with boundary 57.6-58.4 and batch_size 20: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 66 with boundary 58.4-59.3 and batch_size 20: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 67 with boundary 59.3-60.1 and batch_size 19: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 68 with boundary 60.1-60.9 and batch_size 19: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 69 with boundary 60.9-61.7 and batch_size 19: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 70 with boundary 61.7-62.5 and batch_size 19: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 71 with boundary 62.5-63.4 and batch_size 18: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 72 with boundary 63.4-64.2 and batch_size 18: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 73 with boundary 64.2-65.1 and batch_size 18: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 74 with boundary 65.1-66.0 and batch_size 18: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 75 with boundary 66.0-66.8 and batch_size 17: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 76 with boundary 66.8-67.7 and batch_size 17: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 77 with boundary 67.7-68.6 and batch_size 17: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 78 with boundary 68.6-69.5 and batch_size 17: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,953 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 79 with boundary 69.5-70.4 and batch_size 17: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 80 with boundary 70.4-71.3 and batch_size 16: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 81 with boundary 71.3-72.2 and batch_size 16: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 82 with boundary 72.2-73.2 and batch_size 16: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 83 with boundary 73.2-74.1 and batch_size 16: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 84 with boundary 74.1-75.0 and batch_size 15: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 85 with boundary 75.0-76.0 and batch_size 15: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 86 with boundary 76.0-77.0 and batch_size 15: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 87 with boundary 77.0-77.9 and batch_size 15: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 88 with boundary 77.9-78.9 and batch_size 15: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 89 with boundary 78.9-79.9 and batch_size 15: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 90 with boundary 79.9-80.9 and batch_size 14: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 91 with boundary 80.9-82.0 and batch_size 14: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 92 with boundary 82.0-83.0 and batch_size 14: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 93 with boundary 83.0-84.0 and batch_size 14: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 94 with boundary 84.0-85.1 and batch_size 14: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 95 with boundary 85.1-86.2 and batch_size 13: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 96 with boundary 86.2-87.3 and batch_size 13: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 97 with boundary 87.3-88.4 and batch_size 13: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 98 with boundary 88.4-89.5 and batch_size 13: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 99 with boundary 89.5-90.6 and batch_size 13: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 100 with boundary 90.6-91.7 and batch_size 13: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 101 with boundary 91.7-92.9 and batch_size 12: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 102 with boundary 92.9-94.0 and batch_size 12: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 103 with boundary 94.0-95.2 and batch_size 12: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 104 with boundary 95.2-96.4 and batch_size 12: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 105 with boundary 96.4-97.6 and batch_size 12: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 106 with boundary 97.6-98.9 and batch_size 12: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 107 with boundary 98.9-100.1 and batch_size 11: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 108 with boundary 100.1-101.4 and batch_size 11: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 109 with boundary 101.4-102.6 and batch_size 11: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 110 with boundary 102.6-103.9 and batch_size 11: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 111 with boundary 103.9-105.3 and batch_size 11: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 112 with boundary 105.3-106.6 and batch_size 11: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 113 with boundary 106.6-108.0 and batch_size 11: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 114 with boundary 108.0-109.3 and batch_size 10: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 115 with boundary 109.3-110.7 and batch_size 10: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 116 with boundary 110.7-112.1 and batch_size 10: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 117 with boundary 112.1-113.6 and batch_size 10: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 118 with boundary 113.6-115.0 and batch_size 10: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 119 with boundary 115.0-116.5 and batch_size 10: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 120 with boundary 116.5-118.0 and batch_size 10: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 121 with boundary 118.0-119.6 and batch_size 10: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 122 with boundary 119.6-121.1 and batch_size 9: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 123 with boundary 121.1-122.7 and batch_size 9: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 124 with boundary 122.7-124.3 and batch_size 9: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 125 with boundary 124.3-126.0 and batch_size 9: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 126 with boundary 126.0-127.6 and batch_size 9: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 127 with boundary 127.6-129.3 and batch_size 9: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 128 with boundary 129.3-131.1 and batch_size 9: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 129 with boundary 131.1-132.8 and batch_size 9: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 130 with boundary 132.8-134.6 and batch_size 8: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 131 with boundary 134.6-136.5 and batch_size 8: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 132 with boundary 136.5-138.3 and batch_size 8: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 133 with boundary 138.3-140.2 and batch_size 8: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 134 with boundary 140.2-142.2 and batch_size 8: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 135 with boundary 142.2-144.1 and batch_size 8: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 136 with boundary 144.1-146.2 and batch_size 8: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 137 with boundary 146.2-148.2 and batch_size 8: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 138 with boundary 148.2-150.3 and batch_size 7: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 139 with boundary 150.3-152.5 and batch_size 7: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 140 with boundary 152.5-154.7 and batch_size 7: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 141 with boundary 154.7-156.9 and batch_size 7: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 142 with boundary 156.9-159.2 and batch_size 7: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 143 with boundary 159.2-161.5 and batch_size 7: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 144 with boundary 161.5-163.9 and batch_size 7: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 145 with boundary 163.9-166.4 and batch_size 7: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 146 with boundary 166.4-168.9 and batch_size 7: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 147 with boundary 168.9-171.5 and batch_size 6: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 148 with boundary 171.5-174.1 and batch_size 6: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 149 with boundary 174.1-176.9 and batch_size 6: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 150 with boundary 176.9-179.6 and batch_size 6: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 151 with boundary 179.6-182.5 and batch_size 6: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 152 with boundary 182.5-185.4 and batch_size 6: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 153 with boundary 185.4-188.4 and batch_size 6: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 154 with boundary 188.4-191.5 and batch_size 6: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,954 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 155 with boundary 191.5-194.7 and batch_size 6: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 156 with boundary 194.7-198.0 and batch_size 6: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 157 with boundary 198.0-201.4 and batch_size 5: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 158 with boundary 201.4-204.9 and batch_size 5: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 159 with boundary 204.9-208.5 and batch_size 5: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 160 with boundary 208.5-212.2 and batch_size 5: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 161 with boundary 212.2-216.1 and batch_size 5: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 162 with boundary 216.1-220.1 and batch_size 5: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 163 with boundary 220.1-224.2 and batch_size 5: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 164 with boundary 224.2-228.4 and batch_size 5: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 165 with boundary 228.4-232.9 and batch_size 5: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 166 with boundary 232.9-237.5 and batch_size 5: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 167 with boundary 237.5-242.2 and batch_size 4: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 168 with boundary 242.2-247.2 and batch_size 4: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 169 with boundary 247.2-252.4 and batch_size 4: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 170 with boundary 252.4-257.8 and batch_size 4: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 171 with boundary 257.8-263.4 and batch_size 4: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 172 with boundary 263.4-269.3 and batch_size 4: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 173 with boundary 269.3-275.5 and batch_size 4: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 174 with boundary 275.5-282.0 and batch_size 4: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 175 with boundary 282.0-288.8 and batch_size 4: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 176 with boundary 288.8-296.0 and batch_size 4: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 177 with boundary 296.0-303.6 and batch_size 3: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 178 with boundary 303.6-311.7 and batch_size 3: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 179 with boundary 311.7-320.2 and batch_size 3: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 180 with boundary 320.2-329.3 and batch_size 3: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 181 with boundary 329.3-339.0 and batch_size 3: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 182 with boundary 339.0-349.3 and batch_size 3: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 183 with boundary 349.3-360.5 and batch_size 3: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 184 with boundary 360.5-372.5 and batch_size 3: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 185 with boundary 372.5-385.6 and batch_size 3: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 186 with boundary 385.6-399.8 and batch_size 3: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 187 with boundary 399.8-415.4 and batch_size 2: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 188 with boundary 415.4-432.6 and batch_size 2: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 189 with boundary 432.6-451.8 and batch_size 2: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 190 with boundary 451.8-473.3 and batch_size 2: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 191 with boundary 473.3-497.8 and batch_size 2: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 192 with boundary 497.8-526.1 and batch_size 2: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 193 with boundary 526.1-559.3 and batch_size 2: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 194 with boundary 559.3-599.2 and batch_size 2: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 195 with boundary 599.2-648.5 and batch_size 1: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 196 with boundary 648.5-712.2 and batch_size 1: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 197 with boundary 712.2-800.0 and batch_size 1: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 198 with boundary 800.0-935.2 and batch_size 1: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,955 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 199 with boundary 935.2-1200.0 and batch_size 1: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,957 - speechbrain.dataio.sampler - INFO - Batch quantisation in latent space
+2025-12-04 14:35:54,957 - speechbrain.dataio.sampler - DEBUG - Latent bucket boundary - buckets: ['0.58', '0.74', '0.87', '0.97', '1.07', '1.16', '1.24', '1.32', '1.39', '1.46', '1.53', '1.60', '1.67', '1.73', '1.80', '1.86', '1.92', '1.98', '2.04', '2.10', '2.16', '2.22', '2.28', '2.34', '2.40', '2.46', '2.51', '2.57', '2.63', '2.69', '2.74', '2.80', '2.86', '2.92', '2.97', '3.03', '3.09', '3.15', '3.20', '3.26', '3.32', '3.38', '3.44', '3.50', '3.56', '3.61', '3.67', '3.73', '3.79', '3.85', '3.92', '3.98', '4.04', '4.10', '4.16', '4.22', '4.29', '4.35', '4.41', '4.48', '4.54', '4.61', '4.67', '4.74', '4.80', '4.87', '4.94', '5.01', '5.07', '5.14', '5.21', '5.28', '5.35', '5.42', '5.50', '5.57', '5.64', '5.72', '5.79', '5.87', '5.94', '6.02', '6.10', '6.17', '6.25', '6.33', '6.41', '6.50', '6.58', '6.66', '6.75', '6.83', '6.92', '7.00', '7.09', '7.18', '7.27', '7.36', '7.46', '7.55', '7.64', '7.74', '7.84', '7.93', '8.03', '8.14', '8.24', '8.34', '8.45', '8.55', '8.66', '8.77', '8.88', '9.00', '9.11', '9.23', '9.35', '9.47', '9.59', '9.71', '9.84', '9.96', '10.09', '10.23', '10.36', '10.50', '10.64', '10.78', '10.92', '11.07', '11.22', '11.37', '11.53', '11.69', '11.85', '12.01', '12.18', '12.35', '12.53', '12.71', '12.89', '13.08', '13.27', '13.46', '13.66', '13.87', '14.08', '14.29', '14.51', '14.74', '14.97', '15.21', '15.45', '15.70', '15.96', '16.23', '16.50', '16.78', '17.08', '17.38', '17.69', '18.01', '18.34', '18.68', '19.04', '19.41', '19.79', '20.19', '20.60', '21.03', '21.48', '21.95', '22.45', '22.96', '23.50', '24.07', '24.67', '25.30', '25.97', '26.68', '27.44', '28.25', '29.11', '30.04', '31.04', '32.13', '33.31', '34.61', '36.05', '37.65', '39.44', '41.49', '43.84', '46.61', '49.93', '54.04', '59.35', '66.67', '77.93', '100.00'] - length multipliers: ['1.28', '1.17', '1.12', '1.10', '1.08', '1.07', '1.06', '1.06', '1.05', '1.05', '1.04', '1.04', '1.04', '1.04', '1.04', '1.03', '1.03', '1.03', '1.03', '1.03', '1.03', '1.03', '1.03', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.01', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.02', '1.03', '1.03', '1.03', '1.03', '1.03', '1.03', '1.03', '1.03', '1.04', '1.04', '1.04', '1.04', '1.04', '1.05', '1.05', '1.06', '1.06', '1.07', '1.08', '1.10', '1.12', '1.17', '1.28']
+2025-12-04 14:35:54,957 - speechbrain.dataio.sampler - INFO - DynamicBatchSampler: Generating dynamic batches
+2025-12-04 14:35:54,962 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 0 with boundary 0.0-0.6 and batch_size 173: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,962 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 1 with boundary 0.6-0.7 and batch_size 135: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 2 with boundary 0.7-0.9 and batch_size 115: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 3 with boundary 0.9-1.0 and batch_size 102: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 4 with boundary 1.0-1.1 and batch_size 93: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 5 with boundary 1.1-1.2 and batch_size 86: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 6 with boundary 1.2-1.2 and batch_size 80: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 7 with boundary 1.2-1.3 and batch_size 75: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 8 with boundary 1.3-1.4 and batch_size 71: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 9 with boundary 1.4-1.5 and batch_size 68: Num Examples 1.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 10 with boundary 1.5-1.5 and batch_size 65: Num Examples 1.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 11 with boundary 1.5-1.6 and batch_size 62: Num Examples 2.0, Num Full Batches 0.000, Pad Factor 1.616.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 12 with boundary 1.6-1.7 and batch_size 59: Num Examples 1.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 13 with boundary 1.7-1.7 and batch_size 57: Num Examples 3.0, Num Full Batches 0.000, Pad Factor 3.536.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 14 with boundary 1.7-1.8 and batch_size 55: Num Examples 6.0, Num Full Batches 0.000, Pad Factor 1.991.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 15 with boundary 1.8-1.9 and batch_size 53: Num Examples 5.0, Num Full Batches 0.000, Pad Factor 2.722.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 16 with boundary 1.9-1.9 and batch_size 52: Num Examples 4.0, Num Full Batches 0.000, Pad Factor 2.663.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 17 with boundary 1.9-2.0 and batch_size 50: Num Examples 14.0, Num Full Batches 0.000, Pad Factor 2.300.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 18 with boundary 2.0-2.0 and batch_size 48: Num Examples 9.0, Num Full Batches 0.000, Pad Factor 1.979.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 19 with boundary 2.0-2.1 and batch_size 47: Num Examples 14.0, Num Full Batches 0.000, Pad Factor 2.411.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 20 with boundary 2.1-2.2 and batch_size 46: Num Examples 11.0, Num Full Batches 0.000, Pad Factor 1.635.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 21 with boundary 2.2-2.2 and batch_size 45: Num Examples 17.0, Num Full Batches 0.000, Pad Factor 2.506.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 22 with boundary 2.2-2.3 and batch_size 43: Num Examples 23.0, Num Full Batches 0.000, Pad Factor 2.435.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 23 with boundary 2.3-2.3 and batch_size 42: Num Examples 15.0, Num Full Batches 0.000, Pad Factor 1.947.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 24 with boundary 2.3-2.4 and batch_size 41: Num Examples 15.0, Num Full Batches 0.000, Pad Factor 2.324.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 25 with boundary 2.4-2.5 and batch_size 40: Num Examples 15.0, Num Full Batches 0.000, Pad Factor 2.266.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 26 with boundary 2.5-2.5 and batch_size 39: Num Examples 30.0, Num Full Batches 0.000, Pad Factor 2.015.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 27 with boundary 2.5-2.6 and batch_size 38: Num Examples 27.0, Num Full Batches 0.000, Pad Factor 1.965.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 28 with boundary 2.6-2.6 and batch_size 38: Num Examples 21.0, Num Full Batches 0.000, Pad Factor 1.927.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 29 with boundary 2.6-2.7 and batch_size 37: Num Examples 19.0, Num Full Batches 0.000, Pad Factor 2.069.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 30 with boundary 2.7-2.7 and batch_size 36: Num Examples 28.0, Num Full Batches 0.000, Pad Factor 1.841.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 31 with boundary 2.7-2.8 and batch_size 35: Num Examples 33.0, Num Full Batches 0.000, Pad Factor 1.982.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 32 with boundary 2.8-2.9 and batch_size 34: Num Examples 25.0, Num Full Batches 0.000, Pad Factor 1.769.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 33 with boundary 2.9-2.9 and batch_size 34: Num Examples 33.0, Num Full Batches 0.000, Pad Factor 1.905.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 34 with boundary 2.9-3.0 and batch_size 33: Num Examples 19.0, Num Full Batches 0.000, Pad Factor 1.526.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 35 with boundary 3.0-3.0 and batch_size 32: Num Examples 24.0, Num Full Batches 0.000, Pad Factor 1.831.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 36 with boundary 3.0-3.1 and batch_size 32: Num Examples 19.0, Num Full Batches 0.000, Pad Factor 1.632.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 37 with boundary 3.1-3.1 and batch_size 31: Num Examples 23.0, Num Full Batches 0.000, Pad Factor 1.765.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 38 with boundary 3.1-3.2 and batch_size 31: Num Examples 17.0, Num Full Batches 0.000, Pad Factor 1.577.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 39 with boundary 3.2-3.3 and batch_size 30: Num Examples 26.0, Num Full Batches 0.000, Pad Factor 1.701.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 40 with boundary 3.3-3.3 and batch_size 30: Num Examples 25.0, Num Full Batches 0.000, Pad Factor 1.672.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 41 with boundary 3.3-3.4 and batch_size 29: Num Examples 23.0, Num Full Batches 0.000, Pad Factor 1.344.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 42 with boundary 3.4-3.4 and batch_size 29: Num Examples 26.0, Num Full Batches 0.000, Pad Factor 1.614.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 43 with boundary 3.4-3.5 and batch_size 28: Num Examples 15.0, Num Full Batches 0.000, Pad Factor 1.589.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 44 with boundary 3.5-3.6 and batch_size 28: Num Examples 24.0, Num Full Batches 0.000, Pad Factor 1.558.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 45 with boundary 3.6-3.6 and batch_size 27: Num Examples 14.0, Num Full Batches 0.000, Pad Factor 1.393.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 46 with boundary 3.6-3.7 and batch_size 27: Num Examples 20.0, Num Full Batches 0.000, Pad Factor 1.509.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 47 with boundary 3.7-3.7 and batch_size 26: Num Examples 22.0, Num Full Batches 0.000, Pad Factor 1.485.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 48 with boundary 3.7-3.8 and batch_size 26: Num Examples 17.0, Num Full Batches 0.000, Pad Factor 1.327.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 49 with boundary 3.8-3.9 and batch_size 25: Num Examples 23.0, Num Full Batches 0.000, Pad Factor 1.440.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 50 with boundary 3.9-3.9 and batch_size 25: Num Examples 26.0, Num Full Batches 1.000, Pad Factor 1.545.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 51 with boundary 3.9-4.0 and batch_size 25: Num Examples 20.0, Num Full Batches 0.000, Pad Factor 1.393.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 52 with boundary 4.0-4.0 and batch_size 24: Num Examples 25.0, Num Full Batches 1.000, Pad Factor 1.248.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 53 with boundary 4.0-4.1 and batch_size 24: Num Examples 12.0, Num Full Batches 0.000, Pad Factor 1.233.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 54 with boundary 4.1-4.2 and batch_size 24: Num Examples 10.0, Num Full Batches 0.000, Pad Factor 1.329.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 55 with boundary 4.2-4.2 and batch_size 23: Num Examples 23.0, Num Full Batches 0.000, Pad Factor 1.314.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 56 with boundary 4.2-4.3 and batch_size 23: Num Examples 22.0, Num Full Batches 0.000, Pad Factor 1.410.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 57 with boundary 4.3-4.3 and batch_size 22: Num Examples 28.0, Num Full Batches 1.000, Pad Factor 1.158.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 58 with boundary 4.3-4.4 and batch_size 22: Num Examples 26.0, Num Full Batches 1.000, Pad Factor 1.370.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 59 with boundary 4.4-4.5 and batch_size 22: Num Examples 19.0, Num Full Batches 0.000, Pad Factor 1.352.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 60 with boundary 4.5-4.5 and batch_size 22: Num Examples 22.0, Num Full Batches 0.000, Pad Factor 1.330.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 61 with boundary 4.5-4.6 and batch_size 21: Num Examples 24.0, Num Full Batches 1.000, Pad Factor 1.203.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 62 with boundary 4.6-4.7 and batch_size 21: Num Examples 22.0, Num Full Batches 1.000, Pad Factor 1.077.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 63 with boundary 4.7-4.7 and batch_size 21: Num Examples 23.0, Num Full Batches 1.000, Pad Factor 1.275.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 64 with boundary 4.7-4.8 and batch_size 20: Num Examples 24.0, Num Full Batches 1.000, Pad Factor 1.260.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 65 with boundary 4.8-4.9 and batch_size 20: Num Examples 37.0, Num Full Batches 1.000, Pad Factor 1.345.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 66 with boundary 4.9-4.9 and batch_size 20: Num Examples 22.0, Num Full Batches 1.000, Pad Factor 1.222.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 67 with boundary 4.9-5.0 and batch_size 19: Num Examples 25.0, Num Full Batches 1.000, Pad Factor 1.308.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 68 with boundary 5.0-5.1 and batch_size 19: Num Examples 15.0, Num Full Batches 0.000, Pad Factor 1.191.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 69 with boundary 5.1-5.1 and batch_size 19: Num Examples 13.0, Num Full Batches 0.000, Pad Factor 1.079.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 70 with boundary 5.1-5.2 and batch_size 19: Num Examples 23.0, Num Full Batches 1.000, Pad Factor 1.062.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 71 with boundary 5.2-5.3 and batch_size 18: Num Examples 21.0, Num Full Batches 1.000, Pad Factor 1.239.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 72 with boundary 5.3-5.4 and batch_size 18: Num Examples 22.0, Num Full Batches 1.000, Pad Factor 1.221.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 73 with boundary 5.4-5.4 and batch_size 18: Num Examples 14.0, Num Full Batches 0.000, Pad Factor 1.207.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 74 with boundary 5.4-5.5 and batch_size 18: Num Examples 19.0, Num Full Batches 1.000, Pad Factor 1.282.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 75 with boundary 5.5-5.6 and batch_size 17: Num Examples 22.0, Num Full Batches 1.000, Pad Factor 1.176.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 76 with boundary 5.6-5.6 and batch_size 17: Num Examples 16.0, Num Full Batches 0.000, Pad Factor 1.250.
+2025-12-04 14:35:54,963 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 77 with boundary 5.6-5.7 and batch_size 17: Num Examples 19.0, Num Full Batches 1.000, Pad Factor 1.144.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 78 with boundary 5.7-5.8 and batch_size 17: Num Examples 14.0, Num Full Batches 0.000, Pad Factor 1.216.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 79 with boundary 5.8-5.9 and batch_size 17: Num Examples 26.0, Num Full Batches 1.000, Pad Factor 1.199.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 80 with boundary 5.9-5.9 and batch_size 16: Num Examples 13.0, Num Full Batches 0.000, Pad Factor 1.185.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 81 with boundary 5.9-6.0 and batch_size 16: Num Examples 20.0, Num Full Batches 1.000, Pad Factor 1.169.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 82 with boundary 6.0-6.1 and batch_size 16: Num Examples 16.0, Num Full Batches 0.000, Pad Factor 1.238.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 83 with boundary 6.1-6.2 and batch_size 16: Num Examples 19.0, Num Full Batches 1.000, Pad Factor 1.143.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 84 with boundary 6.2-6.3 and batch_size 15: Num Examples 18.0, Num Full Batches 1.000, Pad Factor 1.127.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 85 with boundary 6.3-6.3 and batch_size 15: Num Examples 21.0, Num Full Batches 1.000, Pad Factor 1.191.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 86 with boundary 6.3-6.4 and batch_size 15: Num Examples 14.0, Num Full Batches 0.000, Pad Factor 1.177.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 87 with boundary 6.4-6.5 and batch_size 15: Num Examples 18.0, Num Full Batches 1.000, Pad Factor 1.085.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 88 with boundary 6.5-6.6 and batch_size 15: Num Examples 18.0, Num Full Batches 1.000, Pad Factor 1.071.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 89 with boundary 6.6-6.7 and batch_size 15: Num Examples 23.0, Num Full Batches 1.000, Pad Factor 1.058.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 90 with boundary 6.7-6.7 and batch_size 14: Num Examples 23.0, Num Full Batches 1.000, Pad Factor 1.194.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 91 with boundary 6.7-6.8 and batch_size 14: Num Examples 25.0, Num Full Batches 1.000, Pad Factor 1.178.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 92 with boundary 6.8-6.9 and batch_size 14: Num Examples 18.0, Num Full Batches 1.000, Pad Factor 1.018.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 93 with boundary 6.9-7.0 and batch_size 14: Num Examples 19.0, Num Full Batches 1.000, Pad Factor 1.078.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 94 with boundary 7.0-7.1 and batch_size 14: Num Examples 18.0, Num Full Batches 1.000, Pad Factor 0.994.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 95 with boundary 7.1-7.2 and batch_size 13: Num Examples 17.0, Num Full Batches 1.000, Pad Factor 1.122.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 96 with boundary 7.2-7.3 and batch_size 13: Num Examples 19.0, Num Full Batches 1.000, Pad Factor 1.107.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 97 with boundary 7.3-7.4 and batch_size 13: Num Examples 20.0, Num Full Batches 1.000, Pad Factor 0.955.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 98 with boundary 7.4-7.5 and batch_size 13: Num Examples 26.0, Num Full Batches 1.000, Pad Factor 1.214.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 99 with boundary 7.5-7.5 and batch_size 13: Num Examples 17.0, Num Full Batches 1.000, Pad Factor 1.066.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 100 with boundary 7.5-7.6 and batch_size 13: Num Examples 15.0, Num Full Batches 1.000, Pad Factor 1.185.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 101 with boundary 7.6-7.7 and batch_size 12: Num Examples 19.0, Num Full Batches 1.000, Pad Factor 1.105.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 102 with boundary 7.7-7.8 and batch_size 12: Num Examples 14.0, Num Full Batches 1.000, Pad Factor 1.092.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 103 with boundary 7.8-7.9 and batch_size 12: Num Examples 23.0, Num Full Batches 1.000, Pad Factor 1.141.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 104 with boundary 7.9-8.0 and batch_size 12: Num Examples 24.0, Num Full Batches 1.000, Pad Factor 1.065.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 105 with boundary 8.0-8.1 and batch_size 12: Num Examples 16.0, Num Full Batches 1.000, Pad Factor 0.988.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 106 with boundary 8.1-8.2 and batch_size 12: Num Examples 16.0, Num Full Batches 1.000, Pad Factor 1.100.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 107 with boundary 8.2-8.3 and batch_size 11: Num Examples 19.0, Num Full Batches 1.000, Pad Factor 1.026.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 108 with boundary 8.3-8.4 and batch_size 11: Num Examples 24.0, Num Full Batches 2.000, Pad Factor 1.190.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 109 with boundary 8.4-8.6 and batch_size 11: Num Examples 17.0, Num Full Batches 1.000, Pad Factor 1.176.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 110 with boundary 8.6-8.7 and batch_size 11: Num Examples 20.0, Num Full Batches 1.000, Pad Factor 1.218.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 111 with boundary 8.7-8.8 and batch_size 11: Num Examples 25.0, Num Full Batches 2.000, Pad Factor 1.032.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 112 with boundary 8.8-8.9 and batch_size 11: Num Examples 19.0, Num Full Batches 1.000, Pad Factor 1.076.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 113 with boundary 8.9-9.0 and batch_size 11: Num Examples 15.0, Num Full Batches 1.000, Pad Factor 1.175.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 114 with boundary 9.0-9.1 and batch_size 10: Num Examples 13.0, Num Full Batches 1.000, Pad Factor 1.103.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 115 with boundary 9.1-9.2 and batch_size 10: Num Examples 14.0, Num Full Batches 1.000, Pad Factor 1.036.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 116 with boundary 9.2-9.3 and batch_size 10: Num Examples 24.0, Num Full Batches 2.000, Pad Factor 1.238.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 117 with boundary 9.3-9.5 and batch_size 10: Num Examples 26.0, Num Full Batches 2.000, Pad Factor 1.172.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 118 with boundary 9.5-9.6 and batch_size 10: Num Examples 22.0, Num Full Batches 2.000, Pad Factor 1.102.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 119 with boundary 9.6-9.7 and batch_size 10: Num Examples 13.0, Num Full Batches 1.000, Pad Factor 0.931.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 120 with boundary 9.7-9.8 and batch_size 10: Num Examples 14.0, Num Full Batches 1.000, Pad Factor 1.022.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 121 with boundary 9.8-10.0 and batch_size 10: Num Examples 17.0, Num Full Batches 1.000, Pad Factor 1.062.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 122 with boundary 10.0-10.1 and batch_size 9: Num Examples 19.0, Num Full Batches 1.000, Pad Factor 0.995.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 123 with boundary 10.1-10.2 and batch_size 9: Num Examples 22.0, Num Full Batches 2.000, Pad Factor 1.278.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 124 with boundary 10.2-10.4 and batch_size 9: Num Examples 28.0, Num Full Batches 2.000, Pad Factor 1.263.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 125 with boundary 10.4-10.5 and batch_size 9: Num Examples 19.0, Num Full Batches 1.000, Pad Factor 1.102.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 126 with boundary 10.5-10.6 and batch_size 9: Num Examples 13.0, Num Full Batches 1.000, Pad Factor 1.229.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 127 with boundary 10.6-10.8 and batch_size 9: Num Examples 14.0, Num Full Batches 1.000, Pad Factor 1.120.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 128 with boundary 10.8-10.9 and batch_size 9: Num Examples 14.0, Num Full Batches 1.000, Pad Factor 1.106.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 129 with boundary 10.9-11.1 and batch_size 9: Num Examples 16.0, Num Full Batches 1.000, Pad Factor 1.227.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 130 with boundary 11.1-11.2 and batch_size 8: Num Examples 17.0, Num Full Batches 1.000, Pad Factor 1.078.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 131 with boundary 11.2-11.4 and batch_size 8: Num Examples 13.0, Num Full Batches 1.000, Pad Factor 1.152.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 132 with boundary 11.4-11.5 and batch_size 8: Num Examples 16.0, Num Full Batches 1.000, Pad Factor 1.092.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 133 with boundary 11.5-11.7 and batch_size 8: Num Examples 10.0, Num Full Batches 1.000, Pad Factor 1.119.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 134 with boundary 11.7-11.8 and batch_size 8: Num Examples 12.0, Num Full Batches 1.000, Pad Factor 1.021.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 135 with boundary 11.8-12.0 and batch_size 8: Num Examples 16.0, Num Full Batches 1.000, Pad Factor 1.297.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 136 with boundary 12.0-12.2 and batch_size 8: Num Examples 15.0, Num Full Batches 1.000, Pad Factor 1.281.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 137 with boundary 12.2-12.4 and batch_size 8: Num Examples 11.0, Num Full Batches 1.000, Pad Factor 1.021.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 138 with boundary 12.4-12.5 and batch_size 7: Num Examples 6.0, Num Full Batches 0.000, Pad Factor 1.245.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 139 with boundary 12.5-12.7 and batch_size 7: Num Examples 5.0, Num Full Batches 0.000, Pad Factor 1.230.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 140 with boundary 12.7-12.9 and batch_size 7: Num Examples 11.0, Num Full Batches 1.000, Pad Factor 1.095.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 141 with boundary 12.9-13.1 and batch_size 7: Num Examples 6.0, Num Full Batches 0.000, Pad Factor 1.079.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 142 with boundary 13.1-13.3 and batch_size 7: Num Examples 12.0, Num Full Batches 1.000, Pad Factor 1.137.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 143 with boundary 13.3-13.5 and batch_size 7: Num Examples 8.0, Num Full Batches 1.000, Pad Factor 1.274.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 144 with boundary 13.5-13.7 and batch_size 7: Num Examples 7.0, Num Full Batches 0.000, Pad Factor 1.254.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 145 with boundary 13.7-13.9 and batch_size 7: Num Examples 8.0, Num Full Batches 1.000, Pad Factor 1.310.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 146 with boundary 13.9-14.1 and batch_size 7: Num Examples 19.0, Num Full Batches 2.000, Pad Factor 1.360.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 147 with boundary 14.1-14.3 and batch_size 6: Num Examples 9.0, Num Full Batches 1.000, Pad Factor 1.024.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 148 with boundary 14.3-14.5 and batch_size 6: Num Examples 14.0, Num Full Batches 2.000, Pad Factor 1.318.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 149 with boundary 14.5-14.7 and batch_size 6: Num Examples 8.0, Num Full Batches 1.000, Pad Factor 0.888.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 150 with boundary 14.7-15.0 and batch_size 6: Num Examples 9.0, Num Full Batches 1.000, Pad Factor 1.312.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 151 with boundary 15.0-15.2 and batch_size 6: Num Examples 8.0, Num Full Batches 1.000, Pad Factor 1.294.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 152 with boundary 15.2-15.5 and batch_size 6: Num Examples 9.0, Num Full Batches 1.000, Pad Factor 1.436.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 153 with boundary 15.5-15.7 and batch_size 6: Num Examples 11.0, Num Full Batches 1.000, Pad Factor 1.478.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 154 with boundary 15.7-16.0 and batch_size 6: Num Examples 16.0, Num Full Batches 2.000, Pad Factor 1.419.
+2025-12-04 14:35:54,964 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 155 with boundary 16.0-16.2 and batch_size 6: Num Examples 4.0, Num Full Batches 0.000, Pad Factor 0.313.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 156 with boundary 16.2-16.5 and batch_size 6: Num Examples 12.0, Num Full Batches 1.000, Pad Factor 1.100.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 157 with boundary 16.5-16.8 and batch_size 5: Num Examples 12.0, Num Full Batches 2.000, Pad Factor 1.320.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 158 with boundary 16.8-17.1 and batch_size 5: Num Examples 7.0, Num Full Batches 1.000, Pad Factor 1.095.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 159 with boundary 17.1-17.4 and batch_size 5: Num Examples 9.0, Num Full Batches 1.000, Pad Factor 1.422.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 160 with boundary 17.4-17.7 and batch_size 5: Num Examples 10.0, Num Full Batches 1.000, Pad Factor 1.366.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 161 with boundary 17.7-18.0 and batch_size 5: Num Examples 7.0, Num Full Batches 1.000, Pad Factor 0.561.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 162 with boundary 18.0-18.3 and batch_size 5: Num Examples 6.0, Num Full Batches 1.000, Pad Factor 1.345.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 163 with boundary 18.3-18.7 and batch_size 5: Num Examples 3.0, Num Full Batches 0.000, Pad Factor 1.085.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 164 with boundary 18.7-19.0 and batch_size 5: Num Examples 3.0, Num Full Batches 0.000, Pad Factor 0.502.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 165 with boundary 19.0-19.4 and batch_size 5: Num Examples 8.0, Num Full Batches 1.000, Pad Factor 1.457.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 166 with boundary 19.4-19.8 and batch_size 5: Num Examples 4.0, Num Full Batches 0.000, Pad Factor 1.780.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 167 with boundary 19.8-20.2 and batch_size 4: Num Examples 2.0, Num Full Batches 0.000, Pad Factor 0.126.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 168 with boundary 20.2-20.6 and batch_size 4: Num Examples 9.0, Num Full Batches 1.000, Pad Factor 1.690.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 169 with boundary 20.6-21.0 and batch_size 4: Num Examples 9.0, Num Full Batches 1.000, Pad Factor 1.751.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 170 with boundary 21.0-21.5 and batch_size 4: Num Examples 1.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 171 with boundary 21.5-22.0 and batch_size 4: Num Examples 2.0, Num Full Batches 0.000, Pad Factor 1.424.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 172 with boundary 22.0-22.4 and batch_size 4: Num Examples 2.0, Num Full Batches 0.000, Pad Factor 0.179.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 173 with boundary 22.4-23.0 and batch_size 4: Num Examples 4.0, Num Full Batches 0.000, Pad Factor 1.227.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 174 with boundary 23.0-23.5 and batch_size 4: Num Examples 5.0, Num Full Batches 1.000, Pad Factor 1.960.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 175 with boundary 23.5-24.1 and batch_size 4: Num Examples 3.0, Num Full Batches 0.000, Pad Factor 2.188.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 176 with boundary 24.1-24.7 and batch_size 4: Num Examples 4.0, Num Full Batches 0.000, Pad Factor 1.622.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 177 with boundary 24.7-25.3 and batch_size 3: Num Examples 2.0, Num Full Batches 0.000, Pad Factor 0.424.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 178 with boundary 25.3-26.0 and batch_size 3: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 179 with boundary 26.0-26.7 and batch_size 3: Num Examples 1.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 180 with boundary 26.7-27.4 and batch_size 3: Num Examples 2.0, Num Full Batches 0.000, Pad Factor 0.778.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 181 with boundary 27.4-28.2 and batch_size 3: Num Examples 2.0, Num Full Batches 0.000, Pad Factor 0.394.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 182 with boundary 28.2-29.1 and batch_size 3: Num Examples 5.0, Num Full Batches 1.000, Pad Factor 2.295.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 183 with boundary 29.1-30.0 and batch_size 3: Num Examples 1.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 184 with boundary 30.0-31.0 and batch_size 3: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 185 with boundary 31.0-32.1 and batch_size 3: Num Examples 4.0, Num Full Batches 1.000, Pad Factor 2.130.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 186 with boundary 32.1-33.3 and batch_size 3: Num Examples 5.0, Num Full Batches 1.000, Pad Factor 1.543.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 187 with boundary 33.3-34.6 and batch_size 2: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 188 with boundary 34.6-36.0 and batch_size 2: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 189 with boundary 36.0-37.6 and batch_size 2: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 190 with boundary 37.6-39.4 and batch_size 2: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 191 with boundary 39.4-41.5 and batch_size 2: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 192 with boundary 41.5-43.8 and batch_size 2: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 193 with boundary 43.8-46.6 and batch_size 2: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 194 with boundary 46.6-49.9 and batch_size 2: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 195 with boundary 49.9-54.0 and batch_size 1: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 196 with boundary 54.0-59.3 and batch_size 1: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 197 with boundary 59.3-66.7 and batch_size 1: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 198 with boundary 66.7-77.9 and batch_size 1: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.dataio.sampler - DEBUG - DynamicBatchSampler: Bucket 199 with boundary 77.9-100.0 and batch_size 1: Num Examples 0.0, Num Full Batches 0.000, Pad Factor 0.000.
+2025-12-04 14:35:54,965 - speechbrain.utils.parameter_transfer - DEBUG - Collecting files (or symlinks) for pretraining in results/S2S/hmamba_S_S2S/7778/save.
+2025-12-04 14:35:54,966 - speechbrain.utils.fetching - INFO - Fetch lm.ckpt: Delegating to Huggingface hub, source speechbrain/asr-transformer-transformerlm-librispeech.
+2025-12-04 14:35:54,969 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): huggingface.co:443
+2025-12-04 14:35:55,087 - urllib3.connectionpool - DEBUG - https://huggingface.co:443 "HEAD /speechbrain/asr-transformer-transformerlm-librispeech/resolve/main/lm.ckpt HTTP/1.1" 302 0
+2025-12-04 14:35:55,089 - speechbrain.utils.fetching - INFO - HF fetch: /home/anshulk/.cache/huggingface/hub/models--speechbrain--asr-transformer-transformerlm-librispeech/snapshots/bcf56f762f37877912578f8800bc2a4f5171e5e5/lm.ckpt
+2025-12-04 14:35:55,090 - speechbrain.utils.fetching - INFO - Fetch tokenizer.ckpt: Delegating to Huggingface hub, source speechbrain/asr-transformer-transformerlm-librispeech.
+2025-12-04 14:35:55,137 - urllib3.connectionpool - DEBUG - https://huggingface.co:443 "HEAD /speechbrain/asr-transformer-transformerlm-librispeech/resolve/main/tokenizer.ckpt HTTP/1.1" 302 0
+2025-12-04 14:35:55,139 - speechbrain.utils.fetching - INFO - HF fetch: /home/anshulk/.cache/huggingface/hub/models--speechbrain--asr-transformer-transformerlm-librispeech/snapshots/bcf56f762f37877912578f8800bc2a4f5171e5e5/tokenizer.ckpt
+2025-12-04 14:35:55,139 - speechbrain.utils.parameter_transfer - INFO - Loading pretrained files for: lm, tokenizer
+2025-12-04 14:35:55,416 - speechbrain.core - INFO - Info: precision arg overridden by command line input to: bf16
+2025-12-04 14:35:55,416 - speechbrain.core - INFO - Info: max_grad_norm arg from hparam file is used
+2025-12-04 14:35:55,416 - speechbrain.core - INFO - Info: grad_accumulation_factor arg from hparam file is used
+2025-12-04 14:35:55,422 - speechbrain.core - ERROR - Exception:
+Traceback (most recent call last):
+  File "/home/anshulk/hnet_mamba_asr/Mamba-ASR/train_s2s_hmamba.py", line 601, in <module>
+    asr_brain = HMambaASR(
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/speechbrain/core.py", line 715, in __init__
+    torch.cuda.set_device(int(self.device[-1]))
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/cuda/__init__.py", line 350, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/cuda/__init__.py", line 247, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: No CUDA GPUs are available

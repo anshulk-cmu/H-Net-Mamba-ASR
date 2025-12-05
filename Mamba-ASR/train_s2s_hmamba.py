@@ -119,6 +119,30 @@ class HMambaASR(sb.core.Brain):
         
         logger.info(f"[H-Mamba] Encoder wrapped with DC (split_idx={split_idx}, target_N={target_N})")
     
+    def _update_gumbel_temperature(self):
+        """Anneal Gumbel-softmax temperature for sharper decisions over time."""
+        if not hasattr(self, 'hmamba_encoder'):
+            return
+            
+        # Gumbel temperature annealing schedule
+        gumbel_start = getattr(self.hparams, 'hmamba_gumbel_start', 1.0)
+        gumbel_end = getattr(self.hparams, 'hmamba_gumbel_end', 0.5)
+        gumbel_anneal_epochs = getattr(self.hparams, 'hmamba_gumbel_anneal_epochs', 30)
+        
+        current_epoch = self.hparams.epoch_counter.current
+        
+        if current_epoch < gumbel_anneal_epochs:
+            # Linear annealing from start to end
+            progress = current_epoch / gumbel_anneal_epochs
+            gumbel_tau = gumbel_start - (gumbel_start - gumbel_end) * progress
+        else:
+            gumbel_tau = gumbel_end
+        
+        # Update Gumbel temperature in routing module
+        self.hmamba_encoder.routing_module.gumbel_tau = gumbel_tau
+        
+        return gumbel_tau
+    
     def _get_current_target_N(self):
         """Get current target compression N with warm-up schedule."""
         warmup_epochs = getattr(self.hparams, 'hmamba_warmup_epochs', 20)
@@ -299,6 +323,20 @@ class HMambaASR(sb.core.Brain):
             # Reset batch counter and start epoch timer
             self.current_batch_idx = 0
             self.epoch_start_time = time.time()
+            
+            # Update Gumbel temperature for this epoch (annealing)
+            self._update_gumbel_temperature()
+            
+            # Log current DC parameters
+            if hasattr(self, 'hmamba_encoder'):
+                routing = self.hmamba_encoder.routing_module
+                current_N = self._get_current_target_N()
+                logger.info(
+                    f"[H-Mamba] Epoch {epoch}: target_N={current_N:.2f}, "
+                    f"gumbel_tau={routing.gumbel_tau:.3f}, "
+                    f"temp={routing.temperature.item():.3f}, "
+                    f"bias={routing.boundary_bias.item():.3f}"
+                )
             
             # Start epoch in logger
             if hasattr(self, 'hmamba_logger') and self.hmamba_logger is not None:

@@ -45,18 +45,42 @@ class DeChunkState:
 
 
 class RoutingModule(nn.Module):
+    """
+    Learns boundary positions using cosine similarity between adjacent frames.
+    
+    Key features:
+    - Learnable Q/K projections with random initialization
+    - Learnable temperature for decision sharpness control
+    - Learnable bias to center decision boundary (critical for achieving target ratios)
+    - Gumbel-softmax for differentiable discrete sampling during training
+    """
 
     def __init__(self, d_model, device=None, dtype=None):
         self.d_model = d_model
         factory_kwargs = {"device": device, "dtype": dtype}
         super().__init__()
+        
+        # Q/K projection layers
         self.q_proj_layer = nn.Linear(d_model, d_model, bias=False, **factory_kwargs)
         self.k_proj_layer = nn.Linear(d_model, d_model, bias=False, **factory_kwargs)
-        with torch.no_grad():
-            self.q_proj_layer.weight.copy_(torch.eye(d_model))
-            self.k_proj_layer.weight.copy_(torch.eye(d_model))
+        
+        # Random initialization for diverse projections
+        nn.init.normal_(self.q_proj_layer.weight, std=0.02)
+        nn.init.normal_(self.k_proj_layer.weight, std=0.02)
         self.q_proj_layer.weight._no_reinit = True
         self.k_proj_layer.weight._no_reinit = True
+        
+        # Learnable temperature for decision sharpness (lower = sharper decisions)
+        # Initialize to 0.5 for moderately sharp decisions
+        self.temperature = nn.Parameter(torch.tensor(0.5, **factory_kwargs))
+        
+        # Learnable bias to center the decision boundary
+        # This is CRITICAL: allows boundary_prob to go below 0.5
+        # Initialize negative to start with fewer boundaries (conservative)
+        self.boundary_bias = nn.Parameter(torch.tensor(-0.5, **factory_kwargs))
+        
+        # Gumbel temperature for training (annealed during training)
+        self.gumbel_tau = 1.0  # Can be adjusted externally
 
     def allocate_inference_cache(self, batch_size, max_seqlen, device, dtype=None):
         return RoutingModuleState(
@@ -65,6 +89,26 @@ class RoutingModule(nn.Module):
                 batch_size, self.d_model, device=device, dtype=dtype
             ),
         )
+
+    def _compute_boundary_logits(self, cos_sim):
+        """
+        Compute boundary logits from cosine similarity.
+        
+        Formula: logit = (1 - cos_sim + bias) / temperature
+        
+        - cos_sim high (similar frames) → low logit → low boundary prob
+        - cos_sim low (different frames) → high logit → high boundary prob
+        - bias shifts the decision threshold
+        - temperature controls sharpness
+        """
+        # Clamp temperature to prevent division issues
+        temp = torch.clamp(self.temperature.abs(), min=0.1, max=2.0)
+        
+        # Compute logits with learnable bias for centering
+        # bias < 0 → fewer boundaries, bias > 0 → more boundaries
+        logits = (1 - cos_sim + self.boundary_bias) / temp
+        
+        return logits
 
     def forward(self, hidden_states, cu_seqlens=None, mask=None, inference_params=None):
         assert (mask is not None) or (
@@ -83,27 +127,47 @@ class RoutingModule(nn.Module):
             # We are in packed mode, so hidden_states is (T, D). Make it (B, T, D)
             hidden_states = hidden_states.unsqueeze(0)
 
+        # Compute cosine similarity between adjacent frames
         cos_sim = torch.einsum(
             "b l d, b l d -> b l",
             F.normalize(self.q_proj_layer(hidden_states[:, :-1]), dim=-1),
             F.normalize(self.k_proj_layer(hidden_states[:, 1:]), dim=-1),
         )
-        # this clamp should no-op as long as no precision issues are encountered
-        boundary_prob = torch.clamp(((1 - cos_sim) / 2), min=0.0, max=1.0)
+        
+        # Compute boundary logits with learnable bias and temperature
+        boundary_logits = self._compute_boundary_logits(cos_sim)
+        
+        # Convert to probability
+        boundary_prob_single = torch.sigmoid(boundary_logits)
 
         # Force boundary probability of the first element to 1.0
         PAD_PROB = 1.0
-        boundary_prob = F.pad(boundary_prob, (1, 0), "constant", PAD_PROB)
+        boundary_prob_single = F.pad(boundary_prob_single, (1, 0), "constant", PAD_PROB)
 
         if cu_seqlens is not None:
-            boundary_prob = boundary_prob.squeeze(0)
-            boundary_prob[cu_seqlens[:-1]] = PAD_PROB
+            boundary_prob_single = boundary_prob_single.squeeze(0)
+            boundary_prob_single[cu_seqlens[:-1]] = PAD_PROB
 
-        boundary_prob = torch.stack(((1 - boundary_prob), boundary_prob), dim=-1)
+        # Stack into [P(no-boundary), P(boundary)] format
+        boundary_prob = torch.stack(
+            (1 - boundary_prob_single, boundary_prob_single), dim=-1
+        )
+        
+        # Discrete boundary decision
+        if self.training:
+            # Use Gumbel-Softmax for differentiable sampling during training
+            # This allows gradients to flow through discrete decisions
+            boundary_hard = F.gumbel_softmax(
+                torch.log(boundary_prob + 1e-8), 
+                tau=self.gumbel_tau, 
+                hard=True
+            )
+            boundary_mask = boundary_hard[..., 1] > 0.5
+        else:
+            # Use argmax for inference (deterministic)
+            selected_idx = torch.argmax(boundary_prob, dim=-1)
+            boundary_mask = selected_idx == 1
 
-        selected_idx = torch.argmax(boundary_prob, dim=-1)
-
-        boundary_mask = selected_idx == 1  # (shape hidden_states.shape[:-1])
         if mask is not None:
             # No invalid tokens can be selected
             boundary_mask = boundary_mask & mask
@@ -127,6 +191,7 @@ class RoutingModule(nn.Module):
                 )
             )
 
+        selected_idx = boundary_mask.long()
         selected_probs = boundary_prob.gather(
             dim=-1, index=selected_idx.unsqueeze(-1)
         )  # (shape hidden_states.shape[:-1], 1)
@@ -145,18 +210,28 @@ class RoutingModule(nn.Module):
             F.normalize(self.q_proj_layer(inference_params.last_hidden_state), dim=-1),
             F.normalize(self.k_proj_layer(hidden_states), dim=-1),
         )
-        boundary_prob = torch.clamp(((1 - cos_sim) / 2), min=0.0, max=1.0)
+        
+        # Compute boundary logits with learnable bias and temperature
+        boundary_logits = self._compute_boundary_logits(cos_sim)
+        boundary_prob_single = torch.sigmoid(boundary_logits)
+        
         inference_params.last_hidden_state.copy_(hidden_states)
-        boundary_prob = torch.where(
+        
+        # Force first token to be boundary
+        boundary_prob_single = torch.where(
             inference_params.has_seen_tokens,
-            boundary_prob,
-            torch.ones_like(boundary_prob),
+            boundary_prob_single,
+            torch.ones_like(boundary_prob_single),
         )
-        boundary_prob = torch.stack(((1 - boundary_prob), boundary_prob), dim=-1)
+        
+        boundary_prob = torch.stack(
+            (1 - boundary_prob_single, boundary_prob_single), dim=-1
+        )
 
         inference_params.has_seen_tokens.copy_(
             torch.ones_like(inference_params.has_seen_tokens)
         )
+        
         return RoutingModuleOutput(
             boundary_prob=boundary_prob,  # (B, 2)
             boundary_mask=boundary_prob[..., 1] > 0.5,  # (B,)

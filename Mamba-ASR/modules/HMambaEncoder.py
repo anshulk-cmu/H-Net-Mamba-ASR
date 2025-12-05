@@ -65,7 +65,7 @@ class RoutingModule(nn.Module):
     
     Key improvements:
     - Learnable temperature to control sharpness of decisions
-    - Learnable bias to control overall boundary rate
+    - Learnable bias to CENTER the decision boundary (critical for target ratios)
     - Gumbel-Softmax for differentiable sampling during training
     """
 
@@ -79,19 +79,39 @@ class RoutingModule(nn.Module):
         self.k_proj_layer = nn.Linear(d_model, d_model, bias=False, **factory_kwargs)
         
         # Initialize with small random weights (not identity!) so frames differ
-        nn.init.xavier_uniform_(self.q_proj_layer.weight, gain=0.1)
-        nn.init.xavier_uniform_(self.k_proj_layer.weight, gain=0.1)
+        nn.init.normal_(self.q_proj_layer.weight, std=0.02)
+        nn.init.normal_(self.k_proj_layer.weight, std=0.02)
         
         # Learnable temperature (controls sharpness of boundary decisions)
-        # Initialize to make boundaries more likely initially
-        self.log_temperature = nn.Parameter(torch.tensor(0.0))  # temp = 1.0 initially
+        # Lower temperature = sharper decisions
+        self.temperature = nn.Parameter(torch.tensor(0.5, **factory_kwargs))
         
-        # Learnable bias toward boundaries (positive = more boundaries)
-        # Initialize to encourage ~30-50% boundary rate
-        self.boundary_bias = nn.Parameter(torch.tensor(0.5))  # Start with bias toward boundaries
+        # Learnable bias to CENTER the decision boundary
+        # This is CRITICAL: allows boundary_prob to go below 0.5
+        # Initialize negative to start with fewer boundaries (conservative)
+        self.boundary_bias = nn.Parameter(torch.tensor(-0.5, **factory_kwargs))
         
-        # Gumbel temperature for training (annealed over time)
-        self.gumbel_temperature = 1.0
+        # Gumbel temperature for training (can be annealed)
+        self.gumbel_tau = 1.0
+
+    def _compute_boundary_logits(self, cos_sim: torch.Tensor) -> torch.Tensor:
+        """
+        Compute boundary logits from cosine similarity.
+        
+        Formula: logit = (1 - cos_sim + bias) / temperature
+        
+        - cos_sim high (similar frames) → low logit → low boundary prob
+        - cos_sim low (different frames) → high logit → high boundary prob
+        - bias shifts the decision threshold (negative = fewer boundaries)
+        - temperature controls sharpness
+        """
+        # Clamp temperature to prevent division issues
+        temp = torch.clamp(self.temperature.abs(), min=0.1, max=2.0)
+        
+        # Compute logits with learnable bias for centering
+        logits = (1 - cos_sim + self.boundary_bias) / temp
+        
+        return logits
 
     def forward(
         self, 
@@ -110,50 +130,47 @@ class RoutingModule(nn.Module):
         """
         B, L, D = hidden_states.shape
         
-        # Project frames
-        q = self.q_proj_layer(hidden_states[:, :-1])  # (B, L-1, D)
-        k = self.k_proj_layer(hidden_states[:, 1:])   # (B, L-1, D)
+        # Project frames and compute cosine similarity
+        q = F.normalize(self.q_proj_layer(hidden_states[:, :-1]), dim=-1)
+        k = F.normalize(self.k_proj_layer(hidden_states[:, 1:]), dim=-1)
+        cos_sim = torch.einsum("bld,bld->bl", q, k)  # (B, L-1)
         
-        # Compute cosine similarity between adjacent frames
-        q_norm = F.normalize(q, dim=-1)
-        k_norm = F.normalize(k, dim=-1)
-        cos_sim = torch.einsum("bld,bld->bl", q_norm, k_norm)  # (B, L-1)
+        # Compute boundary logits with learnable bias and temperature
+        boundary_logits = self._compute_boundary_logits(cos_sim)  # (B, L-1)
         
-        # Convert similarity to logits (low similarity → high boundary logit)
-        # Use learnable temperature and bias
-        temperature = torch.exp(self.log_temperature).clamp(min=0.1, max=10.0)
-        dissimilarity = 1 - cos_sim  # Range [0, 2], higher = more different
+        # Convert to single probability
+        boundary_prob_single = torch.sigmoid(boundary_logits)  # (B, L-1)
         
-        # Logits for boundary decision: higher dissimilarity + bias → more likely boundary
-        boundary_logits = (dissimilarity * temperature + self.boundary_bias)  # (B, L-1)
+        # First frame is always a boundary (start of sequence)
+        boundary_prob_single = F.pad(boundary_prob_single, (1, 0), "constant", 1.0)  # (B, L)
         
-        # First frame is always a boundary (start of sequence) - use high logit
-        boundary_logits = F.pad(boundary_logits, (1, 0), "constant", 10.0)  # (B, L)
+        # Stack into [P(no-boundary), P(boundary)] format for compatibility
+        boundary_prob = torch.stack(
+            (1 - boundary_prob_single, boundary_prob_single), dim=-1
+        )  # (B, L, 2)
         
-        # Create logits for [not-boundary, boundary]
-        logits = torch.stack([-boundary_logits, boundary_logits], dim=-1)  # (B, L, 2)
-        
-        # Compute probabilities
-        boundary_prob = F.softmax(logits, dim=-1)  # (B, L, 2)
-        
-        # During training: use Gumbel-Softmax for differentiable sampling
-        # During eval: use hard argmax
+        # Discrete boundary decision
         if self.training:
-            # Gumbel-Softmax: differentiable approximation to categorical sampling
-            gumbel_out = F.gumbel_softmax(logits, tau=self.gumbel_temperature, hard=True)
-            boundary_mask = gumbel_out[..., 1] > 0.5  # (B, L)
+            # Use Gumbel-Softmax for differentiable sampling during training
+            boundary_hard = F.gumbel_softmax(
+                torch.log(boundary_prob + 1e-8), 
+                tau=self.gumbel_tau, 
+                hard=True
+            )
+            boundary_mask = boundary_hard[..., 1] > 0.5  # (B, L)
         else:
-            # Hard decision during evaluation
-            selected_idx = torch.argmax(boundary_prob, dim=-1)  # (B, L)
-            boundary_mask = selected_idx == 1  # (B, L)
+            # Use threshold for inference (deterministic)
+            boundary_mask = boundary_prob_single > 0.5  # (B, L)
         
         # Mask out invalid positions
         if mask is not None:
             boundary_mask = boundary_mask & mask
         
-        # Get probability of selected action (for monitoring)
+        # Get probability of selected action
         selected_idx = boundary_mask.long()
-        selected_probs = boundary_prob.gather(dim=-1, index=selected_idx.unsqueeze(-1))  # (B, L, 1)
+        selected_probs = boundary_prob.gather(
+            dim=-1, index=selected_idx.unsqueeze(-1)
+        )  # (B, L, 1)
         
         return RoutingModuleOutput(
             boundary_prob=boundary_prob,
@@ -356,7 +373,8 @@ def load_balancing_loss(router_output: RoutingModuleOutput, N: float) -> torch.T
     """
     Compute load balancing loss to control compression ratio.
     
-    This loss encourages the boundary ratio to be close to 1/N.
+    This loss encourages the boundary ratio to be close to 1/N using multiple
+    complementary loss terms with proper gradient flow.
     
     Args:
         router_output: Output from RoutingModule
@@ -366,24 +384,63 @@ def load_balancing_loss(router_output: RoutingModuleOutput, N: float) -> torch.T
         Scalar loss tensor
     """
     boundary_prob = router_output.boundary_prob  # (B, L, 2)
+    boundary_mask = router_output.boundary_mask  # (B, L) - from Gumbel-softmax, has gradients
     
     # Target ratio of boundaries
     target_ratio = 1.0 / N
     
-    # Average predicted boundary probability across all positions
-    avg_boundary_prob = boundary_prob[..., 1].mean()  # P(boundary)
+    # =========================================================================
+    # Loss 1: Soft probability target (main gradient signal)
+    # =========================================================================
+    # Use BCE loss which provides stronger gradients than MSE when far from target
+    boundary_probs = boundary_prob[..., 1]  # P(boundary) for each position
+    target_probs = torch.full_like(boundary_probs, target_ratio)
     
-    # L2 loss to push average probability toward target
-    # This provides gradients that directly push probabilities up or down
-    prob_loss = (avg_boundary_prob - target_ratio) ** 2
+    # Binary cross-entropy pushes each probability toward target_ratio
+    # This gives per-position gradients, not just on the mean
+    bce_loss = F.binary_cross_entropy(boundary_probs, target_probs, reduction='mean')
     
-    # Entropy regularization to prevent collapse to all-0 or all-1
-    # Encourages exploration of different boundary patterns
+    # =========================================================================
+    # Loss 2: Mean probability matching (ensures global ratio)
+    # =========================================================================
+    avg_boundary_prob = boundary_probs.mean()
+    mean_loss = (avg_boundary_prob - target_ratio) ** 2
+    
+    # =========================================================================
+    # Loss 3: Variance regularization (encourage spread of decisions)
+    # =========================================================================
+    # We want some frames to be clearly boundaries, others clearly not
+    # High variance = good separation, low variance = all similar (bad)
+    prob_variance = boundary_probs.var()
+    target_variance = target_ratio * (1 - target_ratio)  # Variance of Bernoulli
+    variance_loss = F.relu(target_variance * 0.5 - prob_variance)  # Penalize if variance too low
+    
+    # =========================================================================
+    # Loss 4: Entropy regularization (prevent collapse)
+    # =========================================================================
+    # Encourage exploration by maintaining entropy in probability distribution
     entropy = -(boundary_prob * (boundary_prob + 1e-8).log()).sum(dim=-1).mean()
-    entropy_bonus = -0.01 * entropy  # Small bonus for maintaining entropy
+    max_entropy = -2 * (0.5 * torch.log(torch.tensor(0.5)))  # Max entropy for 2-class
+    entropy_loss = F.relu(0.5 * max_entropy - entropy)  # Penalize if entropy too low
     
-    # Combined loss
-    loss = prob_loss * 10.0 + entropy_bonus  # Scale prob_loss for stronger signal
+    # =========================================================================
+    # Loss 5: Actual ratio loss (monitoring + weak gradient via Gumbel-softmax)
+    # =========================================================================
+    # With Gumbel-softmax, boundary_mask has gradients during training
+    actual_ratio = boundary_mask.float().mean()
+    ratio_loss = (actual_ratio - target_ratio) ** 2
+    
+    # =========================================================================
+    # Combined loss with balanced weights
+    # =========================================================================
+    # BCE is the main driver, others provide regularization
+    loss = (
+        bce_loss * 5.0 +           # Main gradient signal (per-position)
+        mean_loss * 10.0 +          # Global ratio matching
+        variance_loss * 2.0 +       # Encourage decision spread
+        entropy_loss * 1.0 +        # Prevent collapse
+        ratio_loss * 5.0            # Direct ratio supervision (via Gumbel)
+    )
     
     return loss
 

@@ -49,8 +49,13 @@ no_lm: False
 hmamba_split_idx: 6          # Split layers: 0-5 for stage0, 6-11 for stage1
 hmamba_target_N: 4.0         # Target compression (N=4 → 25% frames kept)
 hmamba_headdim: 36           # Head dim for EMA (144/36 = 4 heads)
-hmamba_dc_loss_weight: 4.0   # Weight for DC load balancing loss (increased for new loss)
+hmamba_dc_loss_weight: 0.1   # Weight for DC load balancing loss
 hmamba_warmup_epochs: 20     # Epochs to warm-up from N=1 to target_N
+
+# Gumbel-Softmax annealing (for differentiable boundary sampling)
+hmamba_gumbel_start: 1.0     # Starting Gumbel temperature (softer sampling)
+hmamba_gumbel_end: 0.3       # Final Gumbel temperature (sharper sampling)
+hmamba_gumbel_anneal_epochs: 40  # Epochs to anneal Gumbel temperature
 
 # H-Mamba Logger parameters
 use_hmamba_logger: True
