@@ -88,9 +88,9 @@ class RoutingModule(nn.Module):
         
         # Learnable bias to CENTER the decision boundary
         # This is CRITICAL: allows boundary_prob to go below 0.5
-        # Initialize POSITIVE to start with MORE boundaries (keep more frames during warm-up)
-        # The model will learn to reduce this as target_N increases
-        self.boundary_bias = nn.Parameter(torch.tensor(0.5, **factory_kwargs))
+        # Initialize HIGH (1.5) to start with MANY boundaries (keep ~95% frames during warm-up)
+        # The model will learn to reduce this as target_N increases (more compression)
+        self.boundary_bias = nn.Parameter(torch.tensor(1.5, **factory_kwargs))
         
         # Gumbel temperature for training (can be annealed)
         self.gumbel_tau = 1.0
