@@ -437,23 +437,23 @@ def load_balancing_loss(router_output: RoutingModuleOutput, N: float) -> torch.T
     # Loss 5: Actual ratio loss (direct gradient via Gumbel-softmax)
     # =========================================================================
     # With Gumbel-softmax, boundary_mask has gradients during training
-    # Use L1 loss for stronger gradients when close to target
     actual_ratio = boundary_mask.float().mean()
     ratio_diff = actual_ratio - target_ratio
-    ratio_loss_l1 = ratio_diff.abs()  # L1: constant gradient magnitude
-    ratio_loss_l2 = ratio_diff ** 2   # L2: stronger when far from target
-    ratio_loss = ratio_loss_l1 + ratio_loss_l2  # Combined: best of both
+    
+    # Use L2 loss only - gentler near target, stronger when far
+    # L1 was too aggressive, causing overshoot
+    ratio_loss = ratio_diff ** 2
     
     # =========================================================================
     # Combined loss with balanced weights
     # =========================================================================
-    # Ratio loss is the main driver now, BCE provides per-position guidance
+    # Moderate weights - don't want to overpower ASR learning
     loss = (
-        bce_loss * 3.0 +           # Per-position guidance
-        mean_loss * 10.0 +          # Global probability matching
-        variance_loss * 2.0 +       # Encourage decision spread
-        entropy_loss * 1.0 +        # Prevent collapse
-        ratio_loss * 20.0           # Main driver: actual ratio supervision (increased)
+        bce_loss * 2.0 +           # Per-position guidance (soft)
+        mean_loss * 5.0 +           # Global probability matching
+        variance_loss * 1.0 +       # Encourage decision spread
+        entropy_loss * 0.5 +        # Prevent collapse
+        ratio_loss * 10.0           # Ratio supervision (reduced from 20)
     )
     
     return loss
