@@ -87,10 +87,10 @@ class RoutingModule(nn.Module):
         self.temperature = nn.Parameter(torch.tensor(0.5, **factory_kwargs))
         
         # Learnable bias to CENTER the decision boundary
-        # This is CRITICAL: allows boundary_prob to go below 0.5
-        # Initialize HIGH (1.5) to start with MANY boundaries (keep ~95% frames during warm-up)
-        # The model will learn to reduce this as target_N increases (more compression)
-        self.boundary_bias = nn.Parameter(torch.tensor(1.5, **factory_kwargs))
+        # Mathematical analysis: bias=1.0 gives ~95% frames kept (for avg cos_sim=0.5)
+        # Warm-up starts at target=95%, so bias=1.0 is ideal initial value
+        # Model will learn to DECREASE bias toward -0.5 as target_N increases to 2.0
+        self.boundary_bias = nn.Parameter(torch.tensor(1.0, **factory_kwargs))
         
         # Gumbel temperature for training (can be annealed)
         self.gumbel_tau = 1.0
@@ -440,20 +440,22 @@ def load_balancing_loss(router_output: RoutingModuleOutput, N: float) -> torch.T
     actual_ratio = boundary_mask.float().mean()
     ratio_diff = actual_ratio - target_ratio
     
-    # Use L2 loss only - gentler near target, stronger when far
-    # L1 was too aggressive, causing overshoot
-    ratio_loss = ratio_diff ** 2
+    # Use Huber-style loss: L1 when far, L2 when close
+    # This provides strong constant gradient when far from target
+    ratio_loss = ratio_diff.abs() + ratio_diff ** 2
     
     # =========================================================================
     # Combined loss with balanced weights
     # =========================================================================
-    # Moderate weights - don't want to overpower ASR learning
+    # Simplified loss - ratio_loss is the primary driver
+    # BCE provides per-position soft supervision
+    # Mean loss ensures global probability matches target
     loss = (
-        bce_loss * 2.0 +           # Per-position guidance (soft)
+        bce_loss * 1.0 +           # Per-position guidance
         mean_loss * 5.0 +           # Global probability matching
-        variance_loss * 1.0 +       # Encourage decision spread
+        variance_loss * 0.5 +       # Encourage decision spread
         entropy_loss * 0.5 +        # Prevent collapse
-        ratio_loss * 10.0           # Ratio supervision (reduced from 20)
+        ratio_loss * 10.0           # Direct ratio supervision
     )
     
     return loss

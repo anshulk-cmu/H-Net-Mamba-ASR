@@ -74,11 +74,11 @@ class RoutingModule(nn.Module):
         # Initialize to 0.5 for moderately sharp decisions
         self.temperature = nn.Parameter(torch.tensor(0.5, **factory_kwargs))
         
-        # Learnable bias to center the decision boundary
-        # This is CRITICAL: allows boundary_prob to go below 0.5
-        # Initialize HIGH (1.5) to start with MANY boundaries (keep ~95% frames during warm-up)
-        # The model will learn to reduce this as target_N increases (more compression)
-        self.boundary_bias = nn.Parameter(torch.tensor(1.5, **factory_kwargs))
+        # Learnable bias to CENTER the decision boundary
+        # Mathematical analysis: bias=1.0 gives ~95% frames kept (for avg cos_sim=0.5)
+        # Warm-up starts at target=95%, so bias=1.0 is ideal initial value
+        # Model will learn to DECREASE bias toward -0.5 as target_N increases to 2.0
+        self.boundary_bias = nn.Parameter(torch.tensor(1.0, **factory_kwargs))
         
         # Gumbel temperature for training (annealed during training)
         self.gumbel_tau = 1.0  # Can be adjusted externally
