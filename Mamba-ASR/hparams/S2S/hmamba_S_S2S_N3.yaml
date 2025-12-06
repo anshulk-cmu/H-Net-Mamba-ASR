@@ -12,7 +12,7 @@
 seed: 7778
 __set_seed: !apply:torch.manual_seed [!ref <seed>]
 project: Mamba-ASR
-experiment: hmamba_S_S2S_N4
+experiment: hmamba_S_S2S_N3
 output_folder: !ref results/S2S/<experiment>/<seed>
 output_wer_folder: !ref <output_folder>/
 save_folder: !ref <output_folder>/save
@@ -47,10 +47,10 @@ no_lm: False
 
 # H-Mamba Dynamic Chunking parameters
 hmamba_split_idx: 6          # Split layers: 0-5 for stage0, 6-11 for stage1
-hmamba_target_N: 4.0         # Target compression (N=4 → 25% frames kept)
+hmamba_target_N: 3.0         # Target compression (N=3 → 33% frames kept)
+hmamba_warmup_epochs: 30     # Increased from 20 to allow adaptation to N=3
 hmamba_headdim: 36           # Head dim for EMA (144/36 = 4 heads)
-hmamba_dc_loss_weight: 7.5   # Weight for DC loss (1.5× N=2 value for tighter compression)
-hmamba_warmup_epochs: 30     # Epochs to warm-up from N=1 to target_N (1.5× N=2 for 75% vs 50% compression)
+hmamba_dc_loss_weight: 6.5   # Weight for DC loss (1.5× N=2 value for tighter compression)
 
 # Gumbel-Softmax annealing (for differentiable boundary sampling)
 hmamba_gumbel_start: 1.0     # Starting Gumbel temperature (softer sampling)
