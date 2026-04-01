@@ -71,16 +71,23 @@ conda activate hnetasr
 
 ### 4.2 Install PyTorch (CUDA 11.8)
 ```bash
-pip install torch==2.0.1 torchaudio==2.0.2 \
+pip install torch==2.1.1 torchaudio==2.1.1 \
     --index-url https://download.pytorch.org/whl/cu118
 ```
 
 ### 4.3 Install CUDA Extension Packages
+
+These require `--no-build-isolation` and explicit `CUDA_HOME`:
+
 ```bash
 CUDA_HOME=/usr/local/cuda-11.8 PATH=/usr/local/cuda-11.8/bin:$PATH \
-    pip install causal-conv1d==1.1.3.post1 mamba-ssm==1.1.3.post1 \
+    pip install causal-conv1d==1.4.0 mamba-ssm==2.0.3 \
     --no-build-isolation
 ```
+
+> **causal-conv1d 1.4.0** changed the CUDA kernel API (added `initial_states`,
+> `dfinal_states` args). Our `selective_scan_interface.py` is patched for this.
+> Do NOT use causal-conv1d < 1.4.0 with this codebase.
 
 ### 4.4 Install Remaining Packages
 ```bash
@@ -98,12 +105,21 @@ import torch; print(f'torch: {torch.__version__}')
 import torchaudio; print(f'torchaudio: {torchaudio.__version__}')
 import speechbrain as sb; print(f'speechbrain: {sb.__version__}')
 from mamba_ssm import Mamba; print('mamba_ssm: OK')
-import causal_conv1d; print('causal_conv1d: OK')
+import causal_conv1d; print(f'causal_conv1d: {causal_conv1d.__version__}')
 import tensorboard; print('tensorboard: OK')
-import psutil; print('psutil: OK')
 print('All OK!')
 "
 ```
+
+### 4.6 Known Issues
+
+| Issue | Affected Component | Workaround |
+|-------|-------------------|------------|
+| `mamba_chunk_scan_combined` Triton JIT assertion on Ampere GPUs (sm_86) | DeChunk EMA expansion | PyTorch fallback in `HMambaEncoder.py` (set `MAMBA_KERNEL_AVAILABLE = False`) |
+| `causal_conv1d_fwd` API changed in v1.4.0 (added 2 args) | BiMamba encoder layers | `selective_scan_interface.py` patched for new 7-arg `fwd` and 10-arg `bwd` signatures |
+
+The Triton issue only affects the DeChunk expansion step (Mamba-2 SSD kernel).
+The main encoder Mamba-1 layers use optimized CUDA kernels and are unaffected.
 
 ---
 

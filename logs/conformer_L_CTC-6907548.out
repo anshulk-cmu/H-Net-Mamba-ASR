@@ -41,3 +41,6 @@ speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
 speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+03-01-16+00
 speechbrain.utils.epoch_loop - Going into epoch 3
 speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+03-18-26+00
+speechbrain.utils.epoch_loop - Going into epoch 4
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches

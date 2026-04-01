@@ -23,13 +23,11 @@ import torch.nn.functional as F
 
 from einops import repeat, rearrange
 
-# Try to import mamba kernel, fall back to pure PyTorch if not available
-try:
-    from mamba_ssm.ops.triton.ssd_combined import mamba_chunk_scan_combined
-    MAMBA_KERNEL_AVAILABLE = True
-except ImportError:
-    MAMBA_KERNEL_AVAILABLE = False
-    print("Warning: mamba_ssm kernel not available, using pure PyTorch EMA fallback")
+# Mamba-2 Triton SSD kernel for DeChunk EMA.
+# Disabled: mamba_chunk_scan_combined triggers a Triton 2.1.0 JIT assertion on
+# Ampere GPUs (A6000, sm_86). The PyTorch EMA fallback is used instead — it only
+# affects the DeChunk expansion step, not the main encoder Mamba layers.
+MAMBA_KERNEL_AVAILABLE = False
 
 
 # =============================================================================

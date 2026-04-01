@@ -30,7 +30,7 @@ export WANDB_MODE=offline
 
 stat /data/user_data/anshulk/hnet_asr/LibriSpeech > /dev/null 2>&1
 
-eval "$(conda shell.bash hook)"
+source /home/anshulk/miniconda3/etc/profile.d/conda.sh
 conda activate hnetasr || { echo "ERROR: failed to activate hnetasr"; exit 1; }
 
 echo "Python : $(which python)"
