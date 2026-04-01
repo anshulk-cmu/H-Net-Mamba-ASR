@@ -1,0 +1,49 @@
+============================================================
+conmambamamba_small S2S — eval without LM — 2x A6000
+============================================================
+Job ID   : 6495386
+Node     : babel-t9-28
+Start    : Thu Mar  5 07:25:30 EST 2026
+============================================================
+Python : /home/anshulk/miniconda3/envs/hnetasr/bin/python
+GPUs   : NVIDIA RTX A6000, 49140 MiB
+NVIDIA RTX A6000, 49140 MiB
+
+Master port: 53603
+dropout=0.1 is not used in Mamba.
+dropout=0.1 is not used in Mamba.
+speechbrain.core - Beginning experiment!
+speechbrain.core - Experiment folder: /data/user_data/anshulk/hnet_asr/results/conmambamamba_small_S2S
+librispeech_prepare - Skipping preparation, completed in previous run.
+speechbrain.dataio.sampler - Batch quantisation in latent space
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.dataio.sampler - Batch quantisation in latent space
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.fetching - Fetch lm.ckpt: Using existing file/symlink in /data/user_data/anshulk/hnet_asr/results/conmambamamba_small_S2S/save/lm.ckpt.
+speechbrain.utils.fetching - Fetch tokenizer.ckpt: Using existing file/symlink in /data/user_data/anshulk/hnet_asr/results/conmambamamba_small_S2S/save/tokenizer.ckpt.
+speechbrain.utils.parameter_transfer - Loading pretrained files for: lm, tokenizer
+Evaluate without LM.
+Evaluate without LM.
+speechbrain.core - Info: precision arg overridden by command line input to: bf16
+speechbrain.core - Info: max_grad_norm arg from hparam file is used
+speechbrain.core - Info: grad_accumulation_factor arg from hparam file is used
+speechbrain.core - Gradscaler enabled: False. Using precision: bf16.
+speechbrain.core - 14.6M trainable parameters in ASR
+speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/conmambamamba_small_S2S/save/CKPT+2026-03-05+06-43-23+00
+Loaded the average
+Loaded the average
+speechbrain.utils.train_logger - Epoch loaded: 150 - test loss: 4.98e-01, test ACC: 9.60e-01, test WER: 3.64
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x1489673fee50> in /data/user_data/anshulk/hnet_asr/results/conmambamamba_small_S2S/save/CKPT+2026-03-05+08-10-42+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmambamamba_small_S2S/save/CKPT+2026-03-05+08-10-42+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmambamamba_small_S2S/save/CKPT+2026-03-05+06-43-23+00
+speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/conmambamamba_small_S2S/save/CKPT+2026-03-05+08-10-42+00
+Loaded the average
+Loaded the average
+speechbrain.utils.train_logger - Epoch loaded: 150 - test loss: 9.08e-01, test ACC: 9.24e-01, test WER: 8.70
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x1489673fee50> in /data/user_data/anshulk/hnet_asr/results/conmambamamba_small_S2S/save/CKPT+2026-03-05+08-51-08+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmambamamba_small_S2S/save/CKPT+2026-03-05+08-51-08+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmambamamba_small_S2S/save/CKPT+2026-03-05+08-10-42+00
+
+============================================================
+Job finished — exit code: 0 — Thu Mar  5 08:51:11 EST 2026
+============================================================

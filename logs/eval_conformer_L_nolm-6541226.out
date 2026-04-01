@@ -1,0 +1,47 @@
+============================================================
+conformer_large S2S — eval without LM — 2x A6000
+============================================================
+Job ID   : 6541226
+Node     : babel-w9-32
+Start    : Wed Mar 11 21:33:21 EDT 2026
+============================================================
+Python : /home/anshulk/miniconda3/envs/hnetasr/bin/python
+GPUs   : NVIDIA RTX A6000, 49140 MiB
+NVIDIA RTX A6000, 49140 MiB
+
+Master port: 42605
+speechbrain.core - Beginning experiment!
+speechbrain.core - Experiment folder: /data/user_data/anshulk/hnet_asr/results/conformer_large_S2S
+librispeech_prepare - Skipping preparation, completed in previous run.
+speechbrain.dataio.sampler - Batch quantisation in latent space
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.dataio.sampler - Batch quantisation in latent space
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.fetching - Fetch lm.ckpt: Using existing file/symlink in /data/user_data/anshulk/hnet_asr/results/conformer_large_S2S/save/lm.ckpt.
+speechbrain.utils.fetching - Fetch tokenizer.ckpt: Using existing file/symlink in /data/user_data/anshulk/hnet_asr/results/conformer_large_S2S/save/tokenizer.ckpt.
+speechbrain.utils.parameter_transfer - Loading pretrained files for: lm, tokenizer
+Evaluate without LM.
+Evaluate without LM.
+speechbrain.core - Info: precision arg overridden by command line input to: bf16
+speechbrain.core - Info: max_grad_norm arg from hparam file is used
+speechbrain.core - Info: grad_accumulation_factor arg from hparam file is used
+speechbrain.core - Gradscaler enabled: False. Using precision: bf16.
+speechbrain.core - 109.1M trainable parameters in ASR
+speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/conformer_large_S2S/save/CKPT+2026-03-11+21-30-47+00
+Loaded the average
+Loaded the average
+speechbrain.utils.train_logger - Epoch loaded: 150 - test loss: 3.91e-01, test ACC: 9.78e-01, test WER: 2.57
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x1534e2c09e80> in /data/user_data/anshulk/hnet_asr/results/conformer_large_S2S/save/CKPT+2026-03-11+22-31-15+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_S2S/save/CKPT+2026-03-11+22-31-15+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_S2S/save/CKPT+2026-03-11+21-30-47+00
+speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/conformer_large_S2S/save/CKPT+2026-03-11+22-31-15+00
+Loaded the average
+Loaded the average
+speechbrain.utils.train_logger - Epoch loaded: 150 - test loss: 6.94e-01, test ACC: 9.54e-01, test WER: 5.94
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x1534e2c09e80> in /data/user_data/anshulk/hnet_asr/results/conformer_large_S2S/save/CKPT+2026-03-11+23-23-02+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_S2S/save/CKPT+2026-03-11+23-23-02+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_S2S/save/CKPT+2026-03-11+22-31-15+00
+
+============================================================
+Job finished — exit code: 0 — Wed Mar 11 23:23:06 EDT 2026
+============================================================

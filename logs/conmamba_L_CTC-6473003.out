@@ -1,0 +1,170 @@
+============================================================
+conmamba_large CTC — 4x A6000, preempt
+============================================================
+Job ID   : 6473003
+Node     : babel-t9-16
+Start    : Tue Mar  3 05:25:52 EST 2026
+============================================================
+Python : /home/anshulk/miniconda3/envs/hnetasr/bin/python
+GPUs   : NVIDIA RTX A6000, 49140 MiB
+NVIDIA RTX A6000, 49140 MiB
+NVIDIA RTX A6000, 49140 MiB
+NVIDIA RTX A6000, 49140 MiB
+
+Master port: 47527
+dropout=0.1 is not used in Mamba.
+dropout=0.1 is not used in Mamba.
+dropout=0.1 is not used in Mamba.
+dropout=0.1 is not used in Mamba.
+speechbrain.core - Beginning experiment!
+speechbrain.core - Experiment folder: /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC
+librispeech_prepare - Skipping preparation, completed in previous run.
+speechbrain.tokenizers.SentencePiece - Tokenizer is already trained.
+speechbrain.tokenizers.SentencePiece - ==== Loading Tokenizer ===
+speechbrain.tokenizers.SentencePiece - Tokenizer path: /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/31_char.model
+speechbrain.tokenizers.SentencePiece - Tokenizer vocab_size: 31
+speechbrain.tokenizers.SentencePiece - Tokenizer type: char
+speechbrain.dataio.sampler - Batch quantisation in latent space
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.dataio.sampler - Batch quantisation in latent space
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.core - Info: precision arg overridden by command line input to: bf16
+speechbrain.core - Info: max_grad_norm arg from hparam file is used
+speechbrain.core - Info: grad_accumulation_factor arg from hparam file is used
+speechbrain.core - Gradscaler enabled: False. Using precision: bf16.
+speechbrain.core - 31.6M trainable parameters in ASR
+speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+01-42-54+00
+speechbrain.utils.epoch_loop - Going into epoch 109
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+torch.nn.parallel.distributed - Reducer buckets have been rebuilt in this iteration.
+torch.nn.parallel.distributed - Reducer buckets have been rebuilt in this iteration.
+torch.nn.parallel.distributed - Reducer buckets have been rebuilt in this iteration.
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+05-36-24+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+05-36-24+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+00-15-35+00
+speechbrain.utils.epoch_loop - Going into epoch 110
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+05-46-26+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+05-46-26+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+00-25-18+00
+speechbrain.utils.epoch_loop - Going into epoch 111
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+05-56-31+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+05-56-31+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-02+23-36-44+00
+speechbrain.utils.epoch_loop - Going into epoch 112
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-06-34+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-06-34+00
+speechbrain.utils.epoch_loop - Going into epoch 113
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-16-39+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-16-39+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+00-54-26+00
+speechbrain.utils.epoch_loop - Going into epoch 114
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-26-43+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-26-43+00
+speechbrain.utils.epoch_loop - Going into epoch 115
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-36-48+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-36-48+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+01-13-48+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+00-35-00+00
+speechbrain.utils.epoch_loop - Going into epoch 116
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-46-50+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-46-50+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+00-44-43+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+01-23-31+00
+speechbrain.utils.epoch_loop - Going into epoch 117
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-56-53+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-56-53+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+01-33-14+00
+speechbrain.utils.epoch_loop - Going into epoch 118
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-06-58+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-06-58+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+01-04-07+00
+speechbrain.utils.epoch_loop - Going into epoch 119
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-17-02+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-17-02+00
+speechbrain.utils.epoch_loop - Going into epoch 120
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-27-05+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-27-05+00
+speechbrain.utils.epoch_loop - Going into epoch 121
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-37-08+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-37-08+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+05-56-31+00
+speechbrain.utils.epoch_loop - Going into epoch 122
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-47-11+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-47-11+00
+speechbrain.utils.epoch_loop - Going into epoch 123
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-57-13+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-57-13+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-06-34+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-16-39+00
+speechbrain.utils.epoch_loop - Going into epoch 124
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+08-07-19+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+08-07-19+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+01-42-54+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-26-43+00
+speechbrain.utils.epoch_loop - Going into epoch 125
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+08-17-23+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+08-17-23+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-36-48+00
+speechbrain.utils.epoch_loop - Going into epoch 126
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+08-27-27+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+08-27-27+00
+speechbrain.utils.epoch_loop - Going into epoch 127
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+08-37-31+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+08-37-31+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-46-50+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+06-56-53+00
+speechbrain.utils.epoch_loop - Going into epoch 128
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+08-47-36+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+08-47-36+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+05-36-24+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-06-58+00
+speechbrain.utils.epoch_loop - Going into epoch 129
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+08-57-41+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+08-57-41+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-17-02+00
+speechbrain.utils.epoch_loop - Going into epoch 130
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+09-07-46+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+09-07-46+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+05-46-26+00
+speechbrain.utils.epoch_loop - Going into epoch 131
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+09-17-49+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+09-17-49+00
+speechbrain.utils.epoch_loop - Going into epoch 132
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+09-27-53+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+09-27-53+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-47-11+00
+speechbrain.utils.epoch_loop - Going into epoch 133
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+09-37-58+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+09-37-58+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-37-08+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+07-57-13+00
+speechbrain.utils.epoch_loop - Going into epoch 134
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x151005b6e160> in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+09-48-05+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-03+09-48-05+00
+speechbrain.utils.epoch_loop - Going into epoch 135
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches

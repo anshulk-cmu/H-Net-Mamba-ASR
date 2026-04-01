@@ -1,0 +1,53 @@
+============================================================
+conmamba_large CTC — 4x A6000, preempt
+============================================================
+Job ID   : 6484206
+Node     : babel-t9-24
+Start    : Sat Mar 14 17:46:29 EDT 2026
+============================================================
+Python : /home/anshulk/miniconda3/envs/hnetasr/bin/python
+GPUs   : NVIDIA RTX A6000, 49140 MiB
+NVIDIA RTX A6000, 49140 MiB
+NVIDIA RTX A6000, 49140 MiB
+NVIDIA RTX A6000, 49140 MiB
+
+Master port: 38131
+dropout=0.1 is not used in Mamba.
+dropout=0.1 is not used in Mamba.dropout=0.1 is not used in Mamba.
+
+dropout=0.1 is not used in Mamba.
+speechbrain.core - Beginning experiment!
+speechbrain.core - Experiment folder: /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC
+librispeech_prepare - Skipping preparation, completed in previous run.
+speechbrain.tokenizers.SentencePiece - Tokenizer is already trained.
+speechbrain.tokenizers.SentencePiece - ==== Loading Tokenizer ===
+speechbrain.tokenizers.SentencePiece - Tokenizer path: /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/31_char.model
+speechbrain.tokenizers.SentencePiece - Tokenizer vocab_size: 31
+speechbrain.tokenizers.SentencePiece - Tokenizer type: char
+speechbrain.dataio.sampler - Batch quantisation in latent space
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.dataio.sampler - Batch quantisation in latent space
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.core - Info: precision arg overridden by command line input to: bf16
+speechbrain.core - Info: max_grad_norm arg from hparam file is used
+speechbrain.core - Info: grad_accumulation_factor arg from hparam file is used
+speechbrain.core - Gradscaler enabled: False. Using precision: bf16.
+speechbrain.core - 31.6M trainable parameters in ASR
+speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-14+13-09-37+00
+speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-14+13-09-37+00
+Loaded the average
+Loaded the average
+Loaded the average
+Loaded the average
+speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/CKPT+2026-03-14+13-09-37+00
+Loaded the average
+Loaded the average
+Loaded the average
+Loaded the average
+[1;34mwandb[0m: 
+[1;34mwandb[0m: 🚀 View run [33mconmamba_L_CTC[0m at: [34mhttps://wandb.ai/anshulk-cmu/Mamba-ASR/runs/46ggp0p0[0m
+[1;34mwandb[0m: Find logs at: [1;35m../../../../data/user_data/anshulk/hnet_asr/results/conmamba_large_CTC/save/wandb/run-20260314_174709-46ggp0p0/logs[0m
+
+============================================================
+Job finished — exit code: 0 — Sat Mar 14 17:52:21 EDT 2026
+============================================================

@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.Python
+
+# Environments
+env/
+venv/
+.conda/
+
+# Data files
+data/
+*.tar.gz
+*.zip
+
+# Training outputs (checkpoints live on /data/, not in repo)
+Mamba-ASR/results/
+Mamba-ASR/save/
+
+# Nested git history
+Mamba-ASR/.git
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# System
+.DS_Store
+Thumbs.db

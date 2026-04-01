@@ -1,0 +1,43 @@
+# ============================================================
+# Mamba-ASR / H-Mamba ASR — Pinned Requirements
+# Tested on: Python 3.9, CUDA 11.8, April 2026
+# ============================================================
+
+# --- Step 1: Install PyTorch first (CUDA 11.8 wheels) ---
+# pip install torch==2.0.1 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118
+
+# --- Step 2: Install CUDA extension packages (require --no-build-isolation) ---
+# CUDA_HOME=/usr/local/cuda-11.8 PATH=/usr/local/cuda-11.8/bin:$PATH \
+#   pip install causal-conv1d==1.1.3.post1 mamba-ssm==1.1.3.post1 --no-build-isolation
+
+# --- Step 3: Install remaining packages below normally ---
+
+# Core ASR framework
+speechbrain==1.0.0
+
+# Numerical / data
+numpy==1.26.4                  # Must be <2; compiled modules break on NumPy 2.x
+scipy>=1.13.0
+
+# Tokenization / HuggingFace
+transformers==4.40.0           # Must be <=4.41; mamba-ssm uses GreedySearchDecoderOnlyOutput removed in 4.42+
+sentencepiece==0.2.1
+tokenizers==0.19.1
+safetensors==0.7.0
+huggingface_hub==0.36.2
+hyperpyyaml>=1.2.3
+
+# Mamba dependencies
+einops==0.8.2
+
+# Audio
+librosa==0.11.0
+soundfile==0.13.1
+
+# Logging and monitoring
+wandb==0.25.0
+tensorboard>=2.14.0
+psutil>=5.9.0
+
+# Utilities
+tqdm==4.67.3

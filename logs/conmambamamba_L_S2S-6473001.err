@@ -1,0 +1,103 @@
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/anshulk/.netrc.
+wandb: Currently logged in as: anshulk (anshulk-cmu) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: WARNING Using a boolean value for 'reinit' is deprecated. Use 'return_previous' or 'finish_previous' instead.
+wandb: Tracking run with wandb version 0.25.0
+wandb: Run data is saved locally in /data/user_data/anshulk/hnet_asr/results/conmambamamba_large_S2S/save/wandb/run-20260303_112616-o1b3ca9r
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run conmambamamba_L_S2S
+wandb: ⭐️ View project at https://wandb.ai/anshulk-cmu/Mamba-ASR
+wandb: 🚀 View run at https://wandb.ai/anshulk-cmu/Mamba-ASR/runs/o1b3ca9r
+  0%|          | 0/2574 [00:00<?, ?it/s]                                          0%|          | 0/2574 [00:00<?, ?it/s]  0%|          | 0/2574 [00:03<?, ?it/s, train_loss=9.4]  0%|          | 1/2574 [00:03<2:16:45,  3.19s/it, train_loss=9.4]  0%|          | 1/2574 [00:03<2:16:45,  3.19s/it, train_loss=9.75]  0%|          | 2/2574 [00:03<1:13:29,  1.71s/it, train_loss=9.75]  0%|          | 2/2574 [00:04<1:13:29,  1.71s/it, train_loss=10.2]  0%|          | 3/2574 [00:04<52:47,  1.23s/it, train_loss=10.2]    0%|          | 3/2574 [00:05<52:47,  1.23s/it, train_loss=10.3]  0%|          | 4/2574 [00:05<42:52,  1.00s/it, train_loss=10.3]  0%|          | 4/2574 [00:05<42:52,  1.00s/it, train_loss=10.4]  0%|          | 5/2574 [00:05<38:06,  1.12it/s, train_loss=10.4]  0%|          | 5/2574 [00:06<38:06,  1.12it/s, train_loss=9.84]  0%|          | 6/2574 [00:06<34:50,  1.23it/s, train_loss=9.84]  0%|          | 6/2574 [00:07<34:50,  1.23it/s, train_loss=9.7]   0%|          | 7/2574 [00:07<32:13,  1.33it/s, train_loss=9.7]  0%|          | 7/2574 [00:08<32:13,  1.33it/s, train_loss=9.52]  0%|          | 8/2574 [00:08<38:13,  1.12it/s, train_loss=9.52]                                                                   0%|          | 8/2574 [00:08<38:13,  1.12it/s, train_loss=9.52]                                                                   0%|          | 8/2574 [00:08<38:13,  1.12it/s, train_loss=9.52]                                                                   0%|          | 8/2574 [00:08<38:13,  1.12it/s, train_loss=9.52]                                                                   0%|          | 8/2574 [00:08<38:13,  1.12it/s, train_loss=9.52]  0%|          | 8/2574 [00:09<38:13,  1.12it/s, train_loss=9.44]  0%|          | 9/2574 [00:09<35:18,  1.21it/s, train_loss=9.44]  0%|          | 9/2574 [00:09<35:18,  1.21it/s, train_loss=9.3]   0%|          | 10/2574 [00:09<32:47,  1.30it/s, train_loss=9.3]  0%|          | 10/2574 [00:10<32:47,  1.30it/s, train_loss=9.17]  0%|          | 11/2574 [00:10<31:40,  1.35it/s, train_loss=9.17]  0%|          | 11/2574 [00:10<31:40,  1.35it/s, train_loss=9.29]  0%|          | 12/2574 [00:10<30:15,  1.41it/s, train_loss=9.29]  0%|          | 12/2574 [00:11<30:15,  1.41it/s, train_loss=9.21]  1%|          | 13/2574 [00:11<29:28,  1.45it/s, train_loss=9.21]  1%|          | 13/2574 [00:12<29:28,  1.45it/s, train_loss=9.13]  1%|          | 14/2574 [00:12<28:47,  1.48it/s, train_loss=9.13]  1%|          | 14/2574 [00:12<28:47,  1.48it/s, train_loss=9.25]  1%|          | 15/2574 [00:12<28:35,  1.49it/s, train_loss=9.25]  1%|          | 15/2574 [00:13<28:35,  1.49it/s, train_loss=9.25]  1%|          | 16/2574 [00:13<31:20,  1.36it/s, train_loss=9.25]  1%|          | 16/2574 [00:14<31:20,  1.36it/s, train_loss=9.19]  1%|          | 17/2574 [00:14<30:24,  1.40it/s, train_loss=9.19]  1%|          | 17/2574 [00:15<30:24,  1.40it/s, train_loss=9.09]  1%|          | 18/2574 [00:15<29:36,  1.44it/s, train_loss=9.09]  1%|          | 18/2574 [00:15<29:36,  1.44it/s, train_loss=9.12]  1%|          | 19/2574 [00:15<28:59,  1.47it/s, train_loss=9.12]  1%|          | 19/2574 [00:16<28:59,  1.47it/s, train_loss=9.15]  1%|          | 20/2574 [00:16<28:11,  1.51it/s, train_loss=9.15]  1%|          | 20/2574 [00:17<28:11,  1.51it/s, train_loss=9.04]  1%|          | 21/2574 [00:17<28:04,  1.52it/s, train_loss=9.04]  1%|          | 21/2574 [00:17<28:04,  1.52it/s, train_loss=9.07]  1%|          | 22/2574 [00:17<28:08,  1.51it/s, train_loss=9.07]  1%|          | 22/2574 [00:18<28:08,  1.51it/s, train_loss=9.08]  1%|          | 23/2574 [00:18<27:36,  1.54it/s, train_loss=9.08]  1%|          | 23/2574 [00:19<27:36,  1.54it/s, train_loss=9.01]  1%|          | 24/2574 [00:19<32:43,  1.30it/s, train_loss=9.01]  1%|          | 24/2574 [00:20<32:43,  1.30it/s, train_loss=8.97]  1%|          | 25/2574 [00:20<31:10,  1.36it/s, train_loss=8.97]  1%|          | 25/2574 [00:20<31:10,  1.36it/s, train_loss=9.01]  1%|          | 26/2574 [00:20<29:57,  1.42it/s, train_loss=9.01]  1%|          | 26/2574 [00:21<29:57,  1.42it/s, train_loss=9]     1%|          | 27/2574 [00:21<29:28,  1.44it/s, train_loss=9]  1%|          | 27/2574 [00:21<29:28,  1.44it/s, train_loss=8.97]  1%|          | 28/2574 [00:21<28:44,  1.48it/s, train_loss=8.97]  1%|          | 28/2574 [00:22<28:44,  1.48it/s, train_loss=8.96]  1%|          | 29/2574 [00:22<29:29,  1.44it/s, train_loss=8.96]  1%|          | 29/2574 [00:23<29:29,  1.44it/s, train_loss=8.88]  1%|          | 30/2574 [00:23<29:11,  1.45it/s, train_loss=8.88]  1%|          | 30/2574 [00:24<29:11,  1.45it/s, train_loss=8.89]  1%|          | 31/2574 [00:24<28:51,  1.47it/s, train_loss=8.89]  1%|          | 31/2574 [00:24<28:51,  1.47it/s, train_loss=8.86]  1%|          | 32/2574 [00:24<29:07,  1.45it/s, train_loss=8.86]  1%|          | 32/2574 [00:25<29:07,  1.45it/s, train_loss=8.84]  1%|▏         | 33/2574 [00:25<28:27,  1.49it/s, train_loss=8.84]  1%|▏         | 33/2574 [00:26<28:27,  1.49it/s, train_loss=8.83]  1%|▏         | 34/2574 [00:26<28:14,  1.50it/s, train_loss=8.83]  1%|▏         | 34/2574 [00:26<28:14,  1.50it/s, train_loss=8.82]  1%|▏         | 35/2574 [00:26<28:00,  1.51it/s, train_loss=8.82]  1%|▏         | 35/2574 [00:27<28:00,  1.51it/s, train_loss=8.84]  1%|▏         | 36/2574 [00:27<28:02,  1.51it/s, train_loss=8.84]  1%|▏         | 36/2574 [00:28<28:02,  1.51it/s, train_loss=8.84]  1%|▏         | 37/2574 [00:28<28:11,  1.50it/s, train_loss=8.84]  1%|▏         | 37/2574 [00:28<28:11,  1.50it/s, train_loss=8.86]  1%|▏         | 38/2574 [00:28<27:47,  1.52it/s, train_loss=8.86]  1%|▏         | 38/2574 [00:29<27:47,  1.52it/s, train_loss=8.83]  2%|▏         | 39/2574 [00:29<27:36,  1.53it/s, train_loss=8.83]  2%|▏         | 39/2574 [00:30<27:36,  1.53it/s, train_loss=8.85]  2%|▏         | 40/2574 [00:30<33:46,  1.25it/s, train_loss=8.85]  2%|▏         | 40/2574 [00:31<33:46,  1.25it/s, train_loss=8.84]  2%|▏         | 41/2574 [00:31<32:08,  1.31it/s, train_loss=8.84]  2%|▏         | 41/2574 [00:31<32:08,  1.31it/s, train_loss=8.87]  2%|▏         | 42/2574 [00:31<30:47,  1.37it/s, train_loss=8.87]  2%|▏         | 42/2574 [00:32<30:47,  1.37it/s, train_loss=8.86]  2%|▏         | 43/2574 [00:32<30:06,  1.40it/s, train_loss=8.86]  2%|▏         | 43/2574 [00:33<30:06,  1.40it/s, train_loss=8.85]  2%|▏         | 44/2574 [00:33<29:14,  1.44it/s, train_loss=8.85]  2%|▏         | 44/2574 [00:33<29:14,  1.44it/s, train_loss=8.85]  2%|▏         | 45/2574 [00:33<28:52,  1.46it/s, train_loss=8.85]  2%|▏         | 45/2574 [00:34<28:52,  1.46it/s, train_loss=8.86]  2%|▏         | 46/2574 [00:34<28:35,  1.47it/s, train_loss=8.86]  2%|▏         | 46/2574 [00:35<28:35,  1.47it/s, train_loss=8.85]  2%|▏         | 47/2574 [00:35<28:19,  1.49it/s, train_loss=8.85]  2%|▏         | 47/2574 [00:35<28:19,  1.49it/s, train_loss=8.83]  2%|▏         | 48/2574 [00:35<29:34,  1.42it/s, train_loss=8.83]  2%|▏         | 48/2574 [00:36<29:34,  1.42it/s, train_loss=8.84]  2%|▏         | 49/2574 [00:36<29:03,  1.45it/s, train_loss=8.84]  2%|▏         | 49/2574 [00:37<29:03,  1.45it/s, train_loss=8.79]  2%|▏         | 50/2574 [00:37<28:30,  1.48it/s, train_loss=8.79]  2%|▏         | 50/2574 [00:37<28:30,  1.48it/s, train_loss=8.81]  2%|▏         | 51/2574 [00:37<28:19,  1.48it/s, train_loss=8.81]  2%|▏         | 51/2574 [00:38<28:19,  1.48it/s, train_loss=8.86]  2%|▏         | 52/2574 [00:38<27:54,  1.51it/s, train_loss=8.86]  2%|▏         | 52/2574 [00:39<27:54,  1.51it/s, train_loss=8.83]  2%|▏         | 53/2574 [00:39<28:43,  1.46it/s, train_loss=8.83]  2%|▏         | 53/2574 [00:39<28:43,  1.46it/s, train_loss=8.78]  2%|▏         | 54/2574 [00:39<28:28,  1.48it/s, train_loss=8.78]  2%|▏         | 54/2574 [00:40<28:28,  1.48it/s, train_loss=8.78]  2%|▏         | 55/2574 [00:40<27:58,  1.50it/s, train_loss=8.78]  2%|▏         | 55/2574 [00:41<27:58,  1.50it/s, train_loss=8.77]  2%|▏         | 56/2574 [00:41<28:56,  1.45it/s, train_loss=8.77]  2%|▏         | 56/2574 [00:41<28:56,  1.45it/s, train_loss=8.75]  2%|▏         | 57/2574 [00:41<28:30,  1.47it/s, train_loss=8.75]  2%|▏         | 57/2574 [00:42<28:30,  1.47it/s, train_loss=8.75]  2%|▏         | 58/2574 [00:42<27:49,  1.51it/s, train_loss=8.75]  2%|▏         | 58/2574 [00:43<27:49,  1.51it/s, train_loss=8.77]  2%|▏         | 59/2574 [00:43<27:42,  1.51it/s, train_loss=8.77]  2%|▏         | 59/2574 [00:43<27:42,  1.51it/s, train_loss=8.78]  2%|▏         | 60/2574 [00:43<27:52,  1.50it/s, train_loss=8.78]  2%|▏         | 60/2574 [00:44<27:52,  1.50it/s, train_loss=8.79]  2%|▏         | 61/2574 [00:44<27:30,  1.52it/s, train_loss=8.79]  2%|▏         | 61/2574 [00:45<27:30,  1.52it/s, train_loss=8.76]  2%|▏         | 62/2574 [00:45<27:46,  1.51it/s, train_loss=8.76]  2%|▏         | 62/2574 [00:45<27:46,  1.51it/s, train_loss=8.78]  2%|▏         | 63/2574 [00:45<27:34,  1.52it/s, train_loss=8.78]  2%|▏         | 63/2574 [00:46<27:34,  1.52it/s, train_loss=8.8]   2%|▏         | 64/2574 [00:46<29:37,  1.41it/s, train_loss=8.8]Traceback (most recent call last):
+  File "/home/anshulk/h-mamba_asr/Mamba-ASR/train_S2S.py", line 510, in <module>
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/speechbrain/core.py", line 1555, in fit
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/speechbrain/core.py", line 1378, in _fit_train
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/tqdm/std.py", line 1169, in __iter__
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 633, in __next__
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 1345, in _next_data
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 1371, in _process_data
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/_utils.py", line 644, in reraise
+RuntimeError: Caught RuntimeError in DataLoader worker process 1.
+Original Traceback (most recent call last):
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/utils/data/_utils/worker.py", line 308, in _worker_loop
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/utils/data/_utils/fetch.py", line 51, in fetch
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/utils/data/_utils/fetch.py", line 51, in <listcomp>
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/speechbrain/dataio/dataset.py", line 167, in __getitem__
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/speechbrain/utils/data_pipeline.py", line 464, in compute_outputs
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/speechbrain/utils/data_pipeline.py", line 496, in _compute
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/speechbrain/utils/data_pipeline.py", line 72, in __call__
+  File "/home/anshulk/h-mamba_asr/Mamba-ASR/train_S2S.py", line 349, in audio_pipeline_train
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/speechbrain/dataio/dataio.py", line 275, in read_audio
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torchaudio/backend/sox_io_backend.py", line 256, in load
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torchaudio/backend/sox_io_backend.py", line 30, in _fail_load
+RuntimeError: Failed to load audio from /data/user_data/anshulk/hnet_asr/LibriSpeech/train-clean-360/7717/104491/7717-104491-0042.flac
+
+  2%|▏         | 64/2574 [00:47<29:37,  1.41it/s, train_loss=8.83]  3%|▎         | 65/2574 [00:47<29:23,  1.42it/s, train_loss=8.83]  3%|▎         | 65/2574 [00:48<29:23,  1.42it/s, train_loss=8.82]  3%|▎         | 66/2574 [00:48<29:07,  1.44it/s, train_loss=8.82]  3%|▎         | 66/2574 [00:48<30:25,  1.37it/s, train_loss=8.82]
+Traceback (most recent call last):
+  File "/home/anshulk/h-mamba_asr/Mamba-ASR/train_S2S.py", line 510, in <module>
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/speechbrain/core.py", line 1555, in fit
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/speechbrain/core.py", line 1378, in _fit_train
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/tqdm/std.py", line 1181, in __iter__
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 633, in __next__
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 1345, in _next_data
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 1371, in _process_data
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/_utils.py", line 644, in reraise
+RuntimeError: Caught RuntimeError in DataLoader worker process 2.
+Original Traceback (most recent call last):
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/utils/data/_utils/worker.py", line 308, in _worker_loop
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/utils/data/_utils/fetch.py", line 51, in fetch
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/utils/data/_utils/fetch.py", line 51, in <listcomp>
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/speechbrain/dataio/dataset.py", line 167, in __getitem__
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/speechbrain/utils/data_pipeline.py", line 464, in compute_outputs
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/speechbrain/utils/data_pipeline.py", line 496, in _compute
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/speechbrain/utils/data_pipeline.py", line 72, in __call__
+  File "/home/anshulk/h-mamba_asr/Mamba-ASR/train_S2S.py", line 349, in audio_pipeline_train
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/speechbrain/dataio/dataio.py", line 275, in read_audio
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torchaudio/backend/sox_io_backend.py", line 256, in load
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torchaudio/backend/sox_io_backend.py", line 30, in _fail_load
+RuntimeError: Failed to load audio from /data/user_data/anshulk/hnet_asr/LibriSpeech/train-other-500/1096/17320/1096-17320-0020.flac
+
+Exception in thread ChkStopThr:
+Traceback (most recent call last):
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/threading.py", line 980, in _bootstrap_inner
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/threading.py", line 917, in run
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/wandb/sdk/wandb_run.py", line 308, in check_stop_status
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/wandb/sdk/wandb_run.py", line 237, in _loop_check_status
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/wandb/sdk/interface/interface.py", line 986, in deliver_stop_status
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/wandb/sdk/interface/interface_shared.py", line 482, in _deliver_stop_status
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/wandb/sdk/interface/interface_sock.py", line 50, in _deliver
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/wandb/sdk/lib/asyncio_manager.py", line 137, in run
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/concurrent/futures/_base.py", line 446, in result
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/concurrent/futures/_base.py", line 391, in __get_result
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/wandb/sdk/lib/asyncio_manager.py", line 220, in _wrap
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/wandb/sdk/interface/interface_sock.py", line 58, in deliver_async
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/wandb/sdk/lib/service/service_client.py", line 61, in deliver
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/wandb/sdk/lib/service/service_client.py", line 87, in _send_server_request
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/wandb/sdk/lib/service/service_client.py", line 104, in _drain_writer
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/asyncio/streams.py", line 387, in drain
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/asyncio/streams.py", line 190, in _drain_helper
+ConnectionResetError: Connection lost
+ERROR:torch.distributed.elastic.multiprocessing.api:failed (exitcode: 1) local_rank: 0 (pid: 1878617) of binary: /home/anshulk/miniconda3/envs/hnetasr/bin/python3.9
+Traceback (most recent call last):
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 241, in launch_agent
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/distributed/elastic/metrics/api.py", line 129, in wrapper
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/distributed/elastic/agent/server/api.py", line 726, in run
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/distributed/elastic/agent/server/api.py", line 757, in _record_worker_events
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/distributed/elastic/agent/server/api.py", line 798, in _construct_event
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/distributed/elastic/agent/server/api.py", line 386, in _get_fq_hostname
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/socket.py", line 804, in getfqdn
+LookupError: unknown encoding: idna
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/anshulk/miniconda3/envs/hnetasr/bin/torchrun", line 6, in <module>
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 346, in wrapper
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/distributed/run.py", line 794, in main
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/distributed/run.py", line 785, in run
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 134, in __call__
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 266, in launch_agent
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/distributed/elastic/agent/server/api.py", line 740, in get_event_failed
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/distributed/elastic/agent/server/api.py", line 798, in _construct_event
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/site-packages/torch/distributed/elastic/agent/server/api.py", line 386, in _get_fq_hostname
+  File "/home/anshulk/miniconda3/envs/hnetasr/lib/python3.9/socket.py", line 804, in getfqdn
+LookupError: unknown encoding: idna

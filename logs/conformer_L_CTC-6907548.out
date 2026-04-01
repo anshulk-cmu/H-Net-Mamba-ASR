@@ -1,0 +1,43 @@
+============================================================
+conformer_large CTC — 4x A6000, general, fp32 restart
+============================================================
+Job ID   : 6907548
+Node     : babel-t9-16
+Start    : Wed Apr  1 02:25:44 EDT 2026
+============================================================
+Python : /home/anshulk/miniconda3/envs/hnetasr/bin/python
+GPUs   : NVIDIA RTX A6000, 49140 MiB
+NVIDIA RTX A6000, 49140 MiB
+NVIDIA RTX A6000, 49140 MiB
+NVIDIA RTX A6000, 49140 MiB
+
+Master port: 38455
+speechbrain.core - Beginning experiment!
+speechbrain.core - Experiment folder: /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC
+librispeech_prepare - Skipping preparation, completed in previous run.
+speechbrain.tokenizers.SentencePiece - Tokenizer is already trained.
+speechbrain.tokenizers.SentencePiece - ==== Loading Tokenizer ===
+speechbrain.tokenizers.SentencePiece - Tokenizer path: /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/31_char.model
+speechbrain.tokenizers.SentencePiece - Tokenizer vocab_size: 31
+speechbrain.tokenizers.SentencePiece - Tokenizer type: char
+speechbrain.dataio.sampler - Batch quantisation in latent space
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.dataio.sampler - Batch quantisation in latent space
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.core - Info: precision arg overridden by command line input to: fp32
+speechbrain.core - Info: max_grad_norm arg from hparam file is used
+speechbrain.core - Info: grad_accumulation_factor arg from hparam file is used
+speechbrain.core - Gradscaler enabled: False. Using precision: fp32.
+speechbrain.core - 28.8M trainable parameters in ASR
+speechbrain.utils.checkpoints - Would load a checkpoint here, but none found yet.
+speechbrain.utils.epoch_loop - Going into epoch 1
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+torch.nn.parallel.distributed - Reducer buckets have been rebuilt in this iteration.
+torch.nn.parallel.distributed - Reducer buckets have been rebuilt in this iteration.
+torch.nn.parallel.distributed - Reducer buckets have been rebuilt in this iteration.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+02-44-12+00
+speechbrain.utils.epoch_loop - Going into epoch 2
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+03-01-16+00
+speechbrain.utils.epoch_loop - Going into epoch 3
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
