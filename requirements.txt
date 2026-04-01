@@ -23,9 +23,17 @@
 #
 # --- Known issues ---
 # - mamba_chunk_scan_combined (Mamba-2 Triton SSD kernel) crashes with a JIT
-#   assertion on Ampere GPUs (A6000, sm_86) under triton 2.1.0. The DeChunk
-#   EMA uses a PyTorch fallback instead (see HMambaEncoder.py). This only
-#   affects the DeChunk expansion step, not the main encoder Mamba-1 layers.
+#   assertion on Ampere GPUs (A6000 sm_86, L40S sm_89) under triton 2.1.0.
+#   Fix requires triton >= 2.2.0 which needs PyTorch >= 2.2. The DeChunk EMA
+#   uses a PyTorch fallback instead (see HMambaEncoder.py). This only affects
+#   the DeChunk expansion step, not the main encoder Mamba-1 layers.
+#
+# - causal-conv1d 1.4.0 changed both fwd and bwd CUDA kernel APIs:
+#     fwd: 5 args → 7 args (added initial_states, final_states_out)
+#     bwd: 7 args → 10 args (added initial_states, dfinal_states,
+#          return_dinitial_states) and returns 4 values instead of 3
+#   Our selective_scan_interface.py is patched for these changes.
+#   Do NOT use causal-conv1d < 1.4.0 with this codebase.
 # ============================================================
 
 # Core ASR framework

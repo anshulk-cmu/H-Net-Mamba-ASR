@@ -6,7 +6,7 @@
 #SBATCH --gres=gpu:A6000:2
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
-#SBATCH --time=2:00:00
+#SBATCH --time=12:00:00
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user=anshulk@andrew.cmu.edu
 
@@ -14,9 +14,9 @@
 # H-Mamba Smoke Test — Small N=2, 2x A6000, preempt
 #
 # Tests (in order):
-#   1. Single GPU: 2 epochs on train-clean-100 → loss decreases, ratio → 0.5
-#   2. DDP (2 GPUs): 1 epoch → no hangs, no CUDA errors
-#   3. Resume: load checkpoint from step 1, run 1 more epoch → verify resume
+#   1. Single GPU: 3 epochs on train-clean-100 + test eval → loss decreases, ratio converges
+#   2. DDP (2 GPUs): 1 epoch + test eval → no hangs, no CUDA errors
+#   3. Resume: load checkpoint from step 1, run 1 more epoch + test eval → verify resume
 #
 # If all 3 pass, the 8 full H-Mamba training jobs are safe to submit.
 # ============================================================================
@@ -60,18 +60,18 @@ mkdir -p "$SMOKE_DIR"
 MASTER_PORT=$(python -c "import socket; s=socket.socket(); s.bind(('',0)); print(s.getsockname()[1]); s.close()")
 
 # ============================================================================
-# PHASE 1: Single GPU — 2 epochs, train-clean-100 only
+# PHASE 1: Single GPU — 3 epochs, train-clean-100 only
 # ============================================================================
 echo ""
 echo "============================================================"
-echo "PHASE 1: Single GPU, 2 epochs, train-clean-100"
+echo "PHASE 1: Single GPU, 3 epochs, train-clean-100"
 echo "============================================================"
 
 CUDA_VISIBLE_DEVICES=0 python train_s2s_hmamba.py hparams/S2S/hmamba_small_N2.yaml \
     --data_folder /data/user_data/anshulk/hnet_asr/LibriSpeech \
     --output_folder "$SMOKE_DIR/phase1" \
     --train_splits '["train-clean-100"]' \
-    --number_of_epochs 2 \
+    --number_of_epochs 3 \
     --early_stop_warmup 999 \
     --early_stop_patience 999 \
     --use_wandb False \
@@ -111,18 +111,18 @@ echo "PHASE 2 PASSED — DDP training OK"
 echo ""
 
 # ============================================================================
-# PHASE 3: Resume from Phase 1 checkpoint (epoch 2 → 3)
+# PHASE 3: Resume from Phase 1 checkpoint (epoch 3 → 4)
 # ============================================================================
 echo ""
 echo "============================================================"
-echo "PHASE 3: Resume from Phase 1 checkpoint (epoch 3)"
+echo "PHASE 3: Resume from Phase 1 checkpoint (epoch 4)"
 echo "============================================================"
 
 CUDA_VISIBLE_DEVICES=0 python train_s2s_hmamba.py hparams/S2S/hmamba_small_N2.yaml \
     --data_folder /data/user_data/anshulk/hnet_asr/LibriSpeech \
     --output_folder "$SMOKE_DIR/phase1" \
     --train_splits '["train-clean-100"]' \
-    --number_of_epochs 3 \
+    --number_of_epochs 4 \
     --early_stop_warmup 999 \
     --early_stop_patience 999 \
     --use_wandb False \

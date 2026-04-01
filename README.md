@@ -113,13 +113,29 @@ print('All OK!')
 
 ### 4.6 Known Issues
 
-| Issue | Affected Component | Workaround |
-|-------|-------------------|------------|
-| `mamba_chunk_scan_combined` Triton JIT assertion on Ampere GPUs (sm_86) | DeChunk EMA expansion | PyTorch fallback in `HMambaEncoder.py` (set `MAMBA_KERNEL_AVAILABLE = False`) |
-| `causal_conv1d_fwd` API changed in v1.4.0 (added 2 args) | BiMamba encoder layers | `selective_scan_interface.py` patched for new 7-arg `fwd` and 10-arg `bwd` signatures |
+| Issue | Affected Component | Workaround | Fix |
+|-------|-------------------|------------|-----|
+| `mamba_chunk_scan_combined` Triton JIT assertion on Ampere GPUs (A6000 sm_86, L40S sm_89) | DeChunk EMA expansion | PyTorch fallback in `HMambaEncoder.py` (`MAMBA_KERNEL_AVAILABLE = False`) | Requires triton >= 2.2.0 (needs PyTorch >= 2.2) |
+| `causal_conv1d_fwd` API changed in v1.4.0 | BiMamba encoder layers (forward) | `selective_scan_interface.py` patched: 5-arg → 7-arg (added `initial_states`, `final_states_out`) | Already applied |
+| `causal_conv1d_bwd` API changed in v1.4.0 | BiMamba encoder layers (backward) | `selective_scan_interface.py` patched: 7-arg → 10-arg, returns 4 values instead of 3 | Already applied |
 
 The Triton issue only affects the DeChunk expansion step (Mamba-2 SSD kernel).
 The main encoder Mamba-1 layers use optimized CUDA kernels and are unaffected.
+
+### 4.7 Verified Package Stack
+
+| Package | Version | Notes |
+|---------|---------|-------|
+| Python | 3.9 | |
+| torch | 2.1.1+cu118 | Bundles triton 2.1.0 |
+| torchaudio | 2.1.1+cu118 | |
+| mamba-ssm | 2.0.3 | Mamba-1 + Mamba-2 ops |
+| causal-conv1d | 1.4.0 | New fwd/bwd API |
+| speechbrain | 1.0.0 | |
+| numpy | 1.26.4 | Must be < 2.0 |
+| transformers | 4.40.0 | Must be <= 4.41 |
+| CUDA | 11.8 | `/usr/local/cuda-11.8` |
+| GPU | 2x A6000 (48GB) | Ampere, sm_86 |
 
 ---
 
@@ -138,7 +154,7 @@ LM decoding: beam=66, CTC weight=0.40, LM weight=0.60 with
 | conformer_large | Conformer | Transformer | 109.1M | **2.03** / **4.70** | **2.57** / **5.94** | Done |
 | conmamba_large | ConMamba | Transformer | 115.2M | 2.27 / 5.12 | 2.82 / 6.60 | Done |
 | conmambamamba_large | ConMamba | Mamba | 122.9M | 2.41 / 5.72 | 2.93 / 6.99 | Done |
-| conformer_large (CTC) | Conformer | CTC only | 28.8M | — | In progress | Restarted with fp32 |
+| conformer_large (CTC) | Conformer | CTC only | 28.8M | — | In progress | fp32, running (job 6907548) |
 | conmamba_large (CTC) | ConMamba | CTC only | 31.6M | — | 3.93 / 10.40 | Done |
 
 ### 5.2 Paper Reference Results (WER%)
@@ -205,18 +221,36 @@ torchrun --nproc_per_node=2 train_s2s_hmamba.py hparams/S2S/hmamba_small_N2.yaml
 sbatch ../slurm/hmamba_small_N2.sh
 ```
 
-### 6.4 H-Mamba Results
+### 6.4 Smoke Test Status
+
+Smoke test v2 (job 6921845): 3-phase validation on train-clean-100 with full test eval.
+- Phase 1: Single GPU, 3 epochs + test-clean/test-other eval
+- Phase 2: DDP (2 GPUs), 1 epoch + eval
+- Phase 3: Checkpoint resume, 1 epoch + eval
+
+Previous smoke test v1 (job 6912668): Phase 1 passed (loss 597→395, compression 0.886
+vs target 0.882, 2140x realtime). Timed out during beam search eval (2h limit).
+
+### 6.5 H-Mamba Results
 
 | Model | target_N | Compression | With LM (clean / other) | Without LM (clean / other) | Status |
 |-------|----------|-------------|------------------------|---------------------------|--------|
-| hmamba_small_N1 | 1.0 | None | — | — | Pending |
-| hmamba_small_N2 | 2.0 | 50% | — | — | Pending |
-| hmamba_small_N3 | 3.0 | 33% | — | — | Pending |
-| hmamba_small_N4 | 4.0 | 25% | — | — | Pending |
-| hmamba_large_N1 | 1.0 | None | — | — | Pending |
-| hmamba_large_N2 | 2.0 | 50% | — | — | Pending |
-| hmamba_large_N3 | 3.0 | 33% | — | — | Pending |
-| hmamba_large_N4 | 4.0 | 25% | — | — | Pending |
+| hmamba_small_N1 | 1.0 | None | — | — | Awaiting smoke test |
+| hmamba_small_N2 | 2.0 | 50% | — | — | Awaiting smoke test |
+| hmamba_small_N3 | 3.0 | 33% | — | — | Awaiting smoke test |
+| hmamba_small_N4 | 4.0 | 25% | — | — | Awaiting smoke test |
+| hmamba_large_N1 | 1.0 | None | — | — | Awaiting smoke test |
+| hmamba_large_N2 | 2.0 | 50% | — | — | Awaiting smoke test |
+| hmamba_large_N3 | 3.0 | 33% | — | — | Awaiting smoke test |
+| hmamba_large_N4 | 4.0 | 25% | — | — | Awaiting smoke test |
+
+### 6.6 100-Hour Pilot Results (Small model, pre-bug-fix)
+
+| Config | Compression | test-clean WER | test-other WER |
+|--------|-------------|---------------|---------------|
+| H-Mamba Small N=2 | 50% | 5.96 | 16.35 |
+| H-Mamba Small N=3 | 67% | 7.80 | 21.36 |
+| H-Mamba Small N=4 | 75% | 7.35 | 19.71 |
 
 ---
 
@@ -229,6 +263,7 @@ h-mamba_asr/
   requirements.txt                # Pinned dependencies
   docs/                           # Detailed documentation
     baseline_reproduction.md      # Phase 1: complete analysis of all baseline runs
+    hmamba_dynamic_chunking.md    # Phase 2: DC architecture, math, losses, all decisions
   Mamba-ASR/
     train_S2S.py                  # Seq2Seq training (baselines)
     train_CTC.py                  # CTC training (baselines)
@@ -254,8 +289,8 @@ h-mamba_asr/
       mamba/
         bimamba.py                # Bidirectional Mamba
         mamba_blocks.py           # Mamba decoder blocks
-        selective_scan_interface.py
-  slurm/                          # SLURM job scripts
+        selective_scan_interface.py  # Patched for causal-conv1d 1.4.0
+  slurm/                          # SLURM job scripts (8 hmamba + smoke test)
   logs/                           # SLURM job output logs
 ```
 

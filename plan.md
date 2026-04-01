@@ -30,6 +30,11 @@
 | Conda env `hnetasr` | All deps verified (torch, mamba_ssm, causal_conv1d, speechbrain, etc.) |
 | LibriSpeech 960h | /data/user_data/anshulk/hnet_asr/LibriSpeech |
 | Full code audit + bug fixes | 9 bugs fixed, gradient flow verified, 2 audits complete |
+| Package upgrade | torch 2.0.1→2.1.1, mamba-ssm 1.1.3→2.0.3, causal-conv1d 1.1.3→1.4.0 |
+| causal-conv1d 1.4.0 API patches | 6 fwd + 3 bwd call sites patched in selective_scan_interface.py |
+| Triton kernel workaround | MAMBA_KERNEL_AVAILABLE=False for DeChunk EMA (Triton 2.1.0 crash on Ampere) |
+| Smoke test v1 (Phase 1 only) | 2 epochs passed: loss 597→395, compression 0.886 vs target 0.882. Timed out during eval. |
+| Comprehensive documentation | docs/hmamba_dynamic_chunking.md (2500+ lines), BiMamba v2, SSM math, decoder, pos encoding |
 | Baseline reproduction docs | docs/baseline_reproduction.md |
 
 ### 1.2 Bug Fixes (All Verified)
@@ -58,9 +63,18 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 |-------|---------------|
 | chunk_mask not passed to Stage 1 | ConmambaEncoderLayer ignores mask (line 316). BiMamba doesn't use attention masks. |
 | BCE loss includes hardcoded position 0 | Zero gradient at that position, cosmetic only. |
-| Conformer Large CTC (bf16 convergence) | Resubmitted as fp32 (job 6907548), in progress. |
+| Mamba-2 Triton SSD kernel crash (Ampere) | Triton 2.1.0 JIT assertion on sm_86/sm_89. Fix needs triton ≥ 2.2 (PyTorch ≥ 2.2). PyTorch EMA fallback used for DeChunk. Main encoder Mamba-1 kernels unaffected. |
+| Streaming incompatibility | BiMamba is bidirectional, routing uses look-ahead. Offline-only by design. |
+| Conformer Large CTC (bf16 convergence) | Resubmitted as fp32 (job 6907548), running on preempt. |
 
-### 1.4 Not Started
+### 1.4 In Progress
+
+| Item | Status |
+|------|--------|
+| H-Mamba smoke test v2 (job 6921845) | 3 phases: single GPU 3ep + eval, DDP 1ep + eval, resume 1ep + eval. 12h limit. Pending start on general partition. |
+| Conformer Large CTC fp32 (job 6907548) | Running on preempt. |
+
+### 1.5 Not Started
 
 | Item | Priority | Est. Effort |
 |------|----------|-------------|
@@ -83,12 +97,15 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 
 ### Week 1: April 1-7 — Smoke Test + Launch Small Runs
 
-**Day 1 (today):**
-- GPU smoke test: train H-Mamba Small N=2 on tiny subset (1 epoch, ~100 steps, single A6000)
-- Verify: loss decreases, compression ratio moves toward 0.5, no CUDA errors, no NaN
-- Verify DDP works (torchrun --nproc_per_node=2)
-- Verify checkpoint save/load and resume after preemption
-- If smoke test passes: submit all 4 small H-Mamba runs to SLURM
+**Day 1 (April 1) — DONE:**
+- Upgraded packages: torch 2.1.1, mamba-ssm 2.0.3, causal-conv1d 1.4.0
+- Patched causal-conv1d 1.4.0 API changes (6 fwd + 3 bwd call sites)
+- Discovered Triton 2.1.0 crash on Ampere GPUs, disabled Mamba-2 kernel, PyTorch fallback works
+- Smoke test v1 (job 6912668): Phase 1 passed (2 epochs, loss decreasing, compression converging).
+  Timed out during beam search eval (2h limit too short).
+- Smoke test v2 submitted (job 6921845): 12h limit, 3 epochs, full test eval, all 3 phases.
+- Comprehensive documentation update (BiMamba v2 internals, SSM math, decoder, positional encoding, streaming)
+- **Next: when smoke test passes → submit all 4 small H-Mamba runs**
 
 **Days 2-4:**
 - Install Montreal Forced Aligner, download English acoustic model
@@ -364,7 +381,7 @@ loss = ((1 - true_ratio) * (1 - average_prob) +
 
 ## 11. Immediate Next Steps
 
-1. ~~Run GPU smoke test~~ **DO NOW**
-2. ~~Submit small N=1,2,3,4 to SLURM~~ **DO NOW (after smoke test)**
+1. ~~Run GPU smoke test~~ Smoke test v2 submitted (job 6921845, 12h, 3 phases with full eval)
+2. **Submit small N=1,2,3,4 to SLURM** — after smoke test passes all 3 phases
 3. Install MFA and start alignment
 4. Create ablation configs (conformer_dc, fixed-2x)

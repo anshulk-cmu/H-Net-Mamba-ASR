@@ -1,0 +1,178 @@
+============================================================
+H-Mamba Smoke Test
+============================================================
+Job ID   : 6921845
+Node     : babel-t9-20
+Start    : Wed Apr  1 10:39:34 EDT 2026
+============================================================
+Python : /home/anshulk/miniconda3/envs/hnetasr/bin/python
+GPUs   :
+0, NVIDIA RTX A6000, 49140 MiB
+1, NVIDIA RTX A6000, 49140 MiB
+
+
+============================================================
+PHASE 1: Single GPU, 3 epochs, train-clean-100
+============================================================
+dropout=0.1 is not used in Mamba.
+speechbrain.core - Beginning experiment!
+speechbrain.core - Experiment folder: /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1
+librispeech_prepare - Data_preparation...
+librispeech_prepare - Creating csv lists in  /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/train-clean-100.csv...
+librispeech_prepare - /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/train-clean-100.csv successfully created!
+librispeech_prepare - Creating csv lists in  /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/dev-clean.csv...
+librispeech_prepare - /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/dev-clean.csv successfully created!
+librispeech_prepare - Creating csv lists in  /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/test-clean.csv...
+librispeech_prepare - /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/test-clean.csv successfully created!
+librispeech_prepare - Creating csv lists in  /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/test-other.csv...
+librispeech_prepare - /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/test-other.csv successfully created!
+speechbrain.dataio.dataio - /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/train.csv is created.
+speechbrain.dataio.sampler - Batch quantisation in latent space
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.dataio.sampler - Batch quantisation in latent space
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.fetching - Fetch lm.ckpt: Delegating to Huggingface hub, source speechbrain/asr-transformer-transformerlm-librispeech.
+speechbrain.utils.fetching - HF fetch: /home/anshulk/.cache/huggingface/hub/models--speechbrain--asr-transformer-transformerlm-librispeech/snapshots/bcf56f762f37877912578f8800bc2a4f5171e5e5/lm.ckpt
+speechbrain.utils.fetching - Fetch tokenizer.ckpt: Delegating to Huggingface hub, source speechbrain/asr-transformer-transformerlm-librispeech.
+speechbrain.utils.fetching - HF fetch: /home/anshulk/.cache/huggingface/hub/models--speechbrain--asr-transformer-transformerlm-librispeech/snapshots/bcf56f762f37877912578f8800bc2a4f5171e5e5/tokenizer.ckpt
+speechbrain.utils.parameter_transfer - Loading pretrained files for: lm, tokenizer
+speechbrain.core - Info: precision arg overridden by command line input to: bf16
+speechbrain.core - Info: max_grad_norm arg from hparam file is used
+speechbrain.core - Info: grad_accumulation_factor arg from hparam file is used
+speechbrain.core - Gradscaler enabled: False. Using precision: bf16.
+speechbrain.core - 14.1M trainable parameters in HMambaASR
+[HMambaEncoderWrapper] Created with 6 stage0 layers, 6 stage1 layers
+[HMambaEncoderWrapper] Target compression N=2.0 (r≈0.50)
+__main__ - [H-Mamba] Encoder wrapped with DC (split_idx=6, target_N=2.0)
+__main__ - [H-Mamba] DC RoutingModule has 4 parameters
+__main__ - [H-Mamba]   - temperature: shape=torch.Size([]), requires_grad=True
+__main__ - [H-Mamba]   - boundary_bias: shape=torch.Size([]), requires_grad=True
+__main__ - [H-Mamba]   - q_proj_layer.weight: shape=torch.Size([144, 144]), requires_grad=True
+__main__ - [H-Mamba]   - k_proj_layer.weight: shape=torch.Size([144, 144]), requires_grad=True
+speechbrain.utils.checkpoints - Would load a checkpoint here, but none found yet.
+__main__ - [H-Mamba] DC params in optimizer: True
+HMamba.hmamba_S_N2 - HMambaLogger initialized: /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/hmamba_logs
+HMamba.hmamba_S_N2 - TensorBoard: enabled
+HMamba.hmamba_S_N2 - Config saved to /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/hmamba_logs/experiment_config.json
+speechbrain.utils.epoch_loop - Going into epoch 1
+__main__ - [H-Mamba] Epoch 1: target_N=1.07, gumbel_tau=0.977, temp=0.500, bias=1.000
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - Starting Epoch 1
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - E1 B0000 | loss=673.613 (ctc=1588.283 seq=274.876 dc=0.9431) | comp=0.985 (target=0.938) | bias=0.999 (grad=0.0000) | VRAM=14564MB | t=919ms
+HMamba.hmamba_S_N2 - E1 B0050 | loss=808.584 (ctc=1702.519 seq=420.095 dc=0.7524) | comp=0.973 (target=0.938) | bias=0.999 (grad=0.0000) | VRAM=22700MB | t=195ms
+HMamba.hmamba_S_N2 - E1 B0100 | loss=506.207 (ctc=995.823 seq=291.456 dc=0.6882) | comp=0.969 (target=0.938) | bias=0.999 (grad=0.0000) | VRAM=26808MB | t=161ms
+HMamba.hmamba_S_N2 - E1 B0150 | loss=633.515 (ctc=1134.697 seq=415.446 dc=0.4589) | comp=0.950 (target=0.938) | bias=0.999 (grad=0.0000) | VRAM=26808MB | t=151ms
+HMamba.hmamba_S_N2 - E1 B0200 | loss=629.404 (ctc=1033.152 seq=454.027 dc=0.3278) | comp=0.936 (target=0.938) | bias=0.998 (grad=0.0000) | VRAM=26808MB | t=154ms
+HMamba.hmamba_S_N2 - E1 B0250 | loss=572.659 (ctc=900.609 seq=429.691 dc=0.3385) | comp=0.934 (target=0.938) | bias=0.998 (grad=0.0000) | VRAM=27864MB | t=156ms
+HMamba.hmamba_S_N2 - E1 B0300 | loss=580.286 (ctc=887.419 seq=446.096 dc=0.3585) | comp=0.932 (target=0.938) | bias=0.998 (grad=0.0000) | VRAM=27866MB | t=148ms
+HMamba.hmamba_S_N2 - E1 B0350 | loss=473.924 (ctc=709.588 seq=370.476 dc=0.3430) | comp=0.934 (target=0.938) | bias=0.998 (grad=0.0000) | VRAM=27866MB | t=157ms
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+__main__ - [H-Mamba] Epoch 1: compression=0.950, dc_loss=0.4762, target_N=1.07
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.train_logger - epoch: 1, lr: 1.52e-05 - train loss: 5.97e+02, train compression_ratio: 9.50e-01, train dc_loss: 4.76e-01, train target_N: 1.07 - valid loss: 3.50e+02, valid ACC: 4.75e-02
+HMamba.hmamba_S_N2 - 
+============================================================
+HMamba.hmamba_S_N2 - Epoch 1 Summary
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - Training:
+HMamba.hmamba_S_N2 -   Loss: 597.0578 (CTC=1075.9066, Seq=388.4357, DC=0.4762)
+HMamba.hmamba_S_N2 - Validation:
+HMamba.hmamba_S_N2 -   Loss: 350.0924, ACC: 0.0475
+HMamba.hmamba_S_N2 - Dynamic Chunking:
+HMamba.hmamba_S_N2 -   Compression: 0.950 ± 0.016 (target: 0.938)
+HMamba.hmamba_S_N2 -   Avg chunks: 0.0, Boundary prob: 0.000
+HMamba.hmamba_S_N2 - Performance:
+HMamba.hmamba_S_N2 -   RTF: 0.0005 (2030.2x realtime)
+HMamba.hmamba_S_N2 -   Epoch time: 195.1s, Avg batch: 161.2ms
+HMamba.hmamba_S_N2 -   Audio processed: 110.03 hours
+HMamba.hmamba_S_N2 - GPU:
+HMamba.hmamba_S_N2 -   Peak VRAM: 12479MB, Avg VRAM: 26352MB
+HMamba.hmamba_S_N2 - Optimization:
+HMamba.hmamba_S_N2 -   LR: 0.000015, Grad norm: 0.0000 (max: 0.0000)
+HMamba.hmamba_S_N2 - ============================================================
+
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x14e21e54afa0> in /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/save/CKPT+2026-04-01+10-43-51+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/save/CKPT+2026-04-01+10-43-51+00
+speechbrain.utils.epoch_loop - Going into epoch 2
+__main__ - [H-Mamba] Epoch 2: target_N=1.13, gumbel_tau=0.953, temp=0.502, bias=0.998
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - Starting Epoch 2
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - E2 B0000 | loss=151.053 (ctc=210.546 seq=118.023 dc=1.0547) | comp=0.940 (target=0.882) | bias=0.998 (grad=0.0000) | VRAM=27866MB | t=161ms
+HMamba.hmamba_S_N2 - E2 B0050 | loss=470.023 (ctc=663.636 seq=383.913 dc=0.4386) | comp=0.887 (target=0.882) | bias=0.997 (grad=0.0000) | VRAM=27866MB | t=155ms
+HMamba.hmamba_S_N2 - E2 B0100 | loss=423.308 (ctc=572.428 seq=356.574 dc=0.3956) | comp=0.883 (target=0.882) | bias=0.997 (grad=0.0000) | VRAM=27866MB | t=157ms
+HMamba.hmamba_S_N2 - E2 B0150 | loss=122.362 (ctc=152.449 seq=106.328 dc=0.4396) | comp=0.877 (target=0.882) | bias=0.996 (grad=0.0000) | VRAM=27866MB | t=143ms
+HMamba.hmamba_S_N2 - E2 B0200 | loss=283.968 (ctc=343.872 seq=255.258 dc=0.4251) | comp=0.886 (target=0.882) | bias=0.996 (grad=0.0000) | VRAM=27866MB | t=163ms
+HMamba.hmamba_S_N2 - E2 B0250 | loss=423.203 (ctc=496.371 seq=389.010 dc=0.3968) | comp=0.883 (target=0.882) | bias=0.996 (grad=0.0000) | VRAM=27866MB | t=154ms
+HMamba.hmamba_S_N2 - E2 B0300 | loss=390.389 (ctc=434.606 seq=368.376 dc=0.4289) | comp=0.886 (target=0.882) | bias=0.996 (grad=0.0000) | VRAM=27866MB | t=152ms
+HMamba.hmamba_S_N2 - E2 B0350 | loss=318.220 (ctc=340.104 seq=305.853 dc=0.4183) | comp=0.880 (target=0.882) | bias=0.995 (grad=0.0000) | VRAM=27866MB | t=149ms
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+__main__ - [H-Mamba] Epoch 2: compression=0.886, dc_loss=0.4472, target_N=1.13
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.train_logger - epoch: 2, lr: 3.04e-05 - train loss: 3.95e+02, train compression_ratio: 8.86e-01, train dc_loss: 4.47e-01, train target_N: 1.13 - valid loss: 2.55e+02, valid ACC: 4.82e-02
+HMamba.hmamba_S_N2 - 
+============================================================
+HMamba.hmamba_S_N2 - Epoch 2 Summary
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - Training:
+HMamba.hmamba_S_N2 -   Loss: 394.6181 (CTC=494.5145, Seq=348.6111, DC=0.4472)
+HMamba.hmamba_S_N2 - Validation:
+HMamba.hmamba_S_N2 -   Loss: 255.3667, ACC: 0.0482
+HMamba.hmamba_S_N2 - Dynamic Chunking:
+HMamba.hmamba_S_N2 -   Compression: 0.886 ± 0.010 (target: 0.882)
+HMamba.hmamba_S_N2 -   Avg chunks: 0.0, Boundary prob: 0.000
+HMamba.hmamba_S_N2 - Performance:
+HMamba.hmamba_S_N2 -   RTF: 0.0005 (2172.3x realtime)
+HMamba.hmamba_S_N2 -   Epoch time: 182.3s, Avg batch: 154.4ms
+HMamba.hmamba_S_N2 -   Audio processed: 110.02 hours
+HMamba.hmamba_S_N2 - GPU:
+HMamba.hmamba_S_N2 -   Peak VRAM: 12338MB, Avg VRAM: 27866MB
+HMamba.hmamba_S_N2 - Optimization:
+HMamba.hmamba_S_N2 -   LR: 0.000030, Grad norm: 0.0000 (max: 0.0000)
+HMamba.hmamba_S_N2 - ============================================================
+
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x14e21e54afa0> in /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/save/CKPT+2026-04-01+10-46-53+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/save/CKPT+2026-04-01+10-46-53+00
+speechbrain.utils.epoch_loop - Going into epoch 3
+__main__ - [H-Mamba] Epoch 3: target_N=1.20, gumbel_tau=0.930, temp=0.504, bias=0.995
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - Starting Epoch 3
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - E3 B0000 | loss=108.790 (ctc=107.467 seq=102.308 dc=0.9869) | comp=0.879 (target=0.833) | bias=0.995 (grad=0.0000) | VRAM=27866MB | t=165ms
+HMamba.hmamba_S_N2 - E3 B0050 | loss=342.920 (ctc=349.274 seq=333.249 dc=0.9726) | comp=0.878 (target=0.833) | bias=0.994 (grad=0.0000) | VRAM=27866MB | t=152ms
+HMamba.hmamba_S_N2 - E3 B0100 | loss=318.804 (ctc=320.199 seq=311.483 dc=0.9411) | comp=0.874 (target=0.833) | bias=0.992 (grad=0.0000) | VRAM=27866MB | t=155ms
+HMamba.hmamba_S_N2 - E3 B0150 | loss=97.454 (ctc=92.425 seq=92.797 dc=0.9538) | comp=0.875 (target=0.833) | bias=0.990 (grad=0.0000) | VRAM=27866MB | t=317ms
+HMamba.hmamba_S_N2 - E3 B0200 | loss=231.049 (ctc=227.524 seq=225.892 dc=0.9335) | comp=0.875 (target=0.833) | bias=0.987 (grad=0.0000) | VRAM=27866MB | t=161ms
+HMamba.hmamba_S_N2 - E3 B0250 | loss=352.507 (ctc=354.377 seq=345.104 dc=0.9241) | comp=0.874 (target=0.833) | bias=0.985 (grad=0.0000) | VRAM=27866MB | t=154ms
+HMamba.hmamba_S_N2 - E3 B0300 | loss=340.139 (ctc=342.957 seq=332.744 dc=0.8662) | comp=0.869 (target=0.833) | bias=0.983 (grad=0.0000) | VRAM=28410MB | t=153ms
+HMamba.hmamba_S_N2 - E3 B0350 | loss=287.102 (ctc=289.873 seq=279.727 dc=0.8664) | comp=0.869 (target=0.833) | bias=0.981 (grad=0.0000) | VRAM=28410MB | t=150ms
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+__main__ - [H-Mamba] Epoch 3: compression=0.874, dc_loss=0.9288, target_N=1.20
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.train_logger - epoch: 3, lr: 4.56e-05 - train loss: 3.16e+02, train compression_ratio: 8.74e-01, train dc_loss: 9.29e-01, train target_N: 1.20 - valid loss: 2.32e+02, valid ACC: 1.02e-01
+HMamba.hmamba_S_N2 - 
+============================================================
+HMamba.hmamba_S_N2 - Epoch 3 Summary
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - Training:
+HMamba.hmamba_S_N2 -   Loss: 316.2202 (CTC=318.4593, Seq=308.6264, DC=0.9288)
+HMamba.hmamba_S_N2 - Validation:
+HMamba.hmamba_S_N2 -   Loss: 232.4670, ACC: 0.1022
+HMamba.hmamba_S_N2 - Dynamic Chunking:
+HMamba.hmamba_S_N2 -   Compression: 0.874 ± 0.005 (target: 0.833)
+HMamba.hmamba_S_N2 -   Avg chunks: 0.0, Boundary prob: 0.000
+HMamba.hmamba_S_N2 - Performance:
+HMamba.hmamba_S_N2 -   RTF: 0.0005 (2190.0x realtime)
+HMamba.hmamba_S_N2 -   Epoch time: 180.8s, Avg batch: 153.7ms
+HMamba.hmamba_S_N2 -   Audio processed: 110.01 hours
+HMamba.hmamba_S_N2 - GPU:
+HMamba.hmamba_S_N2 -   Peak VRAM: 12254MB, Avg VRAM: 27993MB
+HMamba.hmamba_S_N2 - Optimization:
+HMamba.hmamba_S_N2 -   LR: 0.000046, Grad norm: 0.0000 (max: 0.0000)
+HMamba.hmamba_S_N2 - ============================================================
+
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x14e21e54afa0> in /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/save/CKPT+2026-04-01+10-49-55+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/save/CKPT+2026-04-01+10-49-55+00
+speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/hmamba_smoke_test_v2/phase1/save/CKPT+2026-04-01+10-49-55+00
+Loaded the average

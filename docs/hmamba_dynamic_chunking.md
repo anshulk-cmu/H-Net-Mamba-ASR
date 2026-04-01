@@ -20,12 +20,14 @@ experiments are documented separately in `baseline_reproduction.md`.
 5. [The H-Net Paper](#5-the-h-net-paper)
 6. [Architecture Overview](#6-architecture-overview)
 7. [Stage 0: Frame-Level Processing](#7-stage-0-frame-level-processing)
+   - [BiMamba v2: The Bidirectional SSM](#bimamba-v2-the-bidirectional-ssm)
 8. [The Routing Module](#8-the-routing-module)
 9. [The Boundary Decision Math](#9-the-boundary-decision-math)
 10. [Gumbel-Softmax and Differentiability](#10-gumbel-softmax-and-differentiability)
 11. [The Straight-Through Estimator](#11-the-straight-through-estimator)
 12. [The Chunk Layer](#12-the-chunk-layer)
 13. [Stage 1: Chunk-Level Processing](#13-stage-1-chunk-level-processing)
+   - [How the decoder receives the encoder output](#how-the-decoder-receives-the-encoder-output)
 14. [The DeChunk Layer](#14-the-dechunk-layer)
 15. [The EMA Expansion Math](#15-the-ema-expansion-math)
 16. [The Residual Connection](#16-the-residual-connection)
@@ -46,10 +48,13 @@ experiments are documented separately in `baseline_reproduction.md`.
 31. [Bug Fixes and Code Audit](#31-bug-fixes-and-code-audit)
 32. [Gradient Flow Verification](#32-gradient-flow-verification)
 33. [Known Deferred Issues](#33-known-deferred-issues)
+   - [Positional encoding and compression interaction](#positional-encoding-and-compression-interaction)
+   - [Streaming / online ASR incompatibility](#streaming--online-asr-incompatibility)
 34. [The Alternative Loss Formula](#34-the-alternative-loss-formula)
-35. [Tensor Shape Reference](#35-tensor-shape-reference)
-36. [File Reference](#36-file-reference)
-37. [What This Stage Will Establish](#37-what-this-stage-will-establish)
+35. [Package Upgrade and API Patches](#35-package-upgrade-and-api-patches)
+36. [Tensor Shape Reference](#36-tensor-shape-reference)
+37. [File Reference](#37-file-reference)
+38. [What This Stage Will Establish](#38-what-this-stage-will-establish)
 
 ---
 
@@ -350,10 +355,7 @@ x = LayerNorm(x + 0.5 * FFN_2(x))   # Half-step feed-forward + final norm
 **FFN** (PositionalwiseFeedForward): Linear(d_model → d_ffn) → activation → dropout →
 Linear(d_ffn → d_model). With d_ffn=1024 (small) or 2048 (large).
 
-**BiMamba**: Bidirectional Mamba v2. Processes the sequence in both forward and backward
-directions. Internal parameters: d_state=16, expand=2 (internal dimension = 2*d_model),
-d_conv=4 (local convolution kernel). The bidirectional processing means each frame's
-output incorporates information from the entire sequence in both directions.
+**BiMamba**: Bidirectional Mamba v2 (see detailed subsection below).
 
 **ConvModule**: LayerNorm → Pointwise Conv (expand 2x, GLU) → Depthwise Conv (kernel=31)
 → LayerNorm → Swish → Linear → Dropout. The kernel size of 31 means each frame sees
@@ -363,6 +365,157 @@ substantially.
 After Stage 0, each frame's hidden state encodes both local acoustic features (from the
 convolution) and global sequence context (from BiMamba). This is the representation that
 the routing module will analyze to decide where to place boundaries.
+
+### BiMamba v2: The Bidirectional SSM
+
+BiMamba v2 (`bimamba.py`) is the core sequence model in every ConMamba encoder layer and
+in the Mamba decoder layers. It processes the sequence in both forward and backward
+directions using **completely separate parameter sets** for each direction, then averages
+the results.
+
+#### Key dimensions
+
+| Dimension | Formula | Small (d_model=144) | Large (d_model=512) |
+|-----------|---------|---------------------|---------------------|
+| d_inner | expand × d_model | 288 | 1024 |
+| dt_rank | ceil(d_model / 16) | 9 | 32 |
+| d_state | fixed | 16 | 16 |
+| d_conv | fixed | 4 | 4 |
+| expand | fixed | 2 | 2 |
+
+`d_inner` is the internal working dimension — all SSM operations happen at this expanded
+width. `dt_rank` controls the bottleneck for the discretization step (delta). The formula
+`ceil(d_model / 16)` keeps dt_rank proportional to model size.
+
+#### Forward and backward parameter sets
+
+BiMamba v2 maintains **separate parameters for the backward direction**. This is not
+a simple flip-and-reuse — the backward path has its own learned conv1d, projections,
+and skip connection:
+
+| Parameter | Shape | Forward | Backward |
+|-----------|-------|---------|----------|
+| in_proj | (d_model, d_inner×2) | Shared | Shared |
+| conv1d | (d_inner, 1, d_conv) | `conv1d` | `conv1d_b` |
+| x_proj | (d_inner, dt_rank + d_state×2) | `x_proj` | `x_proj_b` |
+| dt_proj | (dt_rank, d_inner) | `dt_proj` | `dt_proj_b` |
+| A_log | (d_inner, d_state) | `A_log` | `A_b_log` |
+| D (skip) | (d_inner,) | `D` | `D_b` |
+| out_proj | (d_inner, d_model) | Shared | Shared |
+
+The `in_proj` and `out_proj` are shared between directions. Everything in the SSM core
+(conv1d, projections, state transition matrix A, skip connection D) is separate. This
+gives the backward direction freedom to learn different temporal patterns than the
+forward direction.
+
+#### Forward pass step by step
+
+```python
+# 1. Project input to 2× width (shared for both directions)
+xz = in_proj(hidden_states)            # (B, L, d_inner*2) → split into x and z
+
+# 2. Forward direction
+A = -exp(A_log)                        # (d_inner, d_state) — negative for stability
+out = mamba_inner_fn_no_out_proj(
+    xz, conv1d.weight, conv1d.bias,
+    x_proj.weight, dt_proj.weight,
+    A, None, None, D,                  # B, C are input-dependent (computed inside)
+    delta_bias=dt_proj.bias,
+    delta_softplus=True
+)                                       # (B, d_inner, L)
+
+# 3. Backward direction — FLIP input, use separate parameters
+A_b = -exp(A_b_log)
+out_b = mamba_inner_fn_no_out_proj(
+    xz.flip([-1]),                      # Reverse time dimension
+    conv1d_b.weight, conv1d_b.bias,
+    x_proj_b.weight, dt_proj_b.weight,
+    A_b, None, None, D_b,
+    delta_bias=dt_proj_b.bias,
+    delta_softplus=True
+)                                       # (B, d_inner, L) — in reversed order
+
+# 4. Average and project back to d_model
+out = 0.5 * out + 0.5 * out_b.flip([-1])   # Flip backward output back
+output = out_proj(out)                       # (B, L, d_model)
+```
+
+The `0.5` averaging (enabled by `if_devide_out=True`, the default) ensures the output
+magnitude stays consistent regardless of direction. Without it, the output would be
+2× the expected magnitude.
+
+#### The SSM recurrence (from selective_scan_ref)
+
+Inside `mamba_inner_fn_no_out_proj`, the core computation is the Selective State Space
+Model scan. The reference implementation in `selective_scan_interface.py` makes this
+explicit:
+
+```python
+# Inputs (all at d_inner width):
+#   u: (B, d_inner, L)  — the gated input
+#   delta: (B, d_inner, L) — discretization step sizes (from dt_proj + softplus)
+#   A: (d_inner, d_state) — state transition matrix (negative, from -exp(A_log))
+#   B: (B, d_state, L) — input-dependent input gate (from x_proj)
+#   C: (B, d_state, L) — input-dependent output gate (from x_proj)
+#   D: (d_inner,) — skip connection
+
+# Step 1: Discretize A and B
+deltaA = exp(einsum('bdl,dn->bdln', delta, A))   # (B, d_inner, L, d_state)
+deltaB_u = einsum('bdl,bnl,bdl->bdln', delta, B, u)  # (B, d_inner, L, d_state)
+
+# Step 2: Sequential scan (the recurrence)
+x = zeros(B, d_inner, d_state)              # Initial hidden state
+for i in range(L):
+    x = deltaA[:,:,i] * x + deltaB_u[:,:,i]  # State update: decay + input
+    y[i] = einsum('bdn,bn->bd', x, C[:,:,i]) # Output: read from state
+
+# Step 3: Skip connection and gating
+out = y + u * D                              # Add skip (D acts like a residual)
+out = out * silu(z)                          # Gate with the other half of in_proj
+```
+
+**The key insight**: `delta` (discretization step) is **input-dependent** — it comes
+from projecting the input through `x_proj` → `dt_proj` → `softplus`. This makes the
+state transition selective: the model can learn to update its state quickly (large delta)
+at transitions and slowly (small delta) during steady states. This selectivity is what
+distinguishes Mamba from classical linear SSMs like S4.
+
+**B and C are also input-dependent**: they are computed from the input via `x_proj`,
+which outputs `(dt_rank + d_state*2)` values per frame. The first `dt_rank` values
+become delta (via dt_proj), and the remaining `2*d_state` values are split into B and C.
+
+#### A_log initialization (S4D real)
+
+The state transition matrix A is initialized using the S4D (Structured State Spaces for
+Sequences, Diagonal) real initialization:
+
+```python
+A = repeat(
+    arange(1, d_state + 1, dtype=float32),   # [1, 2, 3, ..., 16]
+    "n -> d n",                               # Broadcast to (d_inner, d_state)
+    d=d_inner
+)
+A_log = log(A)                                # Store as log for numerical stability
+```
+
+This creates `A_log[d, n] = log(n+1)` for `n = 0, ..., d_state-1`. When used:
+```python
+A = -exp(A_log)   # A[d, n] = -(n+1)
+```
+
+The negative values ensure the state decays over time (`exp(delta * A)` < 1 when A < 0
+and delta > 0). Larger state indices decay faster, creating a multi-scale memory: state
+dimension 0 (A=-1) has the longest memory, state dimension 15 (A=-16) has the shortest.
+
+Both forward and backward directions initialize their A matrices identically, but they
+diverge during training because they receive different gradients.
+
+#### Dropout note
+
+The ConmambaEncoder constructor prints `dropout=0.1 is not used in Mamba` — this is
+accurate. BiMamba itself has no dropout. Dropout is only applied in the surrounding
+ConMamba layer structure (FFN and ConvModule), not inside the SSM computation. The SSM
+recurrence operates deterministically on the gated inputs.
 
 ---
 
@@ -769,6 +922,54 @@ issues (Section 33):
 - The padded positions in the compressed sequence contain real gathered features, not
   noise, because they are gathered from the hidden_states tensor
 - Dynamic batching groups sequences of similar length, so padding is minimal
+
+### How the decoder receives the encoder output
+
+Both the Transformer decoder and Mamba decoder receive the **full-length** encoder
+output (B, L, D) — not the compressed (B, M, D) output. This is because the DeChunk
+expansion (Section 14) restores the sequence to its original length before the output
+leaves the encoder. The decoder is completely unaware that compression happened.
+
+**Transformer decoder** (used in `conmamba_small`, `conmamba_large`, all H-Mamba runs):
+Standard cross-attention between decoder tokens and encoder output. The encoder output
+serves as key and value in the attention computation. Since the output is length L, the
+attention matrix is (T_dec × L) — identical to the baseline without DC.
+
+**Mamba decoder** (used in `conmambamamba_small`, `conmambamamba_large`):
+The Mamba decoder replaces cross-attention with a concatenate-and-truncate mechanism:
+
+```python
+# In MambaDecoderLayer.forward():
+# 1. Self-Mamba over target sequence
+tgt2 = self.self_mamba(tgt)              # (B, T_dec, D)
+tgt = tgt + dropout(tgt2)
+
+# 2. Cross-Mamba: concatenate encoder output with target, run Mamba, keep only target
+tgt2 = self.cross_mamba(
+    torch.cat([memory, tgt], dim=1)      # (B, L + T_dec, D)
+)[:, -tgt.shape[1]:]                     # Take last T_dec tokens → (B, T_dec, D)
+
+tgt = tgt + dropout(tgt2)
+
+# 3. Feed-forward
+tgt2 = self.pos_ffn(tgt)
+tgt = tgt + dropout(tgt2)
+```
+
+The concatenate-and-truncate trick works because Mamba processes left-to-right: by
+placing the encoder output before the target tokens, the Mamba SSM state accumulates
+information from the full encoder output before processing the target. The truncation
+`[:, -T_dec:]` then extracts only the target positions, which now carry encoder context
+in their SSM hidden state.
+
+This is an implicit cross-attention — the encoder information flows into the decoder
+through the SSM recurrence rather than through explicit key-value attention. The
+self_mamba and cross_mamba are separate Mamba instances (unidirectional, not BiMamba)
+with independent parameters.
+
+**Important for H-Mamba**: Since both decoder types receive length-L output from the
+encoder, no decoder modifications are needed for Dynamic Chunking. The DC mechanism
+is fully encapsulated within the encoder.
 
 ---
 
@@ -1926,6 +2127,62 @@ handled by clamping, but the gradient with respect to the routing module is zero
 because position 0 bypasses the cosine similarity computation). The inclusion
 inflates the loss value slightly but has no training impact.
 
+### Positional encoding and compression interaction
+
+The system uses `fixed_abs_sine` positional encoding, which is added to the encoder
+input **before** Stage 0:
+
+```python
+# In TransformerASR.forward():
+src = self.custom_src_module(src)               # CNN frontend + linear projection
+src = src + self.positional_encoding(src)       # Add sinusoidal position embeddings
+encoder_out, _ = self.encoder(src=src, ...)     # Encoder processes pos-encoded input
+```
+
+The positional information is baked into the hidden states before the DC mechanism sees
+them. This means:
+
+1. **Stage 0** processes frames with correct positional information — each frame knows
+   its absolute position in the utterance.
+2. **The routing module** computes cosine similarity on position-aware hidden states.
+   This is beneficial: transitions at position 10 vs. position 500 may have different
+   significance, and the routing module can learn this.
+3. **Stage 1** processes the compressed sequence with positional information inherited
+   from the boundary frames' original positions. The compressed frames retain their
+   original positional encoding, but the *relative* positions are distorted — frame 5
+   might be adjacent to frame 15 in the compressed sequence. BiMamba is tolerant of
+   this because it is a recurrent model (not attention-based) and does not explicitly
+   use positional encodings internally. The SSM state simply processes whatever sequence
+   it receives.
+4. **DeChunk expansion** copies each boundary frame's features (including its baked-in
+   positional encoding) to all positions in its chunk. Non-boundary positions get the
+   nearest boundary frame's positional information, not their own. The **residual
+   connection** mitigates this: the residual from Stage 0 output carries the correct
+   positional encoding for every frame and is added back to the expanded output.
+
+This is not an explicit design decision but a consequence of how SpeechBrain adds
+positional encoding outside the encoder. If positional encoding were added per-layer
+(as in some Transformer implementations), the interaction with DC would require
+explicit handling.
+
+### Streaming / online ASR incompatibility
+
+The H-Mamba Dynamic Chunking mechanism is **incompatible with streaming ASR**:
+
+1. **BiMamba is bidirectional**: every encoder layer processes the full utterance in both
+   forward and backward directions. There is no causal variant.
+2. **The routing module uses look-ahead**: the cosine similarity between frame t and
+   frame t+1 requires the full utterance to be available. There is no streaming-compatible
+   boundary detection.
+3. **The DeChunk EMA expansion operates on the full compressed sequence**: it requires
+   all boundary frames to be known before expansion can begin.
+4. **The Transformer decoder's cross-attention** attends to all L encoder output frames.
+
+This is by design — the project targets offline ASR (the full utterance is available).
+A streaming variant would require replacing BiMamba with unidirectional Mamba, using
+CIF-style left-to-right boundary detection instead of cosine similarity, and chunk-based
+processing in the DeChunk layer. This is out of scope for the current work.
+
 ---
 
 ## 34. The Alternative Loss Formula
@@ -1958,7 +2215,129 @@ in `load_balancing_loss()`.
 
 ---
 
-## 35. Tensor Shape Reference
+## 35. Package Upgrade and API Patches
+
+### Why we upgraded
+
+The original codebase used mamba-ssm 1.1.3 + causal-conv1d 1.1.3 + PyTorch 2.0.1. This
+stack only included Mamba-1 ops. The DeChunkLayer's EMA expansion tried to use
+`mamba_chunk_scan_combined` (a Mamba-2 SSD kernel), but it doesn't exist in mamba-ssm 1.x.
+The code fell back to a pure PyTorch sequential loop.
+
+We upgraded to get the Mamba-2 kernel and newer CUDA optimizations:
+
+| Package | Before | After |
+|---------|--------|-------|
+| torch | 2.0.1+cu118 | 2.1.1+cu118 |
+| torchaudio | 2.0.2+cu118 | 2.1.1+cu118 |
+| triton | 2.0.0 | 2.1.0 |
+| mamba-ssm | 1.1.3.post1 | 2.0.3 |
+| causal-conv1d | 1.1.3.post1 | 1.4.0 |
+
+### causal-conv1d 1.4.0 API changes
+
+causal-conv1d 1.4.0 changed the C++ CUDA kernel signatures. The file
+`Mamba-ASR/modules/mamba/selective_scan_interface.py` was patched at all 9 call sites.
+
+**Forward (`causal_conv1d_fwd`)** — 6 call sites:
+
+```python
+# Old (5 args):
+causal_conv1d_cuda.causal_conv1d_fwd(x, conv1d_weight, conv1d_bias, None, True)
+
+# New (7 args — added initial_states, final_states_out):
+causal_conv1d_cuda.causal_conv1d_fwd(x, conv1d_weight, conv1d_bias, None, None, None, True)
+```
+
+**Backward (`causal_conv1d_bwd`)** — 3 call sites:
+
+```python
+# Old (7 args, 3 returns):
+dx, dconv1d_weight, dconv1d_bias = causal_conv1d_cuda.causal_conv1d_bwd(
+    x, conv1d_weight, conv1d_bias, dconv1d_out, None, dx, True
+)
+
+# New (10 args, 4 returns — added initial_states, dfinal_states, return_dinitial_states):
+dx, dconv1d_weight, dconv1d_bias, _ = causal_conv1d_cuda.causal_conv1d_bwd(
+    x, conv1d_weight, conv1d_bias, dconv1d_out, None, None, None, dx, False, True
+)
+```
+
+The 4th return value (`dinitial_states`) is discarded with `_` since we don't use
+initial states.
+
+### Mamba-2 Triton kernel crash
+
+After the upgrade, `mamba_chunk_scan_combined` imported successfully but crashed
+at runtime with a Triton JIT assertion:
+
+```
+python: /project/lib/Analysis/Allocation.cpp:40:
+Assertion `!(srcMmaLayout && dstMmaLayout) &&
+"Unexpected mma -> mma layout conversion"' failed.
+Aborted (core dumped)
+```
+
+This is a known Triton 2.1.0 bug in the MLIR→PTX lowering pass. It triggers on
+Ampere GPUs (A6000 sm_86, L40S sm_89) when JIT-compiling the SSD combined kernel.
+The fix requires triton >= 2.2.0, which needs PyTorch >= 2.2.
+
+**Resolution**: Disabled the Mamba-2 Triton kernel in `HMambaEncoder.py`
+(`MAMBA_KERNEL_AVAILABLE = False`). The DeChunk EMA uses the PyTorch fallback instead.
+This only affects the expansion step — the main encoder Mamba-1 layers continue to
+use optimized CUDA kernels from causal-conv1d and selective_scan.
+
+### What uses optimized kernels vs. fallbacks
+
+| Component | Kernel | Status |
+|-----------|--------|--------|
+| BiMamba encoder (Stage 0 + Stage 1) | causal_conv1d_cuda + selective_scan_cuda | Optimized CUDA |
+| Mamba decoder | causal_conv1d_cuda + selective_scan_cuda | Optimized CUDA |
+| DeChunk EMA expansion | mamba_chunk_scan_combined (Triton) | PyTorch fallback |
+| RoutingModule, ChunkLayer | Pure PyTorch | N/A (no kernel needed) |
+
+### OOM protection
+
+The training script includes OOM handling in `fit_batch()` (train_s2s_hmamba.py):
+
+```python
+def fit_batch(self, batch):
+    try:
+        loss = super().fit_batch(batch)
+        return loss
+    except RuntimeError as e:
+        if "out of memory" in str(e).lower():
+            logger.warning("[H-Mamba] CUDA OOM — skipping batch, clearing cache.")
+            for p in self.modules.parameters():
+                if p.grad is not None:
+                    del p.grad
+            torch.cuda.empty_cache()
+            return torch.tensor(0.0, device=self.device)
+        raise
+```
+
+This catches OOM errors from variable-length batches (DC adds memory overhead that
+depends on the number of boundary frames). The batch is skipped and training continues.
+
+### GPU utilization (smoke test observations)
+
+From the smoke test (Small N=2, single A6000, train-clean-100):
+
+| Metric | Value |
+|--------|-------|
+| Peak VRAM | 12,332 MB / 49,140 MB (25%) |
+| Avg batch time | 157 ms |
+| RTF | 0.0005 (2140x realtime) |
+| Epoch time (100h data) | 185 seconds |
+
+The small model (14.1M params) underutilizes a single A6000. The SLURM scripts
+override `max_batch_length_train` to 1200 (vs yaml default 1050) to increase
+throughput. The large model (115M params, d_model=512) will use significantly
+more VRAM. With DDP across 2 GPUs, the effective per-GPU batch is halved.
+
+---
+
+## 36. Tensor Shape Reference
 
 This section documents every tensor shape through the entire H-Mamba pipeline. All
 shapes assume batch size B, original sequence length L, compressed length M, model
@@ -2031,7 +2410,7 @@ dimension D, and 2-class boundary distribution.
 
 ---
 
-## 36. File Reference
+## 37. File Reference
 
 ### Core H-Mamba modules
 
@@ -2081,10 +2460,11 @@ dimension D, and 2-class boundary distribution.
 | `Mamba-ASR/modules/Conformer.py` | Conformer encoder |
 | `Mamba-ASR/modules/TransformerASR.py` | Top-level model, Transformer decoder |
 | `Mamba-ASR/modules/mamba/bimamba.py` | Bidirectional Mamba |
+| `Mamba-ASR/modules/mamba/selective_scan_interface.py` | Selective scan ops, patched for causal-conv1d 1.4.0 |
 
 ---
 
-## 37. What This Stage Will Establish
+## 38. What This Stage Will Establish
 
 When all 8 experiments complete and are evaluated, this stage will answer:
 
@@ -2140,4 +2520,4 @@ When all 8 experiments complete and are evaluated, this stage will answer:
 
 *Document last updated: April 1, 2026*
 *All code references are from the current codebase after the April 2026 audit.*
-*Training has not started yet — results will be filled in as experiments complete.*
+*Smoke test v2 in progress (job 6921845). Full 960h training awaiting smoke test completion.*

@@ -283,7 +283,7 @@ class MambaInnerFnNoOutProj(torch.autograd.Function):
         dconv1d_out = rearrange(dconv1d_out, "d (b l) -> b d l", b=x.shape[0], l=x.shape[-1])
         # The kernel supports passing in a pre-allocated dx (e.g., in case we want to fuse the
         # backward of conv1d with the backward of chunk).
-        dx, dconv1d_weight, dconv1d_bias = causal_conv1d_cuda.causal_conv1d_bwd(
+        dx, dconv1d_weight, dconv1d_bias, _ = causal_conv1d_cuda.causal_conv1d_bwd(
             x, conv1d_weight, conv1d_bias, dconv1d_out, None, None, None, dx, False, True
         )
         dconv1d_bias = dconv1d_bias if conv1d_bias is not None else None
@@ -427,7 +427,7 @@ class MambaInnerFn(torch.autograd.Function):
         dconv1d_out = rearrange(dconv1d_out, "d (b l) -> b d l", b=x.shape[0], l=x.shape[-1])
         # The kernel supports passing in a pre-allocated dx (e.g., in case we want to fuse the
         # backward of conv1d with the backward of chunk).
-        dx, dconv1d_weight, dconv1d_bias = causal_conv1d_cuda.causal_conv1d_bwd(
+        dx, dconv1d_weight, dconv1d_bias, _ = causal_conv1d_cuda.causal_conv1d_bwd(
             x, conv1d_weight, conv1d_bias, dconv1d_out, None, None, None, dx, False, True
         )
         dconv1d_bias = dconv1d_bias if conv1d_bias is not None else None
@@ -596,7 +596,7 @@ class BiMambaInnerFn(torch.autograd.Function):
         dconv1d_out = rearrange(dconv1d_out, "d (b l) -> b d l", b=x.shape[0], l=x.shape[-1])
         # The kernel supports passing in a pre-allocated dx (e.g., in case we want to fuse the
         # backward of conv1d with the backward of chunk).
-        dx, dconv1d_weight, dconv1d_bias = causal_conv1d_cuda.causal_conv1d_bwd(
+        dx, dconv1d_weight, dconv1d_bias, _ = causal_conv1d_cuda.causal_conv1d_bwd(
             x, conv1d_weight, conv1d_bias, dconv1d_out, None, None, None, dx, False, True
         )
         dconv1d_bias = dconv1d_bias if conv1d_bias is not None else None
