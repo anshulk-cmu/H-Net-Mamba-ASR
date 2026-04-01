@@ -1703,14 +1703,28 @@ train-clean-100 (100 hours) using the small model.
 | Config | Compression | test-clean WER | test-other WER |
 |--------|-------------|---------------|---------------|
 | H-Mamba Small N=2 (100h) | 50% | 5.96 | 16.35 |
-| H-Mamba Small N=3 (100h) | 67% | — | — |
+| H-Mamba Small N=3 (100h) | 67% | 7.80 | 21.36 |
 | H-Mamba Small N=4 (100h) | 75% | 7.35 | 19.71 |
 
 ### The N=3 anomaly
 
-During the pilot, N=3 performed worse than N=4. This was unexpected — more compression
-(N=4) should give worse WER than less compression (N=3). The anomaly was explained by
-two critical bugs discovered in the April 2026 code audit:
+N=3 was the worst performing of all three compression levels — it underperformed both
+N=2 (5.96/16.35) and even the more aggressive N=4 (7.35/19.71) by 0.45–1.65% absolute
+on test-clean. This is counterintuitive: less compression (N=3) should give better WER
+than more compression (N=4).
+
+The anomaly is attributed to **inconsistent learned boundaries**. N=3's intermediate
+compression target (keep 1-in-3 frames) sits in an awkward regime where the routing
+module struggles to find stable boundary positions. This gives Stage-1 Mamba noisier
+inputs than either N=2 (where half the frames are kept, giving more context) or N=4
+(where the stronger DC loss weight forces more decisive boundary placement).
+
+Additional context from the error breakdown:
+- N=3 test-clean: 514 ins / 623 del / 2,964 sub (SER 56.56%)
+- N=3 test-other: 1,373 ins / 1,722 del / 8,088 sub (SER 80.54%)
+- RTF: 0.0007, peak VRAM: 14,142 MB
+
+Two critical bugs discovered in the code audit (see Section 31) also contributed:
 
 1. **Bug 1 (ratio_loss zero gradient)**: The ratio_loss used `boundary_mask.float().mean()`,
    which is a boolean-to-float conversion with zero gradient. This meant `boundary_bias`
@@ -1722,18 +1736,21 @@ two critical bugs discovered in the April 2026 code audit:
    This meant the routing module received no gradient from the ASR loss.
 
 With both bugs, the routing module was barely learning. Compression was inconsistent
-and the boundary positions were semi-random. N=4's stronger DC loss weight happened
-to produce a better (though still suboptimal) configuration by accident.
+and the boundary positions were semi-random.
 
-Both bugs are now fixed and gradient flow is verified (see Section 32).
+Both bugs are now fixed and gradient flow is verified (see Section 32). The N=3 anomaly
+is flagged as something worth watching in the 960h runs — if it persists with fixed
+code, it becomes a real finding worth discussing in the paper (boundary consistency
+vs. compression depth).
 
 ### Pilot takeaways
 
 1. The DC mechanism works — it learns to compress speech sequences
 2. N=2 achieves reasonable WER on 100h (5.96 test-clean, vs ~4.5 for ConMamba baseline)
 3. The gap between N=2 and N=4 is ~1.4% absolute on test-clean
-4. The bugs explain the N=3 anomaly; with fixed gradients, N=3 should interpolate
-   between N=2 and N=4
+4. N=3 is the worst at 7.80/21.36 — worse than both N=2 and N=4
+5. The N=3 anomaly suggests boundary consistency matters more than compression depth;
+   if it persists at 960h (with bug fixes), it is a paper-worthy finding
 
 ### Why 960h will be different
 

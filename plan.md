@@ -24,7 +24,7 @@
 | ConMamba Large S2S (960h, 150ep) | 2.27/5.12 (LM), 2.82/6.60 (no LM) |
 | ConMambaMamba Large S2S (960h, 150ep) | 2.41/5.72 (LM), 2.93/6.99 (no LM) |
 | ConMamba Large CTC (960h) | 3.93/10.40 (no LM) |
-| H-Mamba pilot (100h, small, N=2,3,4) | N=2: 5.96/16.35, N=4: 7.35/19.71 |
+| H-Mamba pilot (100h, small, N=2,3,4) | N=2: 5.96/16.35, N=3: 7.80/21.36, N=4: 7.35/19.71 |
 | 8 H-Mamba YAML configs | hmamba_{small,large}_N{1,2,3,4}.yaml |
 | 8 H-Mamba SLURM scripts | hmamba_{small,large}_N{1,2,3,4}.sh |
 | Conda env `hnetasr` | All deps verified (torch, mamba_ssm, causal_conv1d, speechbrain, etc.) |
