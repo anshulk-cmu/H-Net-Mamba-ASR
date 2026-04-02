@@ -2,8 +2,8 @@
 conformer_large CTC — 4x A6000, general, fp32 restart
 ============================================================
 Job ID   : 6907548
-Node     : babel-w9-28
-Start    : Wed Apr  1 07:51:23 EDT 2026
+Node     : babel-s9-28
+Start    : Thu Apr  2 09:21:36 EDT 2026
 ============================================================
 Python : /home/anshulk/miniconda3/envs/hnetasr/bin/python
 GPUs   : NVIDIA RTX A6000, 49140 MiB
@@ -11,7 +11,7 @@ NVIDIA RTX A6000, 49140 MiB
 NVIDIA RTX A6000, 49140 MiB
 NVIDIA RTX A6000, 49140 MiB
 
-Master port: 52923
+Master port: 60289
 speechbrain.core - Beginning experiment!
 speechbrain.core - Experiment folder: /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC
 librispeech_prepare - Skipping preparation, completed in previous run.
@@ -29,40 +29,19 @@ speechbrain.core - Info: max_grad_norm arg from hparam file is used
 speechbrain.core - Info: grad_accumulation_factor arg from hparam file is used
 speechbrain.core - Gradscaler enabled: False. Using precision: fp32.
 speechbrain.core - 28.8M trainable parameters in ASR
-speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+03-18-26+00
-speechbrain.utils.epoch_loop - Going into epoch 4
+speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-02+09-09-52+00
+speechbrain.utils.epoch_loop - Going into epoch 23
 speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+08-07-57+00
-speechbrain.utils.epoch_loop - Going into epoch 5
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-02+09-37-45+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+09-11-53+00
+speechbrain.utils.epoch_loop - Going into epoch 24
 speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+08-24-02+00
-speechbrain.utils.epoch_loop - Going into epoch 6
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-02+09-53-36+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+10-47-43+00
+speechbrain.utils.epoch_loop - Going into epoch 25
 speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+08-40-01+00
-speechbrain.utils.epoch_loop - Going into epoch 7
-speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+08-55-58+00
-speechbrain.utils.epoch_loop - Going into epoch 8
-speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+09-11-53+00
-speechbrain.utils.epoch_loop - Going into epoch 9
-speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+09-27-50+00
-speechbrain.utils.epoch_loop - Going into epoch 10
-speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+09-43-50+00
-speechbrain.utils.epoch_loop - Going into epoch 11
-speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+09-59-47+00
-speechbrain.utils.epoch_loop - Going into epoch 12
-speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+10-15-41+00
-speechbrain.utils.epoch_loop - Going into epoch 13
-speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+10-31-37+00
-speechbrain.utils.epoch_loop - Going into epoch 14
-speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+10-47-43+00
-speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+08-07-57+00
-speechbrain.utils.epoch_loop - Going into epoch 15
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-02+10-09-30+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+10-15-41+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-02+07-09-17+00
+speechbrain.utils.epoch_loop - Going into epoch 26
 speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches

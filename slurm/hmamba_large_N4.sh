@@ -2,12 +2,11 @@
 #SBATCH --job-name=hmamba_L_N4
 #SBATCH --output=/home/anshulk/h-mamba_asr/logs/hmamba_L_N4-%j.out
 #SBATCH --error=/home/anshulk/h-mamba_asr/logs/hmamba_L_N4-%j.err
-#SBATCH --partition=preempt
+#SBATCH --partition=general
 #SBATCH --gres=gpu:A6000:2
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=256G
-#SBATCH --time=14-00:00:00
-#SBATCH --requeue
+#SBATCH --time=2-00:00:00
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user=anshulk@andrew.cmu.edu
 

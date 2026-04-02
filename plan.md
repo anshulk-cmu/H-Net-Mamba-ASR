@@ -34,7 +34,13 @@
 | causal-conv1d 1.4.0 API patches | 6 fwd + 3 bwd call sites patched in selective_scan_interface.py |
 | Triton kernel workaround | MAMBA_KERNEL_AVAILABLE=False for DeChunk EMA (Triton 2.1.0 crash on Ampere) |
 | Smoke test v1 (Phase 1 only) | 2 epochs passed: loss 597→395, compression 0.886 vs target 0.882. Timed out during eval. |
+| Smoke test v3 DDP (job 6928765) | DDP 2-GPU training passed, checkpoint saved, NumPy 1.26.4 fix confirmed. |
+| Resume test (job 6928816) | Resumed from DDP checkpoint, epoch 2 trained. Optimizer, scheduler, DC state all restored correctly. |
+| Grad norm logging fix | fit_batch() override captures grad_norm/bias_grad before optimizer.zero_grad(). Confirmed: grad_norm=1195 (was 0.0000). |
+| Final validation (job 6928979) | DDP training + grad norm fix verified. Grad norm 1195.0 (max 1770.9), bias_grad 4.9→13.5. |
 | Comprehensive documentation | docs/hmamba_dynamic_chunking.md (2500+ lines), BiMamba v2, SSM math, decoder, pos encoding |
+| NumPy downgrade fix | numpy 2.0.2 → 1.26.4, fixes DDP broadcast crash (PyTorch 2.1.1 incompatible with NumPy 2.x) |
+| SLURM partition migration | All 8 H-Mamba scripts: preempt (14d, requeue) → general (2d, no requeue) |
 | Baseline reproduction docs | docs/baseline_reproduction.md |
 
 ### 1.2 Bug Fixes (All Verified)
@@ -50,6 +56,7 @@
 | 7 | MED | train_s2s_hmamba.py | Optimizer fallback missed DC params | Added residual_proj + dechunk_layer |
 | 8 | LOW | train_s2s_hmamba.py | Dead dc_loss_weight variable | Removed |
 | 9 | ENV | conda env | Missing tensorboard, psutil | Installed |
+| 10 | MED | train_s2s_hmamba.py | Grad norm + bias_grad always 0 (computed after zero_grad) | Override fit_batch(), capture between backward() and step() |
 
 **Gradient flow verified** — all routing params receive non-zero gradients:
 
@@ -65,14 +72,14 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 | BCE loss includes hardcoded position 0 | Zero gradient at that position, cosmetic only. |
 | Mamba-2 Triton SSD kernel crash (Ampere) | Triton 2.1.0 JIT assertion on sm_86/sm_89. Fix needs triton ≥ 2.2 (PyTorch ≥ 2.2). PyTorch EMA fallback used for DeChunk. Main encoder Mamba-1 kernels unaffected. |
 | Streaming incompatibility | BiMamba is bidirectional, routing uses look-ahead. Offline-only by design. |
-| Conformer Large CTC (bf16 convergence) | Resubmitted as fp32 (job 6907548), running on preempt. |
+| Conformer Large CTC (bf16 convergence) | Resubmitted as fp32 (job 6907548). |
 
 ### 1.4 In Progress
 
 | Item | Status |
 |------|--------|
-| H-Mamba smoke test v2 (job 6921845) | 3 phases: single GPU 3ep + eval, DDP 1ep + eval, resume 1ep + eval. 12h limit. Pending start on general partition. |
-| Conformer Large CTC fp32 (job 6907548) | Running on preempt. |
+| H-Mamba 960h training (8 runs) | Ready to submit. All smoke tests passed. |
+| Conformer Large CTC fp32 (job 6907548) | Running. |
 
 ### 1.5 Not Started
 
@@ -103,9 +110,14 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 - Discovered Triton 2.1.0 crash on Ampere GPUs, disabled Mamba-2 kernel, PyTorch fallback works
 - Smoke test v1 (job 6912668): Phase 1 passed (2 epochs, loss decreasing, compression converging).
   Timed out during beam search eval (2h limit too short).
-- Smoke test v2 submitted (job 6921845): 12h limit, 3 epochs, full test eval, all 3 phases.
+- Smoke test v2 (job 6921845): Phase 1 passed (single GPU, 3 epochs + eval). Phase 2 DDP crashed — NumPy 2.0.2 incompatible with PyTorch 2.1.1 DDP.
+- Fixed NumPy: downgraded 2.0.2 → 1.26.4 (pinned in requirements.txt).
+- Smoke test v3 (job 6928765): DDP (2 GPU) Phase 1 passed — training, checkpoint save, NumPy fix confirmed.
+- Resume test (job 6928816): Resumed from v3 DDP checkpoint, epoch 2 trained successfully. All state (optimizer, scheduler, DC params) restored correctly.
+- Switched all 8 H-Mamba SLURM scripts from preempt (14-day, requeue) to general (2-day, no requeue).
+- Fixed grad_norm logging bug: was always 0.0000 because computed after optimizer.zero_grad(). Now captured between backward() and step(). Final check (job 6928979) confirmed: grad_norm=1195.0 (max 1770.9), bias_grad=4.9→13.5.
 - Comprehensive documentation update (BiMamba v2 internals, SSM math, decoder, positional encoding, streaming)
-- **Next: when smoke test passes → submit all 4 small H-Mamba runs**
+- **All smoke tests passed. Ready to submit 8 H-Mamba 960h training runs.**
 
 **Days 2-4:**
 - Install Montreal Forced Aligner, download English acoustic model
@@ -246,7 +258,7 @@ Smoke test (day 1)
                 → Submit (week 8)
 ```
 
-**Bottleneck:** Large model training (10-14 days). If SLURM preemption delays by >1 week, submit with small-scale large results and add full results during ARR author response.
+**Bottleneck:** Large model training (10-14 days). Using `general` partition (2-day walltime) with epoch checkpointing — jobs auto-resume across multiple submissions. If cluster congestion delays by >1 week, submit with small-scale large results and add full results during ARR author response.
 
 ---
 
@@ -307,10 +319,10 @@ Smoke test (day 1)
 | Risk | Prob. | Impact | Mitigation |
 |------|-------|--------|------------|
 | H-Mamba N=2 doesn't match ConMamba at 960h | Low | CRITICAL | Adjust DC loss weight, warmup schedule. Worst case: frame as "learned compression reveals acoustic structure" even if WER is slightly worse |
-| Large runs take >14 days (preemption) | Medium | HIGH | Use `--requeue`, submit early. If N=3/N=4 don't finish, submit with small-scale N=3/N=4 + large N=1/N=2 only |
+| Large runs take >14 days (cluster delays) | Medium | HIGH | General partition (2-day limit) with epoch checkpointing; resubmit as needed. If N=3/N=4 don't finish, submit with small-scale N=3/N=4 + large N=1/N=2 only |
 | Conformer+DC shows DC helps Conformer equally | Medium | MEDIUM | Reframe: "DC is a general technique, Mamba is the natural fit due to linear complexity" |
 | MFA boundary analysis shows weak phoneme correlation | Low | HIGH | Pivot to information-theoretic framing. Or frame as interesting negative result |
-| SLURM cluster overloaded | Medium | HIGH | Preemptible queues. Could also use L40S cluster if available |
+| SLURM cluster overloaded | Medium | HIGH | General partition with checkpoint-resume. Could also use L40S cluster if available |
 | Reviewer says "just an engineering combination" | High | HIGH | The analysis section is the answer. Phone-class compression, probing, speaking-rate. Without this, paper is dead. |
 | Reviewer asks for CIF comparison | High | MEDIUM | Discuss CIF thoroughly in related work with clear differentiation. CIF baseline is ideal but may not fit in 8 weeks. |
 
@@ -381,7 +393,7 @@ loss = ((1 - true_ratio) * (1 - average_prob) +
 
 ## 11. Immediate Next Steps
 
-1. ~~Run GPU smoke test~~ Smoke test v2 submitted (job 6921845, 12h, 3 phases with full eval)
-2. **Submit small N=1,2,3,4 to SLURM** — after smoke test passes all 3 phases
+1. ~~Run GPU smoke test~~ All passed: single GPU (v2), DDP (v3 job 6928765), resume (job 6928816)
+2. **Submit small N=1,2,3,4 to SLURM** — smoke tests passed, ready to go
 3. Install MFA and start alignment
 4. Create ablation configs (conformer_dc, fixed-2x)

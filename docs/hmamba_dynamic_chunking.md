@@ -1832,13 +1832,16 @@ Large models are more memory-constrained, so no overrides are needed.
 
 | Parameter | Small Models | Large Models |
 |-----------|-------------|-------------|
-| Partition | preempt | preempt |
+| Partition | general | general |
 | GPUs | 2x A6000 | 2x A6000 |
 | CPUs | 16 per task | 16 per task |
 | Memory | 128 GB | 256 GB |
-| Max walltime | 14 days | 14 days |
-| Requeue | Enabled | Enabled |
+| Max walltime | 2 days | 2 days |
 | Email | anshulk@andrew.cmu.edu | anshulk@andrew.cmu.edu |
+
+> **Partition change (April 2026):** Moved from `preempt` (14-day walltime, requeue)
+> to `general` (2-day walltime, no requeue) for predictable scheduling. SpeechBrain
+> checkpoints every epoch, so jobs resume cleanly if they hit the 2-day wall.
 
 ### Environment setup (all scripts)
 
@@ -2321,14 +2324,23 @@ depends on the number of boundary frames). The batch is skipped and training con
 
 ### GPU utilization (smoke test observations)
 
-From the smoke test (Small N=2, single A6000, train-clean-100):
+From smoke tests (Small N=2, train-clean-100):
 
-| Metric | Value |
-|--------|-------|
-| Peak VRAM | 12,332 MB / 49,140 MB (25%) |
-| Avg batch time | 157 ms |
-| RTF | 0.0005 (2140x realtime) |
-| Epoch time (100h data) | 185 seconds |
+| Metric | Single GPU | DDP (2 GPUs) |
+|--------|-----------|-------------|
+| Peak VRAM | 12,332 MB (25%) | 12,481 MB (25%) per GPU |
+| Avg batch time | 157 ms | 203 ms |
+| RTF | 0.0005 (2140x realtime) | 0.0014 (722x realtime) |
+| Epoch time (100h data) | 185 seconds | 277 seconds |
+
+DDP overhead is expected (gradient sync, communication). Per-GPU throughput is lower
+but total throughput is comparable since each GPU processes half the data.
+
+**Smoke test summary (all passed):**
+- Single GPU, 3 epochs + eval (v2, job 6921845)
+- DDP 2-GPU training + checkpoint save (v3, job 6928765)
+- Checkpoint resume under DDP (job 6928816) — optimizer, scheduler, DC state all restored
+- Final validation with grad_norm fix (job 6928979) — grad_norm=1195 (max 1770), bias_grad=4.9→13.5, VRAM 55%/GPU
 
 The small model (14.1M params) underutilizes a single A6000. The SLURM scripts
 override `max_batch_length_train` to 1200 (vs yaml default 1050) to increase
@@ -2520,4 +2532,4 @@ When all 8 experiments complete and are evaluated, this stage will answer:
 
 *Document last updated: April 1, 2026*
 *All code references are from the current codebase after the April 2026 audit.*
-*Smoke test v2 in progress (job 6921845). Full 960h training awaiting smoke test completion.*
+*All smoke tests passed (single GPU, DDP, checkpoint resume). Ready for full 960h training.*

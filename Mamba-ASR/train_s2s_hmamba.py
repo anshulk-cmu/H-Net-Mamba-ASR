@@ -473,10 +473,60 @@ class HMambaASR(sb.core.Brain):
         print("Loaded the average")
 
     def fit_batch(self, batch):
-        """Override to add CUDA OOM protection (DC adds variable memory usage)."""
+        """Override to capture grad norm before optimizer step + OOM protection.
+
+        SpeechBrain's optimizers_step() calls zero_grad(set_to_none=True) after
+        stepping, so on_fit_batch_end() sees no gradients. We compute grad_norm
+        here, between backward() and optimizers_step().
+        """
         try:
-            loss = super().fit_batch(batch)
-            return loss
+            from speechbrain.core import AMPConfig
+            amp = AMPConfig.from_name(self.precision)
+
+            should_step = (self.step % self.grad_accumulation_factor) == 0
+
+            with self.no_sync(not should_step):
+                if self.use_amp:
+                    with torch.autocast(
+                        dtype=amp.dtype,
+                        device_type=torch.device(self.device).type,
+                    ):
+                        outputs = self.compute_forward(batch, sb.Stage.TRAIN)
+                        loss = self.compute_objectives(
+                            outputs, batch, sb.Stage.TRAIN
+                        )
+                else:
+                    outputs = self.compute_forward(batch, sb.Stage.TRAIN)
+                    loss = self.compute_objectives(outputs, batch, sb.Stage.TRAIN)
+
+                scaled_loss = self.scaler.scale(
+                    loss / self.grad_accumulation_factor
+                )
+                self.check_loss_isfinite(scaled_loss)
+                scaled_loss.backward()
+
+            # Capture grad norm and DC bias grad BEFORE optimizer step zeros gradients
+            self._last_grad_norm = 0.0
+            self._last_bias_grad = 0.0
+            if should_step:
+                total_norm = 0.0
+                for p in self.modules.parameters():
+                    if p.grad is not None:
+                        param_norm = p.grad.data.norm(2)
+                        total_norm += param_norm.item() ** 2
+                self._last_grad_norm = total_norm ** 0.5
+                # Capture DC bias gradient before it's zeroed
+                if hasattr(self, 'hmamba_encoder'):
+                    routing = self.hmamba_encoder.routing_module
+                    if routing.boundary_bias.grad is not None:
+                        self._last_bias_grad = routing.boundary_bias.grad.item()
+
+            if should_step:
+                self.optimizers_step()
+
+            self.on_fit_batch_end(batch, outputs, loss, should_step)
+            return loss.detach().cpu()
+
         except RuntimeError as e:
             if "out of memory" in str(e).lower():
                 logger.warning("[H-Mamba] CUDA OOM — skipping batch, clearing cache.")
@@ -490,27 +540,16 @@ class HMambaASR(sb.core.Brain):
 
     def on_fit_batch_end(self, batch, outputs, loss, should_step):
         """Apply learning rate scheduling and batch logging."""
-        # Compute gradient norm before optimizer step
-        grad_norm = 0.0
-        if should_step:
-            total_norm = 0.0
-            for p in self.modules.parameters():
-                if p.grad is not None:
-                    param_norm = p.grad.data.norm(2)
-                    total_norm += param_norm.item() ** 2
-            grad_norm = total_norm ** 0.5
-        
+        grad_norm = getattr(self, '_last_grad_norm', 0.0)
+
         if should_step:
             self.hparams.noam_annealing(self.optimizer)
         
-        # Update bias gradient info AFTER backward pass (more accurate)
+        # Update DC stats — bias value (current) and gradient (captured pre-step)
         if hasattr(self, 'hmamba_encoder') and hasattr(self, 'current_dc_stats'):
             routing = self.hmamba_encoder.routing_module
             self.current_dc_stats['bias'] = routing.boundary_bias.item()
-            if routing.boundary_bias.grad is not None:
-                self.current_dc_stats['bias_grad'] = routing.boundary_bias.grad.item()
-            else:
-                self.current_dc_stats['bias_grad'] = 0.0
+            self.current_dc_stats['bias_grad'] = getattr(self, '_last_bias_grad', 0.0)
         
         # Log batch metrics
         if hasattr(self, 'hmamba_logger') and self.hmamba_logger is not None:

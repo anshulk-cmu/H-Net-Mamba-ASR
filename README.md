@@ -118,6 +118,7 @@ print('All OK!')
 | `mamba_chunk_scan_combined` Triton JIT assertion on Ampere GPUs (A6000 sm_86, L40S sm_89) | DeChunk EMA expansion | PyTorch fallback in `HMambaEncoder.py` (`MAMBA_KERNEL_AVAILABLE = False`) | Requires triton >= 2.2.0 (needs PyTorch >= 2.2) |
 | `causal_conv1d_fwd` API changed in v1.4.0 | BiMamba encoder layers (forward) | `selective_scan_interface.py` patched: 5-arg → 7-arg (added `initial_states`, `final_states_out`) | Already applied |
 | `causal_conv1d_bwd` API changed in v1.4.0 | BiMamba encoder layers (backward) | `selective_scan_interface.py` patched: 7-arg → 10-arg, returns 4 values instead of 3 | Already applied |
+| NumPy 2.x breaks DDP | `torch.distributed.broadcast_object_list` → `tensor.numpy()` fails | Pin `numpy==1.26.4` (< 2.0) | Already applied |
 
 The Triton issue only affects the DeChunk expansion step (Mamba-2 SSD kernel).
 The main encoder Mamba-1 layers use optimized CUDA kernels and are unaffected.
@@ -223,26 +224,32 @@ sbatch ../slurm/hmamba_small_N2.sh
 
 ### 6.4 Smoke Test Status
 
-Smoke test v2 (job 6921845): 3-phase validation on train-clean-100 with full test eval.
-- Phase 1: Single GPU, 3 epochs + test-clean/test-other eval
-- Phase 2: DDP (2 GPUs), 1 epoch + eval
-- Phase 3: Checkpoint resume, 1 epoch + eval
+All smoke tests passed. Ready for full 960h training.
 
-Previous smoke test v1 (job 6912668): Phase 1 passed (loss 597→395, compression 0.886
-vs target 0.882, 2140x realtime). Timed out during beam search eval (2h limit).
+| Test | Job | Result |
+|------|-----|--------|
+| Single GPU, 3 epochs + eval | v2 (6921845) | Passed. Loss 597→395, compression converges. |
+| DDP (2 GPUs), 1 epoch | v3 (6928765) | Passed. NumPy 1.26.4 fix confirmed, no DDP crash. |
+| Checkpoint resume (DDP) | 6928816 | Passed. Epoch 2 resumed correctly — optimizer, scheduler, DC state restored. |
+| Final validation (DDP + grad fix) | 6928979 | Passed. Grad norm=1195 (was 0), bias_grad=4.9→13.5, VRAM 55%/GPU. |
+
+Previous issues resolved:
+- NumPy 2.0.2 broke DDP (`broadcast_object_list` → `tensor.numpy()`). Fixed: numpy 1.26.4.
+- Grad norm logging always showed 0.0 (computed after `zero_grad`). Fixed: captured pre-step.
+- Smoke test v1 (6912668) timed out during beam search eval (2h limit too short).
 
 ### 6.5 H-Mamba Results
 
 | Model | target_N | Compression | With LM (clean / other) | Without LM (clean / other) | Status |
 |-------|----------|-------------|------------------------|---------------------------|--------|
-| hmamba_small_N1 | 1.0 | None | — | — | Awaiting smoke test |
-| hmamba_small_N2 | 2.0 | 50% | — | — | Awaiting smoke test |
-| hmamba_small_N3 | 3.0 | 33% | — | — | Awaiting smoke test |
-| hmamba_small_N4 | 4.0 | 25% | — | — | Awaiting smoke test |
-| hmamba_large_N1 | 1.0 | None | — | — | Awaiting smoke test |
-| hmamba_large_N2 | 2.0 | 50% | — | — | Awaiting smoke test |
-| hmamba_large_N3 | 3.0 | 33% | — | — | Awaiting smoke test |
-| hmamba_large_N4 | 4.0 | 25% | — | — | Awaiting smoke test |
+| hmamba_small_N1 | 1.0 | None | — | — | Ready to submit |
+| hmamba_small_N2 | 2.0 | 50% | — | — | Ready to submit |
+| hmamba_small_N3 | 3.0 | 33% | — | — | Ready to submit |
+| hmamba_small_N4 | 4.0 | 25% | — | — | Ready to submit |
+| hmamba_large_N1 | 1.0 | None | — | — | Ready to submit |
+| hmamba_large_N2 | 2.0 | 50% | — | — | Ready to submit |
+| hmamba_large_N3 | 3.0 | 33% | — | — | Ready to submit |
+| hmamba_large_N4 | 4.0 | 25% | — | — | Ready to submit |
 
 ### 6.6 100-Hour Pilot Results (Small model, pre-bug-fix)
 
