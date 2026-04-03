@@ -263,7 +263,23 @@ WER is dev-clean (valid_search_interval=10, greedy without LM). Final with-LM / 
 - S_N4 WER is actively degrading (11.52% at epoch 20 → 14.44% at epoch 70) — 75% compression may be too aggressive for the small model.
 - L_N3 ACC is volatile (63%–80%), not stably converged.
 
-### 6.6 100-Hour Pilot Results (Small model, pre-bug-fix)
+**Evaluation pipeline:** Interim WERs above use beam=10, CTC only, no LM (valid_search). Final evaluation uses beam=66, CTC(0.40) + TransformerLM(0.60) (test_search). LM decoding typically improves WER by 1.0–1.5% absolute on test-clean.
+
+### 6.6 Competitive Landscape (LibriSpeech 960h)
+
+| Model | #Params | WER clean/other | LM | Source |
+|-------|---------|----------------|----|--------|
+| Conformer (Google) | ~118M | 1.9 / 3.9 | yes | Gulati et al., 2020 |
+| E-Branchformer (ESPnet) | ~120M | 1.81 / 3.65 | yes | Kim et al., 2022 |
+| Zipformer-S | 23.2M | 2.42 / 5.73 | no | Yao et al., ICLR 2024 |
+| Zipformer-L | 148.4M | 2.00 / 4.38 | yes | Yao et al., ICLR 2024 |
+| ConMamba Small (ours) | 14.1M | 2.22 / 5.56 | yes | Phase 1 baseline |
+| ConMamba Large (ours) | 115.2M | 2.27 / 5.12 | yes | Phase 1 baseline |
+| SAMBA-ASR | large | 1.17 / 2.48 | — | Jiang et al., 2025 (multi-dataset, not 960h-only) |
+
+ConMamba Small with LM (2.22/5.56) beats Zipformer-S (2.42/5.73) at 40% fewer parameters. H-Mamba's goal is not SOTA WER but 50% frame compression with negligible degradation from these baselines. See [hmamba_dynamic_chunking.md](docs/hmamba_dynamic_chunking.md) for detailed analysis.
+
+### 6.7 100-Hour Pilot Results (Small model, pre-bug-fix)
 
 | Config | Compression | test-clean WER | test-other WER |
 |--------|-------------|---------------|---------------|

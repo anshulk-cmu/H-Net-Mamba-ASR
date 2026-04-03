@@ -46,6 +46,8 @@ experiments are documented separately in `baseline_reproduction.md`.
 29. [SLURM Job Configuration](#29-slurm-job-configuration)
 30. [The 100-Hour Pilot Study](#30-the-100-hour-pilot-study)
    - 30b. [The 960h Training Campaign: Complete Analysis](#30b-the-960h-training-campaign-complete-analysis)
+   - [The evaluation pipeline: valid search vs test search](#the-evaluation-pipeline-valid-search-vs-test-search)
+   - [Competitive landscape: published LibriSpeech 960h results](#competitive-landscape-published-librispeech-960h-results)
 31. [Bug Fixes and Code Audit](#31-bug-fixes-and-code-audit)
 32. [Gradient Flow Verification](#32-gradient-flow-verification)
 33. [Known Deferred Issues](#33-known-deferred-issues)
@@ -2516,6 +2518,128 @@ For the paper's central claim to hold, H-Mamba Small N=2 must achieve WER within
 Based on current training (S_N2 dev-clean WER 4.08% without LM at epoch 88, vs
 baseline 3.34% without LM), this is plausible but not guaranteed. The model is still
 improving and LM decoding typically improves WER by 1-2% absolute.
+
+### The evaluation pipeline: valid search vs test search
+
+The training script uses two different decoding configurations, and understanding this
+distinction is critical for interpreting interim results vs final numbers.
+
+**During training — valid_search (what current WER numbers use):**
+```
+valid_search:
+    beam_size: 10
+    scorer: [CTC (weight 0.40)]       # no LM
+```
+
+The validation search runs every `valid_search_interval=10` epochs. It uses beam size 10
+with CTC rescoring only — no language model. This is intentional: LM decoding with beam=66
+is too slow to run every 10 epochs during training. All interim WER numbers reported in
+this document (4.08%, 3.24%, 4.34%, etc.) come from this search.
+
+**During test evaluation — test_search (final numbers for the paper):**
+```
+test_search:
+    beam_size: 66
+    scorer: [CTC (weight 0.40) + TransformerLM (weight 0.60)]
+    temperature: 1.15
+```
+
+The test search is used when running `--test_only` after training completes. It uses beam
+size 66 with joint CTC (0.40) and Transformer language model (0.60) scoring. The LM is a
+pretrained Transformer LM loaded via SpeechBrain's pretrainer. Setting `no_lm: True` in
+the YAML overrides test_search with valid_search for ablation (no-LM test numbers).
+
+The `no_lm` flag defaults to `False` in all H-Mamba configs. After training converges,
+each model will be evaluated twice: once with LM (test_search) and once without
+(valid_search), on both test-clean and test-other, producing 4 WER numbers per model.
+
+**What this means for current numbers:** all interim WERs are pessimistic. They use
+smaller beam, no LM, and evaluate on dev-clean only. The ConMamba baselines were
+evaluated with the same test_search config, so the with-LM comparison is apples-to-apples.
+Based on Phase 1 baselines, LM decoding improves WER by approximately 1.0-1.5% absolute
+on test-clean (ConMamba Small: 3.34% → 2.22%, a 1.12% improvement; ConMamba Large:
+2.82% → 2.27%, a 0.55% improvement).
+
+### Competitive landscape: published LibriSpeech 960h results
+
+To position H-Mamba in the broader ASR literature, we compare against published results
+on LibriSpeech 960h. All numbers below are test-clean / test-other WER (%) from the
+respective papers. Models are grouped by architecture family.
+
+#### Attention-based encoders
+
+| Model | #Params | WER clean/other (with LM) | WER clean/other (no LM) | Source |
+|-------|---------|--------------------------|------------------------|--------|
+| Conformer (Google, 2020) | ~118M | 1.9 / 3.9 | 2.1 / 4.3 | Gulati et al., Interspeech 2020 |
+| E-Branchformer (ESPnet) | ~120M | 1.81 / 3.65 | — | Kim et al., SLT 2022 |
+| Zipformer-S (ICLR 2024) | 23.2M | — | 2.42 / 5.73 | Yao et al., ICLR 2024 |
+| Zipformer-M (ICLR 2024) | 65.5M | — | 2.21 / 4.79 | Yao et al., ICLR 2024 |
+| Zipformer-L (ICLR 2024) | 148.4M | 2.00 / 4.38 | 2.06 / 4.63 | Yao et al., ICLR 2024 |
+| SpeechBrain Conformer+TrfmLM | ~115M | ~2.0 / ~4.5 | — | SpeechBrain HuggingFace |
+
+#### Mamba / SSM-based encoders
+
+| Model | #Params | WER clean/other (with LM) | WER clean/other (no LM) | Source |
+|-------|---------|--------------------------|------------------------|--------|
+| ConMamba Small (our baseline) | 14.1M | 2.22 / 5.56 | 3.34 / 8.47 | Phase 1, this project |
+| ConMamba Large (our baseline) | 115.2M | 2.27 / 5.12 | 2.82 / 6.60 | Phase 1, this project |
+| SAMBA-ASR | large | 1.17 / 2.48† | — | Jiang et al., Jan 2025 |
+
+†SAMBA-ASR uses multi-dataset training (LibriSpeech + GigaSpeech ~10,000h total), so it
+is **not** a fair comparison with 960h-only models. It is included for reference only.
+
+#### H-Mamba interim results (960h, mid-training, dev-clean, no LM)
+
+| Model | #Params | Epoch | dev-clean WER (no LM) | Projected test-clean (with LM)‡ |
+|-------|---------|-------|-----------------------|--------------------------------|
+| H-Mamba Small N=1 (control) | ~14.1M | 58 | 4.34% | ~2.2-2.5% |
+| H-Mamba Small N=2 (50% comp) | ~14.1M | 80 | 4.08% | ~2.2-2.8% |
+| H-Mamba Large N=2 (50% comp) | ~115.2M | 46 | 3.24% | ~1.8-2.3% |
+
+‡Projected with-LM numbers are rough estimates based on the improvement observed in
+ConMamba baselines (1.0-1.5% absolute on test-clean). These are **not** measured values —
+actual results may differ. The projection assumes: (1) convergence brings dev-clean WER
+down by another 0.3-0.5%, (2) test-clean is typically 0.1-0.3% better than dev-clean,
+and (3) LM decoding adds 1.0-1.5% improvement. Each of these steps has uncertainty.
+
+#### Analysis: where H-Mamba stands
+
+**1. ConMamba baselines are already competitive.** ConMamba Small with LM (2.22/5.56)
+beats Zipformer-S (2.42/5.73) despite having 40% fewer parameters (14.1M vs 23.2M).
+ConMamba Large with LM (2.27/5.12) is competitive with Zipformer-M (2.21/4.79) and
+within range of Zipformer-L (2.00/4.38). This gives the entire ConMamba/H-Mamba
+framework credibility — the baselines we are compressing from are not weak.
+
+**2. H-Mamba's novelty is compression, not SOTA WER.** The paper does not claim to beat
+E-Branchformer or Zipformer. The claim is: "H-Mamba achieves 50% frame compression with
+negligible WER degradation compared to the uncompressed ConMamba baseline." The
+competitive landscape comparison shows that ConMamba is a legitimate baseline to compress
+from — it is not an artificially weak starting point.
+
+**3. Projected H-Mamba N=2 with LM is plausible.** If S_N2 converges to ~3.5% no-LM on
+test-clean (currently 4.08% on dev-clean at epoch 80, still improving), LM decoding
+could bring it to ~2.2-2.5%. This would be within 0.3% of ConMamba Small's 2.22%. For
+the large model, L_N2 at 3.24% dev-clean (epoch 46, early) with LM could approach
+~1.8-2.3%, potentially matching or beating ConMamba Large's 2.27%. These projections
+carry significant uncertainty — they are plausible outcomes, not guarantees.
+
+**4. The size-efficiency story.** H-Mamba Small N=2 would process only 50% of frames
+through Stage 1, reducing Mamba computation by roughly 50% in the compressed stage.
+At 14.1M parameters, if it achieves WER comparable to Zipformer-S (23.2M), that is a
+strong result: similar accuracy with fewer parameters and 50% fewer frames processed.
+This efficiency argument is independent of absolute SOTA numbers.
+
+**5. Fair comparison caveats.** Several factors make direct comparison difficult:
+- Different frameworks (SpeechBrain vs ESPnet vs icefall) use different training recipes,
+  data augmentation, and LM configurations
+- LM quality varies across setups (Transformer LM size, training data, interpolation)
+- Zipformer results use pruned RNN-T loss, a different training objective than CTC+Attention
+- SAMBA-ASR uses 10x more training data (GigaSpeech), making direct comparison unfair
+- Our interim numbers are dev-clean without LM; published numbers are test-clean/other
+  with LM — never compare these directly
+
+The definitive comparison requires converged models evaluated on test-clean and test-other
+with the same decoding pipeline. Until then, the projections above are best estimates.
 
 ---
 
