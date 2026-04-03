@@ -3,9 +3,9 @@
 **Target:** ARR May 2026 cycle (deadline May 25, 2026)  
 **Venue:** EMNLP 2026, Budapest, October 24-29  
 **Notification:** August 20, 2026  
-**Today:** April 1, 2026 (Week 0)  
+**Today:** April 3, 2026 (Week 1, Day 3)  
 **Authors:** Anshul Kumar, Shinji Watanabe (CMU)  
-**Last updated:** April 1, 2026
+**Last updated:** April 3, 2026
 
 **Proposed title:** Learning Acoustic Compression Hierarchies: Dynamic Chunking with Mamba for Variable-Rate Speech Recognition
 
@@ -29,18 +29,18 @@
 | 8 H-Mamba SLURM scripts | hmamba_{small,large}_N{1,2,3,4}.sh |
 | Conda env `hnetasr` | All deps verified (torch, mamba_ssm, causal_conv1d, speechbrain, etc.) |
 | LibriSpeech 960h | /data/user_data/anshulk/hnet_asr/LibriSpeech |
-| Full code audit + bug fixes | 9 bugs fixed, gradient flow verified, 2 audits complete |
+| Full code audit + bug fixes | 11 bugs fixed, gradient flow verified, 3 audits complete |
 | Package upgrade | torch 2.0.1→2.1.1, mamba-ssm 1.1.3→2.0.3, causal-conv1d 1.1.3→1.4.0 |
 | causal-conv1d 1.4.0 API patches | 6 fwd + 3 bwd call sites patched in selective_scan_interface.py |
 | Triton kernel workaround | MAMBA_KERNEL_AVAILABLE=False for DeChunk EMA (Triton 2.1.0 crash on Ampere) |
 | Smoke test v1 (Phase 1 only) | 2 epochs passed: loss 597→395, compression 0.886 vs target 0.882. Timed out during eval. |
 | Smoke test v3 DDP (job 6928765) | DDP 2-GPU training passed, checkpoint saved, NumPy 1.26.4 fix confirmed. |
 | Resume test (job 6928816) | Resumed from DDP checkpoint, epoch 2 trained. Optimizer, scheduler, DC state all restored correctly. |
-| Grad norm logging fix | fit_batch() override captures grad_norm/bias_grad before optimizer.zero_grad(). Confirmed: grad_norm=1195 (was 0.0000). |
+| Grad norm logging fix | fit_batch() override captures grad_norm/bias_grad before optimizer.zero_grad(). Confirmed: grad_norm=1195 (was 0.0000). Also: persist values across grad_accum batches for large models. |
 | Final validation (job 6928979) | DDP training + grad norm fix verified. Grad norm 1195.0 (max 1770.9), bias_grad 4.9→13.5. |
 | Comprehensive documentation | docs/hmamba_dynamic_chunking.md (2500+ lines), BiMamba v2, SSM math, decoder, pos encoding |
 | NumPy downgrade fix | numpy 2.0.2 → 1.26.4, fixes DDP broadcast crash (PyTorch 2.1.1 incompatible with NumPy 2.x) |
-| SLURM partition migration | All 8 H-Mamba scripts: preempt (14d, requeue) → general (2d, no requeue) |
+| SLURM partition config | Small: general (2d). Large: preempt (14d, --requeue). |
 | Baseline reproduction docs | docs/baseline_reproduction.md |
 
 ### 1.2 Bug Fixes (All Verified)
@@ -57,6 +57,7 @@
 | 8 | LOW | train_s2s_hmamba.py | Dead dc_loss_weight variable | Removed |
 | 9 | ENV | conda env | Missing tensorboard, psutil | Installed |
 | 10 | MED | train_s2s_hmamba.py | Grad norm + bias_grad always 0 (computed after zero_grad) | Override fit_batch(), capture between backward() and step() |
+| 11 | LOW | train_s2s_hmamba.py | Grad norm always 0 on large models (grad_accum=8 misaligned with log interval) | Persist _last_grad_norm across non-step batches instead of resetting to 0 |
 
 **Gradient flow verified** — all routing params receive non-zero gradients:
 
@@ -73,20 +74,28 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 | Mamba-2 Triton SSD kernel crash (Ampere) | Triton 2.1.0 JIT assertion on sm_86/sm_89. Fix needs triton ≥ 2.2 (PyTorch ≥ 2.2). PyTorch EMA fallback used for DeChunk. Main encoder Mamba-1 kernels unaffected. |
 | Streaming incompatibility | BiMamba is bidirectional, routing uses look-ahead. Offline-only by design. |
 | Conformer Large CTC (bf16 convergence) | Resubmitted as fp32 (job 6907548). |
+| N=3 anomaly (WER ~10% vs N=2's ~4%) | Persists at both small and large scales after all bug fixes. Likely intrinsic difficulty of 67% compression, not a code bug. Paper will discuss as a finding. |
 
-### 1.4 In Progress
+### 1.4 In Progress (as of April 3, ~32h into training)
 
 | Item | Status |
 |------|--------|
-| H-Mamba 960h training (8 runs) | Ready to submit. All smoke tests passed. |
-| Conformer Large CTC fp32 (job 6907548) | Running. |
+| H-Mamba Small N=1 (job 6933669) | Running, general, epoch 58, ACC 96.6%, WER 4.34%, comp 0.838. ~16h left on 2-day wall. |
+| H-Mamba Small N=2 (job 6933673) | Running, general, epoch 88, ACC 96.7%, WER 4.08%, comp 0.501. Lowest WER but at higher epoch than N1 (88 vs 58). |
+| H-Mamba Small N=3 (job 6933674) | Running, general, epoch 104, ACC 86.9%, WER 10.37%, comp 0.335. N3 anomaly persists. |
+| H-Mamba Small N=4 (job 6933675) | Running, general, epoch 70, ACC 84.6%, WER 14.44%, comp 0.251. WER degrading since epoch 20. |
+| H-Mamba Large N=1 (job 6933856) | Running, preempt, epoch 37 (restarted after preemption), ACC 97.3%, no WER eval yet. |
+| H-Mamba Large N=2 (job 6933857) | Running, preempt, epoch 46, ACC 97.1%, WER 3.24%, comp 0.501. Approaching baseline 2.82%. |
+| H-Mamba Large N=3 (job 6933858) | Pending (preempted), epoch 59, ACC ~73%, WER 9.10%, comp 0.334. Will resume when scheduled. |
+| H-Mamba Large N=4 (job 6933859) | Pending (preempted), epoch 42, ACC ~87%, WER 7.10%†, comp 0.251. Log overwritten on restart — WER/ACC unverifiable. |
+| Conformer Large CTC fp32 (job 6907548) | Pending (preempt queue), epoch 26+. |
+
+**Note:** Small runs will hit the 2-day general wall time ~April 4 evening. None will reach 300 epochs — all 4 need manual resubmission (`sbatch` same script; SpeechBrain resumes from checkpoint).
 
 ### 1.5 Not Started
 
 | Item | Priority | Est. Effort |
 |------|----------|-------------|
-| H-Mamba Small N=1,2,3,4 on 960h | CRITICAL | 3-5 days each, 2x A6000 |
-| H-Mamba Large N=1,2,3,4 on 960h | CRITICAL | 10-14 days each, 2x A6000 |
 | With-LM / without-LM eval (16 evals) | CRITICAL | ~1 hr each after training |
 | Conformer+DC ablation (Small N=2) | CRITICAL | 3-5 days |
 | Fixed-2x downsampling baseline | HIGH | 3-5 days |
@@ -114,21 +123,55 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 - Fixed NumPy: downgraded 2.0.2 → 1.26.4 (pinned in requirements.txt).
 - Smoke test v3 (job 6928765): DDP (2 GPU) Phase 1 passed — training, checkpoint save, NumPy fix confirmed.
 - Resume test (job 6928816): Resumed from v3 DDP checkpoint, epoch 2 trained successfully. All state (optimizer, scheduler, DC params) restored correctly.
-- Switched all 8 H-Mamba SLURM scripts from preempt (14-day, requeue) to general (2-day, no requeue).
+- SLURM partition strategy: small runs on general (8 GPU cap, 2-day), large runs on preempt (24 GPU cap, 14-day, requeue).
 - Fixed grad_norm logging bug: was always 0.0000 because computed after optimizer.zero_grad(). Now captured between backward() and step(). Final check (job 6928979) confirmed: grad_norm=1195.0 (max 1770.9), bias_grad=4.9→13.5.
 - Comprehensive documentation update (BiMamba v2 internals, SSM math, decoder, positional encoding, streaming)
 - **All smoke tests passed. Ready to submit 8 H-Mamba 960h training runs.**
 
-**Days 2-4:**
+**Day 2 (April 2) — DONE:**
+- Submitted all 4 H-Mamba Small runs to general partition (2x A6000 each):
+  - N=1 (job 6933669, babel-w9-20), N=2 (job 6933673, babel-t9-24),
+    N=3 (job 6933674, babel-s9-28), N=4 (job 6933675, babel-t9-32)
+- All 4 running on 960h LibriSpeech, DDP, bf16
+- Early epoch 1 observations:
+  - N=2: compression converged to target 0.938 by batch 300, bias_grad sign-flipping (self-correcting)
+  - N=3: compression converged to target 0.909 by batch 250, grad working (bias_grad up to 20.25)
+  - N=1: compression 0.958 (target 1.0 = no compression, control run)
+  - Peak VRAM ~37 GB / 49 GB (comfortable headroom)
+- Conformer CTC fp32 (6907548): preempted after epoch 25, requeued and resumed epoch 26
+- Submitted all 4 H-Mamba Large runs to preempt partition (14d, --requeue):
+  - N=1 (job 6933856), N=2 (job 6933857), N=3 (job 6933858), N=4 (job 6933859)
+  - Large runs need ~12.5 days; general partition 2-day limit too short
+  - Preempt allows 24 GPUs, doesn't conflict with small runs on general
+
+**Day 3 (April 3) — IN PROGRESS:**
+- **32h checkpoint** — all 8 runs confirmed learning correctly:
+  - S_N2 WER 4.08% (epoch 80) has surpassed S_N1's epoch-50 WER (4.34%), but at matched epochs S_N1 still leads (4.34% vs 4.95% at epoch 50). Gap closing — key trend to watch.
+  - L_N2 WER 3.24% approaching ConMamba Large baseline (2.82%)
+  - All compression ratios locked to targets (N2=0.501, N3=0.335, N4=0.251)
+- L_N3 and L_N4 preempted, now pending. Will resume from checkpoint when scheduled.
+- L_N4 log overwritten on preemption restart — previously observed WER 7.10% / ACC ~87% cannot be re-verified.
+- L_N1 preempted and restarted (~1h ago), now at epoch 37.
+- N3 anomaly confirmed at both small (WER 10.37%) and large (WER 9.10%) scales.
+- S_N4 WER actively degrading (11.52% → 14.44% from epoch 20 to 70) — 75% compression may be too aggressive for small model.
+- L_N3 ACC volatile (63%–80%), not stably converged.
+  Same pattern as 100h pilot — 67% compression may be a difficult operating point.
+- Small runs approaching 2-day wall time on general partition. Estimated to reach
+  epochs 88-160 before wall. Will need manual resubmission (~April 4 evening).
+- Fixed grad_norm logging blind spot for large models (grad_accum alignment issue).
+- Comprehensive documentation audit and update.
+
+**Days 4-5:**
 - Install Montreal Forced Aligner, download English acoustic model
 - Run MFA alignment on LibriSpeech test-clean and test-other (CPU, overnight)
 - Create ablation configs:
   - `conformer_dc_small_N2.yaml` — Conformer encoder with DC wrapper at layer 6
   - `conmamba_fixed2x_small.yaml` — ConMamba with AvgPool at layer 6 (no learned routing)
+- Resubmit small runs after 2-day wall (~April 4 evening)
 
-**Days 5-7:**
+**Days 6-7:**
 - Monitor small H-Mamba training: loss curves, compression ratio convergence
-- N=2 compression ratio should stabilize near 0.50 after warmup epoch 15
+- N=2 compression ratio already stabilized at 0.50 — continue monitoring
 - If compression drifts, adjust DC loss weight and restart affected run
 
 **Deliverable:** 4 small runs training. MFA running. Ablation configs ready.
@@ -150,23 +193,22 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 
 ---
 
-### Week 3: April 15-21 — Small Results + Go/No-Go + Launch Large
+### Week 3: April 15-21 — Small Results + Analysis
 
 - Small H-Mamba runs finish (with early stopping: 300 epochs / patience 30, expect convergence ~150-200)
 - Evaluate all: with-LM and without-LM for 4 H-Mamba Small + 2 ablations
 
-**Go/no-go decision:**
-- If H-Mamba Small N=2 matches ConMamba Small (2.22/5.56) within ~0.3% absolute: proceed with large runs
-- If not: diagnose and fix before committing expensive compute
-- N=3 should perform correctly now (100h anomaly was caused by bugs 1+2)
+**Go/no-go update:** Large runs were already launched in Week 1 (April 2) since smoke tests
+passed cleanly. The go/no-go decision now applies to whether large runs are on track:
+- If S_N2 matches ConMamba Small (2.22/5.56 with LM) within ~0.3% absolute: large runs confirmed worthwhile
+- If not: may need to adjust DC loss weight on large runs while they're still training
+- N3 anomaly persists at both scales — may be an intrinsic difficulty of 67% compression, not a bug
 
-If proceeding:
-- Submit Large N=1, N=2 immediately (highest priority)
-- Submit Large N=3, N=4
+Remaining:
 - Run efficiency benchmarks on small models (RTF, VRAM at 5s/15s/30s/60s)
 - Run boundary analysis on 960h Small N=2
 
-**Deliverable:** Complete small-scale results. Large runs launched. First boundary analysis.
+**Deliverable:** Complete small-scale results. Large runs at ~50-70 epochs. First boundary analysis.
 
 ---
 
@@ -258,7 +300,7 @@ Smoke test (day 1)
                 → Submit (week 8)
 ```
 
-**Bottleneck:** Large model training (10-14 days). Using `general` partition (2-day walltime) with epoch checkpointing — jobs auto-resume across multiple submissions. If cluster congestion delays by >1 week, submit with small-scale large results and add full results during ARR author response.
+**Bottleneck:** Large model training (10-14 days). Using `preempt` partition (14-day walltime, requeue) since general's 8-GPU cap is consumed by small runs. Epoch checkpointing handles preemption. If cluster congestion delays by >1 week, submit with small-scale large results and add full results during ARR author response.
 
 ---
 
@@ -319,10 +361,10 @@ Smoke test (day 1)
 | Risk | Prob. | Impact | Mitigation |
 |------|-------|--------|------------|
 | H-Mamba N=2 doesn't match ConMamba at 960h | Low | CRITICAL | Adjust DC loss weight, warmup schedule. Worst case: frame as "learned compression reveals acoustic structure" even if WER is slightly worse |
-| Large runs take >14 days (cluster delays) | Medium | HIGH | General partition (2-day limit) with epoch checkpointing; resubmit as needed. If N=3/N=4 don't finish, submit with small-scale N=3/N=4 + large N=1/N=2 only |
+| Large runs take >14 days (preemption delays) | Medium | HIGH | Preempt partition (14-day, requeue) with epoch checkpointing. If N=3/N=4 don't finish, submit with small-scale N=3/N=4 + large N=1/N=2 only |
 | Conformer+DC shows DC helps Conformer equally | Medium | MEDIUM | Reframe: "DC is a general technique, Mamba is the natural fit due to linear complexity" |
 | MFA boundary analysis shows weak phoneme correlation | Low | HIGH | Pivot to information-theoretic framing. Or frame as interesting negative result |
-| SLURM cluster overloaded | Medium | HIGH | General partition with checkpoint-resume. Could also use L40S cluster if available |
+| SLURM cluster overloaded | Medium | HIGH | Small on general, large on preempt (24 GPU pool) with checkpoint-resume. Could also use L40S cluster if available |
 | Reviewer says "just an engineering combination" | High | HIGH | The analysis section is the answer. Phone-class compression, probing, speaking-rate. Without this, paper is dead. |
 | Reviewer asks for CIF comparison | High | MEDIUM | Discuss CIF thoroughly in related work with clear differentiation. CIF baseline is ideal but may not fit in 8 weeks. |
 
@@ -394,6 +436,8 @@ loss = ((1 - true_ratio) * (1 - average_prob) +
 ## 11. Immediate Next Steps
 
 1. ~~Run GPU smoke test~~ All passed: single GPU (v2), DDP (v3 job 6928765), resume (job 6928816)
-2. **Submit small N=1,2,3,4 to SLURM** — smoke tests passed, ready to go
-3. Install MFA and start alignment
-4. Create ablation configs (conformer_dc, fixed-2x)
+2. ~~Submit small N=1,2,3,4 to SLURM~~ Running since April 2 (jobs 6933669-6933675)
+3. ~~Submit large N=1,2,3,4 to SLURM~~ Running since April 2 (jobs 6933856-6933859, preempt)
+4. **Resubmit small N=1,2,3,4** when they hit the 2-day wall (~April 4 evening). Same scripts, SpeechBrain auto-resumes.
+5. Install MFA and start alignment
+6. Create ablation configs (conformer_dc, fixed-2x)

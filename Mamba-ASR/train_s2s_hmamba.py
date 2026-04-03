@@ -505,9 +505,9 @@ class HMambaASR(sb.core.Brain):
                 self.check_loss_isfinite(scaled_loss)
                 scaled_loss.backward()
 
-            # Capture grad norm and DC bias grad BEFORE optimizer step zeros gradients
-            self._last_grad_norm = 0.0
-            self._last_bias_grad = 0.0
+            # Capture grad norm and DC bias grad BEFORE optimizer step zeros gradients.
+            # Only update on step batches; persist the value so non-step batches
+            # (from grad accumulation) still report the last real grad norm.
             if should_step:
                 total_norm = 0.0
                 for p in self.modules.parameters():
@@ -516,6 +516,7 @@ class HMambaASR(sb.core.Brain):
                         total_norm += param_norm.item() ** 2
                 self._last_grad_norm = total_norm ** 0.5
                 # Capture DC bias gradient before it's zeroed
+                self._last_bias_grad = 0.0
                 if hasattr(self, 'hmamba_encoder'):
                     routing = self.hmamba_encoder.routing_module
                     if routing.boundary_bias.grad is not None:

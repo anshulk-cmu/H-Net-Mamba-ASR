@@ -2,8 +2,8 @@
 conformer_large CTC — 4x A6000, general, fp32 restart
 ============================================================
 Job ID   : 6907548
-Node     : babel-s9-28
-Start    : Thu Apr  2 09:21:36 EDT 2026
+Node     : babel-n5-20
+Start    : Fri Apr  3 16:03:06 EDT 2026
 ============================================================
 Python : /home/anshulk/miniconda3/envs/hnetasr/bin/python
 GPUs   : NVIDIA RTX A6000, 49140 MiB
@@ -11,7 +11,7 @@ NVIDIA RTX A6000, 49140 MiB
 NVIDIA RTX A6000, 49140 MiB
 NVIDIA RTX A6000, 49140 MiB
 
-Master port: 60289
+Master port: 55503
 speechbrain.core - Beginning experiment!
 speechbrain.core - Experiment folder: /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC
 librispeech_prepare - Skipping preparation, completed in previous run.
@@ -29,19 +29,14 @@ speechbrain.core - Info: max_grad_norm arg from hparam file is used
 speechbrain.core - Info: grad_accumulation_factor arg from hparam file is used
 speechbrain.core - Gradscaler enabled: False. Using precision: fp32.
 speechbrain.core - 28.8M trainable parameters in ASR
-speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-02+09-09-52+00
-speechbrain.utils.epoch_loop - Going into epoch 23
+speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-03+13-56-29+00
+speechbrain.utils.epoch_loop - Going into epoch 108
 speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-02+09-37-45+00
-speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+09-11-53+00
-speechbrain.utils.epoch_loop - Going into epoch 24
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-03+16-20-17+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-03+11-14-23+00
+speechbrain.utils.epoch_loop - Going into epoch 109
 speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-02+09-53-36+00
-speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+10-47-43+00
-speechbrain.utils.epoch_loop - Going into epoch 25
-speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-02+10-09-30+00
-speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-01+10-15-41+00
-speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-02+07-09-17+00
-speechbrain.utils.epoch_loop - Going into epoch 26
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-03+16-36-38+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/conformer_large_CTC/save/CKPT+2026-04-03+11-32-09+00
+speechbrain.utils.epoch_loop - Going into epoch 110
 speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches

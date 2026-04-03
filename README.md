@@ -23,8 +23,8 @@ This establishes the baselines against which H-Mamba is compared.
 
 ### Phase 2: H-Mamba Training (In Progress)
 Train H-Mamba models (ConMamba + Dynamic Chunking) at 8 configurations:
-- Small model (14.1M params): N=1 (control), N=2, N=3, N=4
-- Large model (115.2M params): N=1 (control), N=2, N=3, N=4
+- Small model (14.1M params): N=1, N=2, N=3, N=4 — **training on general, epochs 58-104 (Apr 3)**
+- Large model (115.2M params): N=1, N=2, N=3, N=4 — **training on preempt, epochs 37-59 (Apr 3)**
 
 Where N is the target compression factor (N=2 keeps 50% of frames, N=4 keeps 25%).
 
@@ -155,7 +155,7 @@ LM decoding: beam=66, CTC weight=0.40, LM weight=0.60 with
 | conformer_large | Conformer | Transformer | 109.1M | **2.03** / **4.70** | **2.57** / **5.94** | Done |
 | conmamba_large | ConMamba | Transformer | 115.2M | 2.27 / 5.12 | 2.82 / 6.60 | Done |
 | conmambamamba_large | ConMamba | Mamba | 122.9M | 2.41 / 5.72 | 2.93 / 6.99 | Done |
-| conformer_large (CTC) | Conformer | CTC only | 28.8M | — | In progress | fp32, running (job 6907548) |
+| conformer_large (CTC) | Conformer | CTC only | 28.8M | — | In progress | fp32, epoch 26+ (job 6907548) |
 | conmamba_large (CTC) | ConMamba | CTC only | 31.6M | — | 3.93 / 10.40 | Done |
 
 ### 5.2 Paper Reference Results (WER%)
@@ -236,20 +236,32 @@ All smoke tests passed. Ready for full 960h training.
 Previous issues resolved:
 - NumPy 2.0.2 broke DDP (`broadcast_object_list` → `tensor.numpy()`). Fixed: numpy 1.26.4.
 - Grad norm logging always showed 0.0 (computed after `zero_grad`). Fixed: captured pre-step.
+- Grad norm showed 0.0 on large models (grad_accum=8 misaligned with log interval). Fixed: persist last real grad_norm across non-step batches.
 - Smoke test v1 (6912668) timed out during beam search eval (2h limit too short).
 
-### 6.5 H-Mamba Results
+### 6.5 H-Mamba Results (960h, in progress as of April 3)
 
-| Model | target_N | Compression | With LM (clean / other) | Without LM (clean / other) | Status |
-|-------|----------|-------------|------------------------|---------------------------|--------|
-| hmamba_small_N1 | 1.0 | None | — | — | Ready to submit |
-| hmamba_small_N2 | 2.0 | 50% | — | — | Ready to submit |
-| hmamba_small_N3 | 3.0 | 33% | — | — | Ready to submit |
-| hmamba_small_N4 | 4.0 | 25% | — | — | Ready to submit |
-| hmamba_large_N1 | 1.0 | None | — | — | Ready to submit |
-| hmamba_large_N2 | 2.0 | 50% | — | — | Ready to submit |
-| hmamba_large_N3 | 3.0 | 33% | — | — | Ready to submit |
-| hmamba_large_N4 | 4.0 | 25% | — | — | Ready to submit |
+WER is dev-clean (valid_search_interval=10, greedy without LM). Final with-LM / without-LM eval after training completes.
+
+| Model | target_N | Compression | Epoch | ACC | WER (dev) | Status |
+|-------|----------|-------------|-------|-----|-----------|--------|
+| hmamba_small_N1 | 1.0 | 0.838 | 58 | 96.6% | 4.34% | Training (job 6933669, general) |
+| hmamba_small_N2 | 2.0 | 0.501 | 88 | 96.7% | 4.08% | Training (job 6933673, general) |
+| hmamba_small_N3 | 3.0 | 0.335 | 104 | 86.9% | 10.37% | Training (job 6933674, general) |
+| hmamba_small_N4 | 4.0 | 0.251 | 70 | 84.6% | 14.44% | Training (job 6933675, general) |
+| hmamba_large_N1 | 1.0 | 0.903 | 37 | 97.3% | — | Training (job 6933856, preempt) |
+| hmamba_large_N2 | 2.0 | 0.501 | 46 | 97.1% | 3.24% | Training (job 6933857, preempt) |
+| hmamba_large_N3 | 3.0 | 0.334 | 59 | ~73% | 9.10% | Pending, preempted (job 6933858) |
+| hmamba_large_N4 | 4.0 | 0.251 | 42 | ~87%† | 7.10%† | Pending, preempted (job 6933859) |
+
+†L_N4 log was overwritten on preemption restart — WER 7.10% and ACC ~87% were previously observed but cannot be re-verified from current logs.
+
+**Early highlights:**
+- S_N2 WER 4.08% (epoch 80) has surpassed S_N1's epoch-50 WER (4.34%), but at matched epochs S_N1 still leads. Gap is closing — S_N2 also trains 1.5x faster per epoch.
+- L_N2 WER 3.24% approaching ConMamba Large baseline (2.82%).
+- N3 anomaly persists at both scales (WER ~10%) — 67% compression may be a difficult operating point.
+- S_N4 WER is actively degrading (11.52% at epoch 20 → 14.44% at epoch 70) — 75% compression may be too aggressive for the small model.
+- L_N3 ACC is volatile (63%–80%), not stably converged.
 
 ### 6.6 100-Hour Pilot Results (Small model, pre-bug-fix)
 
