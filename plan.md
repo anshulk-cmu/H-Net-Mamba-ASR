@@ -3,9 +3,9 @@
 **Target:** ARR May 2026 cycle (deadline May 25, 2026)  
 **Venue:** EMNLP 2026, Budapest, October 24-29  
 **Notification:** August 20, 2026  
-**Today:** April 3, 2026 (Week 1, Day 3)  
+**Today:** April 5, 2026 (Week 1, Day 5)  
 **Authors:** Anshul Kumar, Shinji Watanabe (CMU)  
-**Last updated:** April 3, 2026
+**Last updated:** April 5, 2026
 
 **Proposed title:** Learning Acoustic Compression Hierarchies: Dynamic Chunking with Mamba for Variable-Rate Speech Recognition
 
@@ -76,21 +76,21 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 | Conformer Large CTC (bf16 convergence) | Resubmitted as fp32 (job 6907548). |
 | N=3 anomaly (WER ~10% vs N=2's ~4%) | Persists at both small and large scales after all bug fixes. Likely intrinsic difficulty of 67% compression, not a code bug. Paper will discuss as a finding. |
 
-### 1.4 In Progress (as of April 3, ~32h into training)
+### 1.4 In Progress (as of April 5)
 
 | Item | Status |
 |------|--------|
-| H-Mamba Small N=1 (job 6933669) | Running, general, epoch 58, ACC 96.6%, WER 4.34%, comp 0.838. ~16h left on 2-day wall. |
-| H-Mamba Small N=2 (job 6933673) | Running, general, epoch 88, ACC 96.7%, WER 4.08%, comp 0.501. Lowest WER but at higher epoch than N1 (88 vs 58). |
-| H-Mamba Small N=3 (job 6933674) | Running, general, epoch 104, ACC 86.9%, WER 10.37%, comp 0.335. N3 anomaly persists. |
-| H-Mamba Small N=4 (job 6933675) | Running, general, epoch 70, ACC 84.6%, WER 14.44%, comp 0.251. WER degrading since epoch 20. |
-| H-Mamba Large N=1 (job 6933856) | Running, preempt, epoch 37 (restarted after preemption), ACC 97.3%, no WER eval yet. |
-| H-Mamba Large N=2 (job 6933857) | Running, preempt, epoch 46, ACC 97.1%, WER 3.24%, comp 0.501. Approaching baseline 2.82%. |
-| H-Mamba Large N=3 (job 6933858) | Pending (preempted), epoch 59, ACC ~73%, WER 9.10%, comp 0.334. Will resume when scheduled. |
-| H-Mamba Large N=4 (job 6933859) | Pending (preempted), epoch 42, ACC ~87%, WER 7.10%†, comp 0.251. Log overwritten on restart — WER/ACC unverifiable. |
-| Conformer Large CTC fp32 (job 6907548) | Pending (preempt queue), epoch 26+. |
+| H-Mamba Small N=1 (job 6951736) | Running, general, epoch ~130, ACC 97.1%, WER **3.54%** (ep 120), comp 0.814. Converging slowly. |
+| H-Mamba Small N=2 (job 6951737) | Running, general, epoch ~180, ACC 97.1%, WER **3.49%** (ep 170), comp 0.501. Now ahead of S_N1. |
+| H-Mamba Small N=3 (job 6951738) | Running, general, epoch ~205, ACC 87.3%, WER **10.01%** (ep 160), comp 0.335. Plateaued ~10%. |
+| H-Mamba Small N=4 (job 6951739) | Running, general, epoch ~161, ACC 86.9%, WER **9.70%** (ep 160), comp 0.251. Recovered from degradation. |
+| H-Mamba Large N=1 (job 6959510) | Pending (preempt), last epoch 80, ACC 97.5%, WER **2.76%**, comp 0.859. Crashed (huggingface-hub fix applied), resubmitted. |
+| H-Mamba Large N=2 (job 6959511) | Pending (preempt), last epoch 82, ACC 97.4%, WER **3.04%** (ep 70), comp 0.501. Crashed, resubmitted. |
+| H-Mamba Large N=3 (job 6933858) | Running, preempt, epoch ~141, ACC 83.1%, WER **7.95%** (ep 140), comp 0.334. Still improving. |
+| H-Mamba Large N=4 (job 6959512) | Pending (preempt), last epoch 90, ACC 87.8%, WER **6.48%** (ep 90), comp 0.251. Crashed, resubmitted. |
+| Conformer Large CTC fp32 (job 6907548) | Pending (preempt), crashed same huggingface-hub bug, auto-requeued. |
 
-**Note:** Small runs will hit the 2-day general wall time ~April 4 evening. None will reach 300 epochs — all 4 need manual resubmission (`sbatch` same script; SpeechBrain resumes from checkpoint).
+**Note:** Small runs hit 2-day wall on April 4, resubmitted same day. L_N1, L_N2, L_N4 crashed on preempt restart due to `huggingface-hub` 1.8.0 incompatibility with `transformers` 4.40.0 — fixed by downgrading to 0.36.2, resubmitted April 5. SLURM logs were overwritten on restart but all data recovered from `epoch_metrics.csv` (persistent, never overwritten).
 
 ### 1.5 Not Started
 
@@ -144,22 +144,35 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
   - Large runs need ~12.5 days; general partition 2-day limit too short
   - Preempt allows 24 GPUs, doesn't conflict with small runs on general
 
-**Day 3 (April 3) — IN PROGRESS:**
+**Day 3 (April 3) — DONE:**
 - **32h checkpoint** — all 8 runs confirmed learning correctly:
-  - S_N2 WER 4.08% (epoch 80) has surpassed S_N1's epoch-50 WER (4.34%), but at matched epochs S_N1 still leads (4.34% vs 4.95% at epoch 50). Gap closing — key trend to watch.
+  - S_N2 WER 4.08% (epoch 80) vs S_N1 4.34% (epoch 50) — gap closing but not epoch-matched.
   - L_N2 WER 3.24% approaching ConMamba Large baseline (2.82%)
   - All compression ratios locked to targets (N2=0.501, N3=0.335, N4=0.251)
-- L_N3 and L_N4 preempted, now pending. Will resume from checkpoint when scheduled.
-- L_N4 log overwritten on preemption restart — previously observed WER 7.10% / ACC ~87% cannot be re-verified.
-- L_N1 preempted and restarted (~1h ago), now at epoch 37.
 - N3 anomaly confirmed at both small (WER 10.37%) and large (WER 9.10%) scales.
-- S_N4 WER actively degrading (11.52% → 14.44% from epoch 20 to 70) — 75% compression may be too aggressive for small model.
-- L_N3 ACC volatile (63%–80%), not stably converged.
-  Same pattern as 100h pilot — 67% compression may be a difficult operating point.
-- Small runs approaching 2-day wall time on general partition. Estimated to reach
-  epochs 88-160 before wall. Will need manual resubmission (~April 4 evening).
 - Fixed grad_norm logging blind spot for large models (grad_accum alignment issue).
 - Comprehensive documentation audit and update.
+- Added competitive landscape section (Zipformer, E-Branchformer, SAMBA-ASR comparisons).
+
+**Day 4 (April 4) — DONE:**
+- All 4 small runs hit 2-day general wall time ~10:52 AM, cancelled by SLURM.
+  - S_N1 at epoch 84, S_N2 at epoch 128, S_N3 at epoch 153, S_N4 at epoch 103.
+- Resubmitted all 4 small runs (jobs 6951736-6951739), resumed from checkpoints.
+- L_N1, L_N2 preempted and crashed on restart — `huggingface-hub` upgraded to 1.8.0
+  (incompatible with `transformers` 4.40.0). SLURM logs overwritten on restart.
+
+**Day 5 (April 5) — IN PROGRESS:**
+- L_N4 also crashed on preempt restart (same huggingface-hub bug). Conformer CTC too.
+- Fixed: downgraded `huggingface-hub` 1.8.0 → 0.36.2 in hnetasr env.
+- Resubmitted L_N1 (6959510), L_N2 (6959511), L_N4 (6959512). Conformer auto-requeued.
+- Recovered all WER/ACC data from `epoch_metrics.csv` (persistent logs, never overwritten).
+- **Key results at ~60h:**
+  - **S_N2 (3.49%) now ahead of S_N1 (3.54%)** — first time N=2 genuinely leads the control.
+  - **L_N1 WER 2.76% (ep 80)** — already beats ConMamba Large no-LM baseline (2.82%).
+  - **L_N2 WER 3.04% (ep 70)** — only 0.28% behind L_N1 at matched epoch 70 (2.88%).
+  - S_N4 WER recovered: 14.61% (ep 70) → 9.70% (ep 160). Was degrading, now improving.
+  - L_N4 WER 6.48% (ep 90) — steadily improving, large model handles 75% compression.
+  - S_N3/L_N3 both plateaued ~10% / ~8% — N=3 anomaly confirmed structural.
 
 **Days 4-5:**
 - Install Montreal Forced Aligner, download English acoustic model

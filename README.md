@@ -239,29 +239,29 @@ Previous issues resolved:
 - Grad norm showed 0.0 on large models (grad_accum=8 misaligned with log interval). Fixed: persist last real grad_norm across non-step batches.
 - Smoke test v1 (6912668) timed out during beam search eval (2h limit too short).
 
-### 6.5 H-Mamba Results (960h, in progress as of April 3)
+### 6.5 H-Mamba Results (960h, in progress as of April 5)
 
-WER is dev-clean (valid_search_interval=10, greedy without LM). Final with-LM / without-LM eval after training completes.
+WER is dev-clean (valid_search_interval=10, beam=10, CTC only, no LM). Final with-LM / without-LM eval after training completes.
 
 | Model | target_N | Compression | Epoch | ACC | WER (dev) | Status |
 |-------|----------|-------------|-------|-----|-----------|--------|
-| hmamba_small_N1 | 1.0 | 0.838 | 58 | 96.6% | 4.34% | Training (job 6933669, general) |
-| hmamba_small_N2 | 2.0 | 0.501 | 88 | 96.7% | 4.08% | Training (job 6933673, general) |
-| hmamba_small_N3 | 3.0 | 0.335 | 104 | 86.9% | 10.37% | Training (job 6933674, general) |
-| hmamba_small_N4 | 4.0 | 0.251 | 70 | 84.6% | 14.44% | Training (job 6933675, general) |
-| hmamba_large_N1 | 1.0 | 0.903 | 37 | 97.3% | — | Training (job 6933856, preempt) |
-| hmamba_large_N2 | 2.0 | 0.501 | 46 | 97.1% | 3.24% | Training (job 6933857, preempt) |
-| hmamba_large_N3 | 3.0 | 0.334 | 59 | ~73% | 9.10% | Pending, preempted (job 6933858) |
-| hmamba_large_N4 | 4.0 | 0.251 | 42 | ~87%† | 7.10%† | Pending, preempted (job 6933859) |
+| hmamba_small_N1 | 1.0 | 0.814 | 130 | 97.1% | 3.54% | Training (job 6951736, general) |
+| hmamba_small_N2 | 2.0 | 0.501 | 180 | 97.1% | **3.49%** | Training (job 6951737, general) |
+| hmamba_small_N3 | 3.0 | 0.335 | 205 | 87.3% | 10.01% | Training (job 6951738, general) |
+| hmamba_small_N4 | 4.0 | 0.251 | 161 | 86.9% | 9.70% | Training (job 6951739, general) |
+| hmamba_large_N1 | 1.0 | 0.859 | 80 | 97.5% | **2.76%** | Pending restart (job 6959510, preempt) |
+| hmamba_large_N2 | 2.0 | 0.501 | 82 | 97.4% | 3.04% | Pending restart (job 6959511, preempt) |
+| hmamba_large_N3 | 3.0 | 0.334 | 141 | 83.1% | 7.95% | Training (job 6933858, preempt) |
+| hmamba_large_N4 | 4.0 | 0.251 | 90 | 87.8% | 6.48% | Pending restart (job 6959512, preempt) |
 
-†L_N4 log was overwritten on preemption restart — WER 7.10% and ACC ~87% were previously observed but cannot be re-verified from current logs.
-
-**Early highlights:**
-- S_N2 WER 4.08% (epoch 80) has surpassed S_N1's epoch-50 WER (4.34%), but at matched epochs S_N1 still leads. Gap is closing — S_N2 also trains 1.5x faster per epoch.
-- L_N2 WER 3.24% approaching ConMamba Large baseline (2.82%).
-- N3 anomaly persists at both scales (WER ~10%) — 67% compression may be a difficult operating point.
-- S_N4 WER is actively degrading (11.52% at epoch 20 → 14.44% at epoch 70) — 75% compression may be too aggressive for the small model.
-- L_N3 ACC is volatile (63%–80%), not stably converged.
+**Highlights (April 5):**
+- **S_N2 (3.49%) now leads S_N1 (3.54%)** — 50% compression with equal or better WER. Key paper result.
+- **L_N1 WER 2.76% (ep 80)** beats ConMamba Large no-LM baseline (2.82%).
+- **L_N2 WER 3.04% (ep 70)** — only 0.28% behind L_N1 at epoch-matched comparison (L_N1=2.88% at ep 70).
+- S_N4 WER recovered from degradation: 14.61% (ep 70) → 9.70% (ep 160).
+- N=3 anomaly confirmed structural: S_N3 plateaued ~10%, L_N3 ~8%, at both model scales.
+- L_N1, L_N2, L_N4 crashed on preempt restart (huggingface-hub version conflict). Fixed and resubmitted.
+- All data recovered from persistent `epoch_metrics.csv` logs (SLURM logs overwrite on restart, CSVs do not).
 
 **Evaluation pipeline:** Interim WERs above use beam=10, CTC only, no LM (valid_search). Final evaluation uses beam=66, CTC(0.40) + TransformerLM(0.60) (test_search). LM decoding typically improves WER by 1.0–1.5% absolute on test-clean.
 

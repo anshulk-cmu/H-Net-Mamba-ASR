@@ -2,64 +2,15 @@
 H-Mamba Large N4 — 2x A6000, preempt
 ============================================================
 Job ID   : 6933859
-Node     : babel-t9-20
-Start    : Fri Apr  3 19:08:44 EDT 2026
+Node     : babel-u9-32
+Start    : Sun Apr  5 06:25:11 EDT 2026
 ============================================================
 Python : /home/anshulk/miniconda3/envs/hnetasr/bin/python
 GPUs   : NVIDIA RTX A6000, 49140 MiB
 NVIDIA RTX A6000, 49140 MiB
 
-Master port: 39003
-dropout=0.1 is not used in Mamba.
-dropout=0.1 is not used in Mamba.
-speechbrain.core - Beginning experiment!
-speechbrain.core - Experiment folder: /data/user_data/anshulk/hnet_asr/results/hmamba_large_N4
-librispeech_prepare - Skipping preparation, completed in previous run.
-speechbrain.dataio.sampler - Batch quantisation in latent space
-speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.dataio.sampler - Batch quantisation in latent space
-speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.utils.fetching - Fetch lm.ckpt: Using existing file/symlink in /data/user_data/anshulk/hnet_asr/results/hmamba_large_N4/save/lm.ckpt.
-speechbrain.utils.fetching - Fetch tokenizer.ckpt: Using existing file/symlink in /data/user_data/anshulk/hnet_asr/results/hmamba_large_N4/save/tokenizer.ckpt.
-speechbrain.utils.parameter_transfer - Loading pretrained files for: lm, tokenizer
-[HMambaEncoderWrapper] Created with 6 stage0 layers, 6 stage1 layers
-[HMambaEncoderWrapper] Target compression N=4.0 (r≈0.25)
-speechbrain.core - Info: precision arg overridden by command line input to: bf16
-speechbrain.core - Info: max_grad_norm arg from hparam file is used
-speechbrain.core - Info: grad_accumulation_factor arg from hparam file is used
-speechbrain.core - Gradscaler enabled: False. Using precision: bf16.
-speechbrain.core - 115.2M trainable parameters in HMambaASR
-[HMambaEncoderWrapper] Created with 6 stage0 layers, 6 stage1 layers
-[HMambaEncoderWrapper] Target compression N=4.0 (r≈0.25)
-__main__ - [H-Mamba] Encoder wrapped with DC (split_idx=6, target_N=4.0)
-__main__ - [H-Mamba] DC RoutingModule has 4 parameters
-__main__ - [H-Mamba]   - temperature: shape=torch.Size([]), requires_grad=True
-__main__ - [H-Mamba]   - boundary_bias: shape=torch.Size([]), requires_grad=True
-__main__ - [H-Mamba]   - q_proj_layer.weight: shape=torch.Size([512, 512]), requires_grad=True
-__main__ - [H-Mamba]   - k_proj_layer.weight: shape=torch.Size([512, 512]), requires_grad=True
-speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/hmamba_large_N4/save/CKPT+2026-04-03+18-40-08+00
-__main__ - [H-Mamba] DC params in optimizer: True
-HMamba.hmamba_L_N4 - HMambaLogger initialized: /data/user_data/anshulk/hnet_asr/results/hmamba_large_N4/hmamba_logs
-HMamba.hmamba_L_N4 - TensorBoard: enabled
-HMamba.hmamba_L_N4 - Config saved to /data/user_data/anshulk/hnet_asr/results/hmamba_large_N4/hmamba_logs/experiment_config.json
-speechbrain.utils.epoch_loop - Going into epoch 42
-__main__ - [H-Mamba] Epoch 42: target_N=4.00, gumbel_tau=0.300, temp=0.582, bias=-0.684
-HMamba.hmamba_L_N4 - ============================================================
-HMamba.hmamba_L_N4 - Starting Epoch 42
-HMamba.hmamba_L_N4 - ============================================================
-speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-HMamba.hmamba_L_N4 - E42 B0000 | loss=18.878 (ctc=21.824 seq=10.000 dc=0.7108) | comp=0.259 (target=0.250) | bias=-0.684 (grad=0.0000) | VRAM=14154MB | t=1210ms
-HMamba.hmamba_L_N4 - E42 B0050 | loss=17.076 (ctc=18.387 seq=8.954 dc=0.7056) | comp=0.252 (target=0.250) | bias=-0.684 (grad=0.0000) | VRAM=17690MB | t=174ms
-HMamba.hmamba_L_N4 - E42 B0100 | loss=19.045 (ctc=22.915 seq=10.536 dc=0.6394) | comp=0.251 (target=0.250) | bias=-0.684 (grad=0.0000) | VRAM=17690MB | t=160ms
-HMamba.hmamba_L_N4 - E42 B0150 | loss=18.536 (ctc=20.926 seq=9.930 dc=0.7076) | comp=0.257 (target=0.250) | bias=-0.684 (grad=0.0000) | VRAM=18036MB | t=157ms
-HMamba.hmamba_L_N4 - E42 B0200 | loss=16.708 (ctc=17.259 seq=9.599 dc=0.6415) | comp=0.251 (target=0.250) | bias=-0.685 (grad=0.0000) | VRAM=18036MB | t=164ms
-HMamba.hmamba_L_N4 - E42 B0250 | loss=16.916 (ctc=18.714 seq=8.634 dc=0.7010) | comp=0.256 (target=0.250) | bias=-0.685 (grad=0.0000) | VRAM=18036MB | t=160ms
-HMamba.hmamba_L_N4 - E42 B0300 | loss=15.682 (ctc=16.733 seq=7.885 dc=0.6856) | comp=0.248 (target=0.250) | bias=-0.685 (grad=0.0000) | VRAM=18036MB | t=149ms
-HMamba.hmamba_L_N4 - E42 B0350 | loss=17.139 (ctc=18.691 seq=8.259 dc=0.7667) | comp=0.262 (target=0.250) | bias=-0.685 (grad=0.0000) | VRAM=18036MB | t=170ms
-HMamba.hmamba_L_N4 - E42 B0400 | loss=16.814 (ctc=18.219 seq=9.299 dc=0.6452) | comp=0.249 (target=0.250) | bias=-0.685 (grad=0.0000) | VRAM=18036MB | t=171ms
-HMamba.hmamba_L_N4 - E42 B0450 | loss=11.224 (ctc=5.303 seq=5.561 dc=0.7654) | comp=0.235 (target=0.250) | bias=-0.685 (grad=0.0000) | VRAM=18056MB | t=112ms
-HMamba.hmamba_L_N4 - E42 B0500 | loss=16.630 (ctc=17.368 seq=9.068 dc=0.6762) | comp=0.254 (target=0.250) | bias=-0.685 (grad=0.0000) | VRAM=18056MB | t=155ms
-HMamba.hmamba_L_N4 - E42 B0550 | loss=17.322 (ctc=20.572 seq=8.750 dc=0.6700) | comp=0.254 (target=0.250) | bias=-0.685 (grad=0.0000) | VRAM=18056MB | t=153ms
-HMamba.hmamba_L_N4 - E42 B0600 | loss=16.927 (ctc=18.177 seq=9.194 dc=0.6716) | comp=0.254 (target=0.250) | bias=-0.685 (grad=0.0000) | VRAM=18056MB | t=158ms
-HMamba.hmamba_L_N4 - E42 B0650 | loss=20.753 (ctc=26.566 seq=10.924 dc=0.6849) | comp=0.245 (target=0.250) | bias=-0.685 (grad=0.0000) | VRAM=18056MB | t=149ms
+Master port: 57349
+
+============================================================
+Job finished — exit code: 1 — Sun Apr  5 06:25:25 EDT 2026
+============================================================
