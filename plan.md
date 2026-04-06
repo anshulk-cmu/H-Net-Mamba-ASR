@@ -73,7 +73,6 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 | BCE loss includes hardcoded position 0 | Zero gradient at that position, cosmetic only. |
 | Mamba-2 Triton SSD kernel crash (Ampere) | Triton 2.1.0 JIT assertion on sm_86/sm_89. Fix needs triton ≥ 2.2 (PyTorch ≥ 2.2). PyTorch EMA fallback used for DeChunk. Main encoder Mamba-1 kernels unaffected. |
 | Streaming incompatibility | BiMamba is bidirectional, routing uses look-ahead. Offline-only by design. |
-| Conformer Large CTC (bf16 convergence) | Resubmitted as fp32 (job 6907548). |
 | N=3 anomaly (WER ~10% vs N=2's ~4%) | Persists at both small and large scales after all bug fixes. Likely intrinsic difficulty of 67% compression, not a code bug. Paper will discuss as a finding. |
 
 ### 1.4 In Progress (as of April 5)
@@ -82,13 +81,12 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 |------|--------|
 | H-Mamba Small N=1 (job 6951736) | Running, general, epoch ~130, ACC 97.1%, WER **3.54%** (ep 120), comp 0.814. Converging slowly. |
 | H-Mamba Small N=2 (job 6951737) | Running, general, epoch ~180, ACC 97.1%, WER **3.49%** (ep 170), comp 0.501. Now ahead of S_N1. |
-| H-Mamba Small N=3 (job 6951738) | Running, general, epoch ~205, ACC 87.3%, WER **10.01%** (ep 160), comp 0.335. Plateaued ~10%. |
-| H-Mamba Small N=4 (job 6951739) | Running, general, epoch ~161, ACC 86.9%, WER **9.70%** (ep 160), comp 0.251. Recovered from degradation. |
+| H-Mamba Small N=3 | **Done.** 205 epochs (patience). With LM: **5.31/10.29**. No LM: **10.62/18.66**. Best ep 160. |
+| H-Mamba Small N=4 (job 6951739) | With-LM eval running. 193 epochs (patience). No LM: **9.24/17.38**. Best ep 163. |
 | H-Mamba Large N=1 (job 6959510) | Pending (preempt), last epoch 80, ACC 97.5%, WER **2.76%**, comp 0.859. Crashed (huggingface-hub fix applied), resubmitted. |
 | H-Mamba Large N=2 (job 6959511) | Pending (preempt), last epoch 82, ACC 97.4%, WER **3.04%** (ep 70), comp 0.501. Crashed, resubmitted. |
 | H-Mamba Large N=3 (job 6933858) | Running, preempt, epoch ~141, ACC 83.1%, WER **7.95%** (ep 140), comp 0.334. Still improving. |
 | H-Mamba Large N=4 (job 6959512) | Pending (preempt), last epoch 90, ACC 87.8%, WER **6.48%** (ep 90), comp 0.251. Crashed, resubmitted. |
-| Conformer Large CTC fp32 (job 6907548) | Pending (preempt), crashed same huggingface-hub bug, auto-requeued. |
 
 **Note:** Small runs hit 2-day wall on April 4, resubmitted same day. L_N1, L_N2, L_N4 crashed on preempt restart due to `huggingface-hub` 1.8.0 incompatibility with `transformers` 4.40.0 — fixed by downgrading to 0.36.2, resubmitted April 5. SLURM logs were overwritten on restart but all data recovered from `epoch_metrics.csv` (persistent, never overwritten).
 
@@ -138,7 +136,6 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
   - N=3: compression converged to target 0.909 by batch 250, grad working (bias_grad up to 20.25)
   - N=1: compression 0.958 (target 1.0 = no compression, control run)
   - Peak VRAM ~37 GB / 49 GB (comfortable headroom)
-- Conformer CTC fp32 (6907548): preempted after epoch 25, requeued and resumed epoch 26
 - Submitted all 4 H-Mamba Large runs to preempt partition (14d, --requeue):
   - N=1 (job 6933856), N=2 (job 6933857), N=3 (job 6933858), N=4 (job 6933859)
   - Large runs need ~12.5 days; general partition 2-day limit too short
@@ -162,9 +159,9 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
   (incompatible with `transformers` 4.40.0). SLURM logs overwritten on restart.
 
 **Day 5 (April 5) — IN PROGRESS:**
-- L_N4 also crashed on preempt restart (same huggingface-hub bug). Conformer CTC too.
+- L_N4 also crashed on preempt restart (same huggingface-hub bug).
 - Fixed: downgraded `huggingface-hub` 1.8.0 → 0.36.2 in hnetasr env.
-- Resubmitted L_N1 (6959510), L_N2 (6959511), L_N4 (6959512). Conformer auto-requeued.
+- Resubmitted L_N1 (6959510), L_N2 (6959511), L_N4 (6959512).
 - Recovered all WER/ACC data from `epoch_metrics.csv` (persistent logs, never overwritten).
 - **Key results at ~60h:**
   - **S_N2 (3.49%) now ahead of S_N1 (3.54%)** — first time N=2 genuinely leads the control.

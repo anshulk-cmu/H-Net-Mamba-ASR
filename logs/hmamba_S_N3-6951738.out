@@ -3505,3 +3505,53 @@ speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hn
 speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/hmamba_small_N3/save/CKPT+2026-04-05+09-08-12+00
 Loaded the average
 Loaded the average
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x1488c05ee6d0> in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N3/save/CKPT+2026-04-05+10-42-05+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N3/save/CKPT+2026-04-05+10-42-05+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N3/save/CKPT+2026-04-05+09-08-12+00
+HMamba.hmamba_S_N3 - 
+======================================================================
+H-MAMBA ASR EXPERIMENT SUMMARY
+Experiment: hmamba_S_N3
+Generated: 2026-04-05T10:42:06.561080
+======================================================================
+
+TRAINING OVERVIEW
+-----------------
+Total epochs: 52
+Total training time: 16.77 hours
+Total audio processed: 27858.53 hours
+
+BEST RESULTS (Epoch 160)
+------------------------------------
+WER: 10.01%
+Validation ACC: 0.8731
+Compression ratio: 0.335
+
+FINAL EPOCH (205)
+--------------------------------
+Train loss: 20.6838
+Valid loss: 35.1828
+
+DYNAMIC CHUNKING ANALYSIS
+-------------------------
+Final compression ratio: 0.334 (target: 0.333)
+Compression stability (std): 0.0031
+Average boundary probability: 0.000
+
+PERFORMANCE METRICS
+-------------------
+Average RTF: 0.0006
+Peak VRAM: 12045MB
+Average VRAM: 46436MB
+
+======================================================================
+
+HMamba.hmamba_S_N3 - Logger closed.
+[1;34mwandb[0m: 
+[1;34mwandb[0m: You can sync this run to the cloud by running:
+[1;34mwandb[0m: [1mwandb sync /data/user_data/anshulk/hnet_asr/results/hmamba_small_N3/save/wandb/offline-run-20260404_142804-5wk2b6e0[0m
+[1;34mwandb[0m: Find logs at: [1;35m../../../../data/user_data/anshulk/hnet_asr/results/hmamba_small_N3/save/wandb/offline-run-20260404_142804-5wk2b6e0/logs[0m
+
+============================================================
+Job finished — exit code: 0 — Sun Apr  5 10:42:12 EDT 2026
+============================================================

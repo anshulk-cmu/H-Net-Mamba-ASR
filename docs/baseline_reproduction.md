@@ -31,10 +31,9 @@ The H-Mamba (Dynamic Chunking) experiments are documented separately.
 17. [Training Runs and Timeline](#17-training-runs-and-timeline)
 18. [Results: Word Error Rate](#18-results-word-error-rate)
 19. [Results Analysis](#19-results-analysis)
-20. [The bf16 Conformer CTC Problem](#20-the-bf16-conformer-ctc-problem)
-21. [Reproducibility](#21-reproducibility)
-22. [What This Stage Does NOT Do](#22-what-this-stage-does-not-do)
-23. [What This Stage Establishes](#23-what-this-stage-establishes)
+20. [Reproducibility](#20-reproducibility)
+21. [What This Stage Does NOT Do](#21-what-this-stage-does-not-do)
+22. [What This Stage Establishes](#22-what-this-stage-establishes)
 
 ---
 
@@ -129,8 +128,7 @@ models need more capacity to compensate for the lack of an autoregressive decode
 | 4 | Conformer | Transformer | Large | conformer_large_S2S |
 | 5 | ConMamba | Transformer | Large | conmamba_large_S2S |
 | 6 | ConMamba | Mamba | Large | conmambamamba_large_S2S |
-| 7 | Conformer | CTC | Large | conformer_large_CTC |
-| 8 | ConMamba | CTC | Large | conmamba_large_CTC |
+| 7 | ConMamba | CTC | Large | conmamba_large_CTC |
 
 ---
 
@@ -316,7 +314,7 @@ on LibriSpeech.
 | num_encoder_layers | 12 (S2S) / 18 (CTC) |
 | num_decoder_layers | 6 (S2S) / 0 (CTC) |
 | d_ffn | 2048 |
-| Trainable parameters | 109.1M (Conformer S2S), 115.2M (ConMamba S2S), 122.9M (ConMambaMamba S2S), 28.8M (Conformer CTC), 31.6M (ConMamba CTC) |
+| Trainable parameters | 109.1M (Conformer S2S), 115.2M (ConMamba S2S), 122.9M (ConMambaMamba S2S), 31.6M (ConMamba CTC) |
 
 The large scale is the primary comparison point. d_model=512 with 8 heads gives 64
 dimensions per head, standard for Transformer-based ASR. The CTC models use 18 encoder
@@ -344,7 +342,6 @@ evidence.
 | conformer_large_S2S | Conformer | Transformer | 512 | 8 | 12 | 6 | 2048 | 109.1M | 5000 | 3407 |
 | conmamba_large_S2S | ConMamba | Transformer | 512 | 8* | 12 | 6 | 2048 | 115.2M | 5000 | 3407 |
 | conmambamamba_large_S2S | ConMamba | Mamba | 512 | 8* | 12 | 6 | 2048 | 122.9M | 5000 | 3407 |
-| conformer_large_CTC | Conformer | CTC | 256 | 4 | 18 | 0 | 1024 | 28.8M | 31 | 3402 |
 | conmamba_large_CTC | ConMamba | CTC | 256 | 4* | 18 | 0 | 1024 | 31.6M | 31 | 3402 |
 
 \* nhead is configured but unused — ConMamba/BiMamba does not use multi-head attention.
@@ -414,8 +411,6 @@ vectors at ~25 frames/sec.
 ### Precision
 
 All S2S models and the ConMamba CTC model train in **bf16** (bfloat16) mixed precision.
-The Conformer CTC model required **fp32** due to a convergence issue specific to
-RelPosMHAXL attention under bf16 with CTC-only training (see Section 20).
 
 ### Early stopping
 
@@ -505,7 +500,6 @@ proportionally to the inverse square root of the step number.
 | conformer_large_S2S | 30,000 |
 | conmamba_large_S2S | 3,750 |
 | conmambamamba_large_S2S | 3,750 |
-| conformer_large_CTC | 7,500 |
 | conmamba_large_CTC | 7,500 |
 
 The warmup steps differ across configs because they were tuned per-architecture by Jiang
@@ -741,28 +735,6 @@ conformer_small's effective batch of 256. This follows the original Jiang (2024)
 
 ## 15. CTC Model Configurations
 
-### conformer_large_CTC
-
-**Config**: `hparams/CTC/conformer_large.yaml`
-
-| Parameter | Value |
-|-----------|-------|
-| Encoder | Conformer, 18 layers, d_model=256, nhead=4, d_ffn=1024 |
-| Decoder | CTC (linear projection only) |
-| Attention | RelPosMHAXL |
-| Activation | GELU |
-| Dropout | 0.1 |
-| Batch size (per GPU) | 32 |
-| Grad accumulation | 4 |
-| Effective batch | 32 * 4 GPUs * 4 = 512 |
-| Dynamic batching | max_batch_length_train=1000 |
-| Epochs | 500 |
-| LR / Warmup | 0.001 / 7,500 steps |
-| Optimizer | AdamW (weight_decay=0.0005) |
-| Precision | **fp32** (see Section 20) |
-| Parameters | 28.8M |
-| Vocab | 31 characters |
-
 ### conmamba_large_CTC
 
 **Config**: `hparams/CTC/conmamba_large.yaml`
@@ -811,11 +783,7 @@ All jobs ran on the **Babel HPC cluster** at CMU.
 | conformer_large_S2S | 2x A6000 | 16 | 128 GB | preempt | bf16 | `slurm/conformer_large_S2S.sh` |
 | conmamba_large_S2S | 2x A6000 | 16 | 128 GB | preempt | bf16 | `slurm/conmamba_large_S2S.sh` |
 | conmambamamba_large_S2S | 2x A6000 | 16 | 128 GB | preempt | bf16 | `slurm/conmambamamba_large_S2S.sh` |
-| conformer_large_CTC | 4x A6000 | 32 | 256 GB | preempt* | fp32 | `slurm/conformer_large_CTC.sh` |
 | conmamba_large_CTC | 4x A6000 | 32 | 256 GB | preempt | bf16 | `slurm/conmamba_large_CTC.sh` |
-
-\* The conformer_large_CTC job was resubmitted to the `general` partition after preempt
-failures (see Section 20).
 
 ### SLURM overrides
 
@@ -826,7 +794,7 @@ cluster environment. Common overrides include:
 - `--output_folder`: points to `/data/user_data/anshulk/hnet_asr/results/<config_name>`
 - `--batch_size`: adjusted per job (24 for small, 20 for large S2S, 32 for CTC)
 - `--max_batch_length_train` / `--max_batch_length_val`: tuned per GPU memory
-- `--precision`: bf16 for most, fp32 for conformer_large_CTC
+- `--precision`: bf16 for all models
 - `--grad_accumulation_factor`: adjusted per effective batch target
 
 ### Preempt partition
@@ -863,9 +831,6 @@ experiments due to preemptions or errors.
 | conmambamamba_large_S2S | 6484209 | Mar 6, 07:42 | Mar 6, 20:54 | 13h 12m | 0 | Clean or resumed run |
 | conmamba_large_CTC | 6473003 | Mar 3, 05:26 | — | — | — | Training run (~200+ epochs) |
 | conmamba_large_CTC | 6484206 | Mar 14, 17:46 | Mar 14, 17:52 | 6m | 0 | Test-only eval run |
-| conformer_large_CTC | 6508919 | Mar 7, 10:27 | Mar 7, 10:38 | 11m | 1 | Failed: libcusparseLt.so.0 |
-| conformer_large_CTC | 6541320 | — | — | — | 1 | Failed: same CUDA error |
-| conformer_large_CTC | 6907548 | Apr 1 | — | — | — | Resubmitted with fp32, in progress |
 
 ### Key observations
 
@@ -879,11 +844,6 @@ experiments due to preemptions or errors.
 
 3. **conmamba_large_CTC**: Training completed in a multi-day run (6473003). The short
    6-minute run (6484206) was a test-only evaluation using the trained checkpoints.
-
-4. **conformer_large_CTC**: Had persistent issues. Three job attempts failed with
-   `ImportError: libcusparseLt.so.0: cannot open shared object file`. This is a CUDA
-   library compatibility issue on certain cluster nodes. The fourth attempt (6907548)
-   was resubmitted on Apr 1, 2026 with fp32 precision and is currently in progress.
 
 ---
 
@@ -899,10 +859,7 @@ experiments due to preemptions or errors.
 | conformer_large_S2S | **2.03** | **4.70** | 138 | 72 | 857 | 52,576 |
 | conmamba_large_S2S | **2.27** | **5.12** | 152 | 78 | 961 | 52,576 |
 | conmambamamba_large_S2S | **2.41** | **5.72** | 147 | 92 | 1,030 | 52,576 |
-| conformer_large_CTC | — | — | — | — | — | — |
 | conmamba_large_CTC | **3.93** | **10.40** | 192 | 156 | 1,716 | 52,576 |
-
-The conformer_large_CTC result is pending (job in progress as of April 1, 2026).
 
 ### No-LM results (S2S models only)
 
@@ -986,65 +943,7 @@ frame-level information.
 
 ---
 
-## 20. The bf16 Conformer CTC Problem
-
-The conformer_large_CTC experiment encountered a specific convergence failure under
-bf16 (bfloat16) precision. The problem manifests as:
-
-1. CTC loss fails to decrease after initial epochs
-2. The model produces near-random character sequences
-3. WER remains above 90% indefinitely
-
-### Root cause
-
-The issue is specific to the combination of:
-- **RelPosMHAXL attention** (relative positional encoding with XL-style memory)
-- **bf16 precision**
-- **CTC-only training** (no sequence loss to stabilize training)
-
-RelPosMHAXL computes relative position scores using the `rel_shift` operation, which
-involves matrix manipulations that lose precision in bf16. When the sequence loss acts
-as a stabilizer (in S2S training), this precision loss is tolerable. Under CTC-only
-training, there is no such stabilizer, and the attention scores become noisy enough
-to prevent convergence.
-
-### Evidence
-
-- conformer_large_S2S (bf16 + RelPosMHAXL + joint loss): converges normally, 2.03 WER
-- conmamba_large_CTC (bf16 + BiMamba, no attention): converges normally, 3.93 WER
-- conformer_large_CTC (bf16 + RelPosMHAXL + CTC-only): fails to converge
-
-The failure is specific to the attention+precision+loss combination, not a general bf16
-problem.
-
-### Solution
-
-Force fp32 precision for conformer_large_CTC:
-
-```bash
---precision fp32
-```
-
-This is set in the SLURM script `slurm/conformer_large_CTC.sh` and the resubmitted
-job (6907548) uses fp32. The trade-off is ~2x memory usage and ~1.5x slower training,
-which is why 4x A6000 GPUs are allocated for this job.
-
-### Prior job failures
-
-The first three attempts at conformer_large_CTC (jobs 6508915, 6508919, 6541320) all
-failed with:
-
-```
-ImportError: libcusparseLt.so.0: cannot open shared object file: No such file or directory
-```
-
-This is a CUDA library issue on certain Babel nodes where `libcusparseLt.so.0` is not
-available. The fix was resubmitting to the `general` partition with explicit CUDA module
-loading. This error is unrelated to the bf16 convergence issue.
-
----
-
-## 21. Reproducibility
+## 20. Reproducibility
 
 ### Software environment
 
@@ -1094,8 +993,6 @@ results/
 │   └── ...
 ├── conmambamamba_large_S2S/
 │   └── ...
-├── conformer_large_CTC/   # in progress
-│   └── ...
 └── conmamba_large_CTC/
     ├── wer_test-clean.txt
     ├── wer_test-other.txt
@@ -1104,7 +1001,7 @@ results/
 
 ---
 
-## 22. What This Stage Does NOT Do
+## 21. What This Stage Does NOT Do
 
 - **No Dynamic Chunking**: This stage trains vanilla encoders without any compression
   mechanism. The H-Mamba experiments are documented separately.
@@ -1119,7 +1016,7 @@ results/
 
 ---
 
-## 23. What This Stage Establishes
+## 22. What This Stage Establishes
 
 1. **ConMamba is a viable encoder for ASR**: ConMamba achieves competitive WER at both
    scales, matching or beating Conformer at small scale and trailing slightly at large
@@ -1134,10 +1031,7 @@ results/
    no-LM WER but the LM compensates, we need to know the LM's contribution to
    understand whether the degradation is real.
 
-4. **The bf16 limitation is documented**: Conformer CTC requires fp32. This is important
-   context for any future CTC experiments with attention-based encoders.
-
-5. **Reference numbers for the paper**: Every number in this document can be cited
+4. **Reference numbers for the paper**: Every number in this document can be cited
    directly. The WER results, parameter counts, and training details are the ground
    truth for the baselines table in the paper.
 
@@ -1151,7 +1045,6 @@ results/
 | Conformer-L | Conformer | Transformer+LM | 109.1M | 2.03 | 4.70 |
 | ConMamba-L | ConMamba | Transformer+LM | 115.2M | 2.27 | 5.12 |
 | ConMambaMamba-L | ConMamba | Mamba | 122.9M | 2.41 | 5.72 |
-| Conformer-L-CTC | Conformer | CTC | 28.8M | — | — |
 | ConMamba-L-CTC | ConMamba | CTC | 31.6M | 3.93 | 10.40 |
 
 ---

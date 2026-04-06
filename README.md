@@ -23,8 +23,8 @@ This establishes the baselines against which H-Mamba is compared.
 
 ### Phase 2: H-Mamba Training (In Progress)
 Train H-Mamba models (ConMamba + Dynamic Chunking) at 8 configurations:
-- Small model (14.1M params): N=1, N=2, N=3, N=4 — **training on general, epochs 58-104 (Apr 3)**
-- Large model (115.2M params): N=1, N=2, N=3, N=4 — **training on preempt, epochs 37-59 (Apr 3)**
+- Small model (14.1M params): N=1, N=2, N=3, N=4 — **S_N3 and S_N4 completed, S_N1 and S_N2 still training (Apr 5)**
+- Large model (115.2M params): N=1, N=2, N=3, N=4 — **L_N1 crashed (NumPy), L_N2/L_N3/L_N4 pending in queue (Apr 5)**
 
 Where N is the target compression factor (N=2 keeps 50% of frames, N=4 keeps 25%).
 
@@ -155,7 +155,6 @@ LM decoding: beam=66, CTC weight=0.40, LM weight=0.60 with
 | conformer_large | Conformer | Transformer | 109.1M | **2.03** / **4.70** | **2.57** / **5.94** | Done |
 | conmamba_large | ConMamba | Transformer | 115.2M | 2.27 / 5.12 | 2.82 / 6.60 | Done |
 | conmambamamba_large | ConMamba | Mamba | 122.9M | 2.41 / 5.72 | 2.93 / 6.99 | Done |
-| conformer_large (CTC) | Conformer | CTC only | 28.8M | — | In progress | fp32, epoch 26+ (job 6907548) |
 | conmamba_large (CTC) | ConMamba | CTC only | 31.6M | — | 3.93 / 10.40 | Done |
 
 ### 5.2 Paper Reference Results (WER%)
@@ -168,7 +167,6 @@ LM decoding: beam=66, CTC weight=0.40, LM weight=0.60 with
 | Conformer (L) | 109.1M | 2.0 / 4.5 | 2.6 / 6.7 |
 | ConMamba (L) | 115.2M | 2.1 / 4.9 | 2.8 / 6.7 |
 | ConMambaMamba (L) | 122.9M | 2.4 / 5.7 | 3.0 / 7.0 |
-| Conformer (CTC) | 28.8M | — | 4.3 / 11.3 |
 | ConMamba (CTC) | 31.6M | — | 3.9 / 10.3 |
 
 ---
@@ -239,31 +237,42 @@ Previous issues resolved:
 - Grad norm showed 0.0 on large models (grad_accum=8 misaligned with log interval). Fixed: persist last real grad_norm across non-step batches.
 - Smoke test v1 (6912668) timed out during beam search eval (2h limit too short).
 
-### 6.5 H-Mamba Results (960h, in progress as of April 5)
+### 6.5 H-Mamba Results (960h, updated April 5)
 
-WER is dev-clean (valid_search_interval=10, beam=10, CTC only, no LM). Final with-LM / without-LM eval after training completes.
+#### Completed runs — test-set WER (beam=66, CTC weight=0.40)
+
+| Model | target_N | Compression | Epochs | Best Epoch | With LM (clean / other) | Without LM (clean / other) | Status |
+|-------|----------|-------------|--------|------------|------------------------|---------------------------|--------|
+| hmamba_small_N3 | 3.0 | 0.335 | 205 (patience) | 160 | 5.31 / 10.29 | 10.62 / 18.66 | **Done** |
+| hmamba_small_N4 | 4.0 | 0.251 | 193 (patience) | 163 | With-LM eval running (job 6951739) | 9.24 / 17.38 | **Done** |
+
+#### In-progress runs — dev-set WER (valid_search, beam=10, greedy, no LM)
 
 | Model | target_N | Compression | Epoch | ACC | WER (dev) | Status |
 |-------|----------|-------------|-------|-----|-----------|--------|
-| hmamba_small_N1 | 1.0 | 0.814 | 130 | 97.1% | 3.54% | Training (job 6951736, general) |
-| hmamba_small_N2 | 2.0 | 0.501 | 180 | 97.1% | **3.49%** | Training (job 6951737, general) |
-| hmamba_small_N3 | 3.0 | 0.335 | 205 | 87.3% | 10.01% | Training (job 6951738, general) |
-| hmamba_small_N4 | 4.0 | 0.251 | 161 | 86.9% | 9.70% | Training (job 6951739, general) |
-| hmamba_large_N1 | 1.0 | 0.859 | 80 | 97.5% | **2.76%** | Pending restart (job 6959510, preempt) |
-| hmamba_large_N2 | 2.0 | 0.501 | 82 | 97.4% | 3.04% | Pending restart (job 6959511, preempt) |
-| hmamba_large_N3 | 3.0 | 0.334 | 141 | 83.1% | 7.95% | Training (job 6933858, preempt) |
-| hmamba_large_N4 | 4.0 | 0.251 | 90 | 87.8% | 6.48% | Pending restart (job 6959512, preempt) |
+| hmamba_small_N1 | 1.0 | 0.800 | 159+ | 97.1% | 3.54% (ep 120) | Training (job 6951736, general) |
+| hmamba_small_N2 | 2.0 | 0.501 | 214+ | 97.1% | **3.49%** (ep 170) | Training (job 6951737, general) |
+| hmamba_large_N1 | 1.0 | 0.858 | 81 | 97.6% | **2.76%** (ep 80) | Crashed — NumPy 2.0 error. Needs resubmit |
+| hmamba_large_N2 | 2.0 | 0.501 | 83 (resuming) | 97.4% | 3.04% (ep 70) | Pending (job 6959511, preempt) |
+| hmamba_large_N3 | 3.0 | 0.354 | 142 | 83.1% | 7.95% (ep 140) | Pending (job 6933858, preempt) |
+| hmamba_large_N4 | 4.0 | 0.250 | 94 (resuming) | 87.8% | 6.48% (ep 90) | Pending (job 6959512, preempt) |
 
-**Highlights (April 5):**
-- **S_N2 (3.49%) now leads S_N1 (3.54%)** — 50% compression with equal or better WER. Key paper result.
-- **L_N1 WER 2.76% (ep 80)** beats ConMamba Large no-LM baseline (2.82%).
+**Highlights (April 5, evening):**
+- **S_N3 completed** (205 epochs, patience exhausted at 30). Best epoch 160. With-LM: **5.31 / 10.29**. No-LM: **10.62 / 18.66**.
+- **S_N4 completed** (193 epochs, patience exhausted at 30). Best epoch 163. No-LM: **9.24 / 17.38**. With-LM eval still running (job 6951739).
+- **S_N2 (3.49% dev) still leads S_N1 (3.54% dev)** — 50% compression with equal or better WER. Key paper result.
+- **L_N1 WER 2.76% (ep 80)** beats ConMamba Large no-LM baseline (2.82%), but crashed on NumPy 2.0 at epoch 81.
 - **L_N2 WER 3.04% (ep 70)** — only 0.28% behind L_N1 at epoch-matched comparison (L_N1=2.88% at ep 70).
 - S_N4 WER recovered from degradation: 14.61% (ep 70) → 9.70% (ep 160).
 - N=3 anomaly confirmed structural: S_N3 plateaued ~10%, L_N3 ~8%, at both model scales.
-- L_N1, L_N2, L_N4 crashed on preempt restart (huggingface-hub version conflict). Fixed and resubmitted.
-- All data recovered from persistent `epoch_metrics.csv` logs (SLURM logs overwrite on restart, CSVs do not).
+- L_N1 crashed on NumPy 2.0 error (resubmission). L_N2, L_N3, L_N4 pending in preempt queue.
+- All first-round large runs (6933856-6933859) crashed on huggingface-hub 1.8.0 incompatibility with transformers 4.40.0. Fixed and resubmitted.
 
-**Evaluation pipeline:** Interim WERs above use beam=10, CTC only, no LM (valid_search). Final evaluation uses beam=66, CTC(0.40) + TransformerLM(0.60) (test_search). LM decoding typically improves WER by 1.0–1.5% absolute on test-clean.
+**Known issues:**
+- NumPy 2.0 crash affects L_N1 (resubmission, job 6959510). Small runs on `general` partition are unaffected.
+- L_N1 needs NumPy fix re-applied before resubmitting.
+
+**Evaluation pipeline:** Interim dev WERs use beam=10, CTC only, no LM (valid_search). Final evaluation uses beam=66, CTC(0.40) + TransformerLM(0.60) (test_search). No-LM eval uses beam=10, no LM rescoring. LM decoding typically improves WER by 1.0–1.5% absolute on test-clean.
 
 ### 6.6 Competitive Landscape (LibriSpeech 960h)
 
@@ -325,7 +334,7 @@ h-mamba_asr/
         bimamba.py                # Bidirectional Mamba
         mamba_blocks.py           # Mamba decoder blocks
         selective_scan_interface.py  # Patched for causal-conv1d 1.4.0
-  slurm/                          # SLURM job scripts (8 hmamba + smoke test)
+  slurm/                          # SLURM job scripts (8 hmamba + eval + smoke test)
   logs/                           # SLURM job output logs
 ```
 

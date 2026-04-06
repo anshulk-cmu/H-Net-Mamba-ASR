@@ -2029,25 +2029,43 @@ Large runs use partition `preempt` (14-day walltime, requeue enabled, 24 GPU cap
 The partition split is intentional: the 4 small runs consume all 8 GPU slots on general
 (4 runs x 2 GPUs), so large runs go to preempt to access the separate 24-GPU pool.
 
-### Current training status (April 5, ~72 hours)
+### Current training status (April 5, evening, ~96 hours)
+
+#### Completed runs
+
+| Run | Final Epoch | Best Epoch | Patience | With LM (clean / other) | Without LM (clean / other) |
+|-----|------------|------------|----------|------------------------|---------------------------|
+| S_N3 | 205 | 160 | Exhausted (30) | **5.31 / 10.29** | **10.62 / 18.66** |
+| S_N4 | 193 | 163 | Exhausted (30) | With-LM eval running (job 6951739) | **9.24 / 17.38** |
+
+S_N3 and S_N4 both completed training with early stopping (patience=30 epochs without
+improvement). Final test-set evaluation uses beam=66, CTC weight=0.40, LM weight=0.60.
+No-LM evaluation uses beam=10, no LM rescoring (same as valid_search). No-LM eval
+scripts: `slurm/eval_nolm_hmamba_small_N3.sh` and `slurm/eval_nolm_hmamba_small_N4.sh`
+(1x A6000 each, single-GPU inference).
+
+#### In-progress and pending runs
 
 | Run | Epoch | ACC | WER (dev) | Compression | Status |
 |-----|-------|-----|-----------|-------------|--------|
-| S_N1 | 130 | 97.1% | **3.54%** (ep 120) | 0.814 | Running (general) |
-| S_N2 | 180 | 97.1% | **3.49%** (ep 170) | 0.501 | Running (general) |
-| S_N3 | 205 | 87.3% | 10.01% (ep 160) | 0.335 | Running (general) |
-| S_N4 | 161 | 86.9% | **9.70%** (ep 160) | 0.251 | Running (general) |
-| L_N1 | 80 | 97.5% | **2.76%** (ep 80) | 0.859 | Pending restart (preempt) |
-| L_N2 | 82 | 97.4% | **3.04%** (ep 70) | 0.501 | Pending restart (preempt) |
-| L_N3 | 141 | 83.1% | 7.95% (ep 140) | 0.334 | Running (preempt) |
-| L_N4 | 90 | 87.8% | **6.48%** (ep 90) | 0.251 | Pending restart (preempt) |
+| S_N1 | 159+ | 97.1% | **3.54%** (ep 120) | 0.800 | Running (job 6951736, general) |
+| S_N2 | 214+ | 97.1% | **3.49%** (ep 170) | 0.501 | Running (job 6951737, general) |
+| L_N1 | 81 | 97.6% | **2.76%** (ep 80) | 0.858 | Crashed — NumPy 2.0 error (job 6959510). Needs resubmit |
+| L_N2 | 83 (resuming) | 97.4% | **3.04%** (ep 70) | 0.501 | Pending restart (job 6959511, preempt) |
+| L_N3 | 142 | 83.1% | 7.95% (ep 140) | 0.354 | Pending (job 6933858, preempt) |
+| L_N4 | 94 (resuming) | 87.8% | **6.48%** (ep 90) | 0.250 | Pending restart (job 6959512, preempt) |
 
 Notes on the table:
-- L_N1, L_N2, L_N4 crashed on preempt restart due to `huggingface-hub` 1.8.0
-  incompatibility with `transformers` 4.40.0. Fixed (downgraded to 0.36.2), resubmitted.
+- L_N1 first run (6933856) crashed on `huggingface-hub` 1.8.0 incompatibility with
+  `transformers` 4.40.0. Resubmission (6959510) ran 81 epochs then crashed on NumPy 2.0
+  (`RuntimeError: Numpy is not available`). Needs NumPy fix re-applied before resubmitting.
+- L_N2, L_N4 first runs also crashed on huggingface-hub. Resubmissions pending in preempt queue.
+- L_N3 original job (6933858) has been pending since submission. Has 1 checkpoint at epoch 142
+  from a prior run on a different node.
 - SLURM logs were overwritten on restart, but all data recovered from persistent
   `epoch_metrics.csv` files (written by HMambaLogger, never overwritten).
-- Small runs hit 2-day general wall on April 4, resubmitted same day.
+- Small runs hit 2-day general wall on April 4, resubmitted same day. S_N3 and S_N4
+  completed on the resubmission.
 - Epoch time varies across runs: S_N3 (67% compression) is ~46% faster per epoch
   than S_N1 (no compression). S_N2 is ~1.5x faster than S_N1.
 - **S_N2 (3.49%) now leads S_N1 (3.54%)** — first time N=2 compression genuinely
@@ -2064,14 +2082,14 @@ targets with remarkable precision**.
 
 | Run | Target Ratio (1/N) | Actual Ratio | Error |
 |-----|-------------------|--------------|-------|
-| S_N1 | 1.000 | 0.838 | -0.162 (emergent compression) |
-| S_N2 | 0.500 | 0.501 | +0.001 |
-| S_N3 | 0.333 | 0.335 | +0.002 |
-| S_N4 | 0.250 | 0.251 | +0.001 |
-| L_N1 | 1.000 | 0.903 | -0.097 (emergent compression) |
-| L_N2 | 0.500 | 0.501 | +0.001 |
-| L_N3 | 0.333 | 0.334 | +0.001 |
-| L_N4 | 0.250 | 0.251 | +0.001 |
+| S_N1 | 1.000 | 0.800 (ep 159) | -0.200 (emergent compression, increasing over time) |
+| S_N2 | 0.500 | 0.501 (ep 213) | +0.001 |
+| S_N3 | 0.333 | 0.334 (final, ep 205) | +0.001 |
+| S_N4 | 0.250 | 0.251 (final, ep 193) | +0.001 |
+| L_N1 | 1.000 | 0.858 (ep 81) | -0.142 (emergent compression) |
+| L_N2 | 0.500 | 0.501 (ep 83) | +0.001 |
+| L_N3 | 0.333 | 0.354 (ep 142) | +0.021 (still converging toward target) |
+| L_N4 | 0.250 | 0.250 (ep 94) | +0.000 |
 
 The N=2,3,4 runs are all within 0.2% of their targets. This confirms that the 5-term
 load balancing loss (Section 18) provides sufficient gradient signal to control the
@@ -2102,14 +2120,14 @@ The bias directly shifts the decision threshold. Here is how each run's bias evo
 
 | Run | Initial Bias | Current Bias | Direction | Interpretation |
 |-----|-------------|-------------|-----------|----------------|
-| S_N1 | 1.0 | +0.178 | Decreased | Model compresses slightly, but bias stays positive (most frames kept) |
-| S_N2 | 1.0 | -0.081 | Decreased significantly | Crossed zero: frames must be acoustically distinct to survive |
-| S_N3 | 1.0 | -0.658 | Decreased strongly | Strong negative bias: only ~1-in-3 frames survive |
-| S_N4 | 1.0 | -0.808 | Decreased very strongly | Very aggressive: only ~1-in-4 frames survive |
-| L_N1 | 1.0 | +0.639 | Decreased slightly | Large model keeps more frames than small model |
-| L_N2 | 1.0 | -0.053 | Just crossed zero | Large model needs less negative bias for same compression |
-| L_N3 | 1.0 | -0.549 | Decreased strongly | Similar pattern to small N3 |
-| L_N4 | 1.0 | -0.685 | Decreased strongly | Slightly less negative than small N4 |
+| S_N1 | 1.0 | -0.021 (ep 159) | Decreased, crossed zero | Model now compresses ~20% of frames; bias drifted negative over 159 epochs |
+| S_N2 | 1.0 | -0.125 (ep 213) | Decreased significantly | Stable negative bias: frames must be acoustically distinct to survive |
+| S_N3 | 1.0 | -0.669 (final, ep 205) | Decreased strongly | Strong negative bias: only ~1-in-3 frames survive. Training complete. |
+| S_N4 | 1.0 | -0.843 (final, ep 193) | Decreased very strongly | Very aggressive: only ~1-in-4 frames survive. Training complete. |
+| L_N1 | 1.0 | +0.469 (ep 81) | Decreased | Large model keeps more frames than small model. Crashed before convergence. |
+| L_N2 | 1.0 | -0.058 (ep 83) | Just crossed zero | Large model needs less negative bias for same compression |
+| L_N3 | 1.0 | -0.450 (ep 142) | Decreased strongly | Still converging — compression at 0.354, target 0.333 |
+| L_N4 | 1.0 | -0.650 (ep 94) | Decreased strongly | Slightly less negative than small N4 |
 
 **The pattern**: higher N requires more negative bias. This makes physical sense. With
 bias=+1.0 (initial), almost every frame is a boundary (P(boundary) > 0.88 even for
@@ -2173,14 +2191,14 @@ by the compression ratio. Stage 1 processes fewer frames when compression is hig
 
 | Run | Compression | Epoch Time | Relative to N=1 | Speedup |
 |-----|-------------|------------|-----------------|---------|
-| S_N1 | 0.838 | 1919s | 1.00x | baseline |
-| S_N2 | 0.501 | 1274s | 0.66x | 1.51x faster |
-| S_N3 | 0.335 | 1043s | 0.54x | 1.84x faster |
-| S_N4 | 0.251 | 1590s | 0.83x | 1.21x faster |
-| L_N1 | 0.903 | 1995s | 1.00x | baseline |
-| L_N2 | 0.501 | 1780s | 0.89x | 1.12x faster |
-| L_N3 | 0.334 | 1486s | 0.74x | 1.34x faster |
-| L_N4 | 0.251 | 2253s | 1.13x | 0.88x (slower!) |
+| S_N1 | 0.800 | 1428s (ep 158) | 1.00x | baseline |
+| S_N2 | 0.501 | 1169s (ep 212) | 0.82x | 1.22x faster |
+| S_N3 | 0.334 | 1004s (final) | 0.70x | 1.42x faster |
+| S_N4 | 0.251 | 1168s (final) | 0.82x | 1.22x faster |
+| L_N1 | 0.858 | 2065s (ep 81) | 1.00x | baseline |
+| L_N2 | 0.501 | TBD | — | (pending restart) |
+| L_N3 | 0.354 | TBD | — | (pending, epoch 142) |
+| L_N4 | 0.250 | TBD | — | (pending restart) |
 
 **The anomaly in S_N4 and L_N4**: N=4 is *slower* than expected. With 75% compression,
 we would expect Stage 1 to be 4x faster, giving overall speedup around 1.6-1.8x. But
@@ -2228,8 +2246,11 @@ Here is the WER progression over training for each run (dev-clean, greedy, no LM
 | 160 | — | 3.67% | 10.01% | **9.70%** | |
 | 170 | — | **3.49%** | 10.10% | — | |
 | 180 | — | — | 10.07% | — | |
-| 190 | — | — | 10.14% | — | |
-| 200 | — | — | 10.15% | — | |
+| 190 | — | — | 10.14% | — | S_N4 patience exhausted at ep 193 |
+| 200 | — | — | 10.15% | — | S_N3 patience exhausted at ep 205 |
+
+**S_N3 final**: 205 epochs, best at epoch 160 (WER 10.01%). With LM: **5.31 / 10.29**. No LM: **10.62 / 18.66** (clean/other).
+**S_N4 final**: 193 epochs, best at epoch 163. No LM: **9.24 / 17.38**. With-LM eval still running (job 6951739).
 
 **Large model WER trajectory** (data recovered from epoch_metrics.csv):
 
@@ -2384,13 +2405,14 @@ combines the 5 terms from Section 18, dominated by the ratio_loss (weight=10.0).
 
 | Run | DC Loss at Current Epoch | Interpretation |
 |-----|-------------------------|----------------|
-| S_N1 | 2.056 | No DC pressure (weight=0), but DC mechanism is active. Loss reflects the natural compression behavior. |
-| S_N2 | 0.801 | Converged. The 5-term loss is satisfied — ratio matches target, probabilities are decisive. |
-| S_N3 | 0.744 | Converged. Lower than S_N2 because more aggressive compression gives lower entropy. |
-| S_N4 | 0.663 | Converged. Lowest DC loss because N=4 probabilities are the most decisive (near 0 or 1). |
-| L_N2 | 0.810 | Converged. Similar to S_N2 — the DC loss is scale-invariant (depends on ratios, not magnitudes). |
-| L_N3 | 0.753 | Converged. Similar to S_N3. |
-| L_N4 | 0.672 | Converged. Similar to S_N4. |
+| S_N1 | 2.646 (ep 158) | No DC pressure (weight=0), but DC mechanism is active. Loss increased as emergent compression grew (0.838→0.800). |
+| S_N2 | 0.801 (ep 212) | Converged. The 5-term loss is satisfied — ratio matches target, probabilities are decisive. |
+| S_N3 | 0.744 (final, ep 205) | Converged. Lower than S_N2 because more aggressive compression gives lower entropy. |
+| S_N4 | 0.664 (final, ep 193) | Converged. Lowest DC loss because N=4 probabilities are the most decisive (near 0 or 1). |
+| L_N1 | 1.789 (ep 81) | No DC pressure (weight=0). Less emergent compression than small model (0.858 vs 0.800). |
+| L_N2 | 0.810 (ep 83) | Converged. Similar to S_N2 — the DC loss is scale-invariant (depends on ratios, not magnitudes). |
+| L_N3 | 1.050 (ep 142) | Still converging — compression at 0.354, not yet at target 0.333. DC loss higher than S_N3 (0.744). |
+| L_N4 | 0.672 (ep 94) | Converged. Similar to S_N4. |
 
 The pattern is clear: higher N → lower DC loss. This is because the variance_loss
 (Section 18, Loss 3) and entropy_loss (Loss 4) both decrease when boundary probabilities
@@ -2412,12 +2434,14 @@ values for each run:
 
 | Run | Typical bias_grad range | Interpretation |
 |-----|------------------------|----------------|
-| S_N1 | ±0.08 | Small gradients — no DC loss, only ASR loss through STE |
-| S_N2 | ±5.8 | Moderate — DC loss and ASR loss both contribute |
-| S_N3 | ±15.5 | Large — DC loss is fighting harder to maintain the target |
-| S_N4 | ±19.8 | Very large — strongest DC pressure |
-| L_N1 | 0.0 | No gradient visible (dc_loss_weight=0, and grad_accum logging artifact — see Bug #11) |
-| L_N2 | 0.0 | Logging artifact — Bug #11 (persist grad_norm across grad_accum batches). Fix will show real grads on next restart. |
+| S_N1 | ±0.29 (ep 159) | Small gradients — no DC loss, only ASR loss through STE. Slightly larger than earlier epochs. |
+| S_N2 | ±5.9 (ep 213) | Moderate — DC loss and ASR loss both contribute |
+| S_N3 | ±15.5 (final) | Large — DC loss is fighting harder to maintain the target |
+| S_N4 | ±19.4 (final) | Very large — strongest DC pressure |
+| L_N1 | ±0.07 (ep 81) | Small gradients — no DC loss, only ASR loss through STE |
+| L_N2 | ±3.9 (ep 83) | Moderate — grad_accum logging bug fixed, now showing real gradients |
+| L_N3 | ±20.9 (ep 142) | Very large — compression at 0.354 (target 0.333), still converging |
+| L_N4 | ±18.6 (ep 94) | Very large — strongest DC pressure |
 
 The sign-flipping behavior is expected. The bias gradient oscillates because the
 compression ratio oscillates around the target:

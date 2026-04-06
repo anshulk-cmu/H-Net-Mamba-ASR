@@ -33,6 +33,10 @@ stat /data/user_data/anshulk/hnet_asr/LibriSpeech > /dev/null 2>&1
 source /home/anshulk/miniconda3/etc/profile.d/conda.sh
 conda activate hnetasr || { echo "ERROR: failed to activate hnetasr"; exit 1; }
 
+# Pin numpy to avoid 2.0 DDP crash (broadcast_object_list → tensor.numpy().tobytes())
+pip install numpy==1.26.4 --quiet 2>/dev/null
+echo "NumPy  : $(python -c 'import numpy; print(numpy.__version__)')"
+
 echo "Python : $(which python)"
 echo "GPUs   : $(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader)"
 echo ""
@@ -51,10 +55,34 @@ torchrun --nproc_per_node=2 --master_port=$MASTER_PORT train_s2s_hmamba.py hpara
     --use_wandb True \
     --precision bf16
 
-EXIT_CODE=$?
+TRAIN_EXIT=$?
 
 echo ""
 echo "============================================================"
-echo "Job finished — exit code: $EXIT_CODE — $(date)"
+echo "Training + with-LM eval finished — exit code: $TRAIN_EXIT — $(date)"
 echo "============================================================"
-exit $EXIT_CODE
+
+if [ $TRAIN_EXIT -eq 0 ]; then
+    echo ""
+    echo "============================================================"
+    echo "Starting no-LM eval (single GPU) — $(date)"
+    echo "============================================================"
+
+    python train_s2s_hmamba.py hparams/S2S/hmamba_large_N2.yaml \
+        --data_folder /data/user_data/anshulk/hnet_asr/LibriSpeech \
+        --output_folder /data/user_data/anshulk/hnet_asr/results/hmamba_large_N2 \
+        --batch_size 16 \
+        --max_batch_length_train 600 \
+        --max_batch_length_val 100 \
+        --precision bf16 \
+        --skip_train True \
+        --no_lm True
+
+    NOLM_EXIT=$?
+    echo ""
+    echo "============================================================"
+    echo "No-LM eval finished — exit code: $NOLM_EXIT — $(date)"
+    echo "============================================================"
+fi
+
+exit $TRAIN_EXIT
