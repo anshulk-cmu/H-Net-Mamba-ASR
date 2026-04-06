@@ -34,3 +34,9 @@ __main__ - [H-Mamba]   - q_proj_layer.weight: shape=torch.Size([144, 144]), requ
 __main__ - [H-Mamba]   - k_proj_layer.weight: shape=torch.Size([144, 144]), requires_grad=True
 speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-06+08-11-08+00
 Loaded the average
+speechbrain.utils.train_logger - Epoch loaded: 234 - test loss: 1.29, test ACC: 9.73e-01, test WER: 2.42
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x1530f80f2d90> in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-06+14-58-20+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-06+14-58-20+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-06+08-11-08+00
+speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-06+14-58-20+00
+Loaded the average

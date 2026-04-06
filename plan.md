@@ -40,7 +40,7 @@
 | Final validation (job 6928979) | DDP training + grad norm fix verified. Grad norm 1195.0 (max 1770.9), bias_grad 4.9→13.5. |
 | Comprehensive documentation | docs/hmamba_dynamic_chunking.md (2500+ lines), BiMamba v2, SSM math, decoder, pos encoding |
 | NumPy downgrade fix | numpy 2.0.2 → 1.26.4, fixes DDP broadcast crash (PyTorch 2.1.1 incompatible with NumPy 2.x) |
-| SLURM partition config | Small: general (2d). Large: started on preempt, L_N1/L_N2 moved to general (2d). |
+| SLURM partition config | Small: general (2d, needs resubmit). Large: L_N1/L_N2 on general (2d), L_N3/L_N4 on preempt (14d). |
 | Baseline reproduction docs | docs/baseline_reproduction.md |
 
 ### 1.2 Bug Fixes (All Verified)
@@ -75,20 +75,20 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 | Streaming incompatibility | BiMamba is bidirectional, routing uses look-ahead. Offline-only by design. |
 | N=3 anomaly (WER ~10% vs N=2's ~4%) | Persists at both small and large scales after all bug fixes. Likely intrinsic difficulty of 67% compression, not a code bug. Paper will discuss as a finding. |
 
-### 1.4 In Progress (as of April 6)
+### 1.4 In Progress (as of April 6 evening)
 
 | Item | Status |
 |------|--------|
-| H-Mamba Small N=1 (job 6951736) | Running, general, epoch 165, ACC 97.2%, WER **3.54%** (ep 120), comp 0.803. Converging slowly. |
-| H-Mamba Small N=2 | **Done.** 234 epochs (patience). No LM: **2.42/5.98**. With-LM eval submitted. Best ep 230, comp 0.501. |
+| H-Mamba Small N=1 (job 6987430) | Timed out ep 200 (batch 479/1603, job 6951736). Best WER **3.32%** (ep 190), ACC 97.3%, comp 0.796. Resubmitted job 6987430, running on general. |
+| H-Mamba Small N=2 | **Done.** 234 epochs (patience). No LM: **2.42/5.98**. With-LM eval running (~96%, job 6986666). Best ep 230, comp 0.501. |
 | H-Mamba Small N=3 | **Done.** 205 epochs (patience). With LM: **5.31/10.29**. No LM: **10.62/18.66**. Best ep 160. |
-| H-Mamba Small N=4 | **Done.** 193 epochs (patience). With LM: **5.21/11.06**. No LM: **9.24/17.38**. Best ep 163. |
-| H-Mamba Large N=1 (job 6965857) | Running (general), epoch 84, ACC 97.5%, WER **2.76%** (ep 80), comp 0.854. Moved from preempt. |
-| H-Mamba Large N=2 (job 6968230) | Running (general), epoch 82, ACC 97.4%, WER **3.15%** (ep 80), comp 0.501. Moved from preempt. |
-| H-Mamba Large N=3 (job 6965501) | **With-LM done: 5.21/10.10.** Patience exhausted ~ep 120 (best ~ep 90). Pending preempt, ep 142. Needs no-LM eval. |
-| H-Mamba Large N=4 (job 6965502) | Pending (preempt), epoch 93, ACC 87.3%, WER **6.48%** (ep 90), comp 0.251. |
+| H-Mamba Small N=4 | **Done.** 193 epochs (patience). With LM: **5.21/11.06**. No LM: **9.24/17.38**. Best ep 160. |
+| H-Mamba Large N=1 (job 6965857) | Running (general), epoch 108, ACC 97.6%, WER **2.76%** (ep 80), then 2.77 (ep 90), 2.85 (ep 100), comp 0.834. |
+| H-Mamba Large N=2 (job 6968230) | Running (general), epoch 112, ACC 97.5%, WER **2.87%** (ep 110), improving: 3.15→2.94→2.99→2.87, comp 0.501. |
+| H-Mamba Large N=3 (job 6965501) | **With-LM done: 5.21/10.10** (best ep 90). Running preempt, ep 164. Best dev WER 7.89% (ep 90). Needs no-LM eval. |
+| H-Mamba Large N=4 (job 6965502) | Pending (preempt), epoch 93, ACC 87.3% (regressed from 90.8%), WER **6.46%** (ep 70), comp 0.251. |
 
-**Note:** Small runs hit 2-day wall on April 4, resubmitted same day. L_N1, L_N2, L_N4 crashed on preempt restart due to `huggingface-hub` 1.8.0 incompatibility with `transformers` 4.40.0 — fixed by downgrading to 0.36.2, resubmitted April 5. L_N1 and L_N2 moved from preempt to general on April 5-6. L_N3 with-LM eval completed (5.21/10.10) — patience exhausted ~epoch 120, then requeued job continued training to epoch 142. SLURM logs were overwritten on restart but all data recovered from `epoch_metrics.csv` (persistent, never overwritten).
+**Note:** Small runs hit 2-day wall on April 4, resubmitted same day. S_N1 timed out again on April 6 in epoch 200. L_N1, L_N2, L_N4 crashed on preempt restart due to `huggingface-hub` 1.8.0 incompatibility with `transformers` 4.40.0 — fixed by downgrading to 0.36.2, resubmitted April 5. L_N1 and L_N2 moved from preempt to general on April 5-6. L_N3 with-LM eval completed (5.21/10.10) — best epoch 90, training continues past eval (now ep 164). SLURM logs were overwritten on restart but all data recovered from log.txt (persistent).
 
 ### 1.5 Not Started
 
@@ -169,25 +169,21 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 - Removed all conformer_large_CTC traces (code, logs, configs, docs, results on disk).
 
 **Day 6 (April 6) — IN PROGRESS:**
-- L_N1 running on general, epoch 84. L_N2 running on general, epoch 82.
-- S_N1 epoch 165, S_N2 epoch 221. Both still training.
-- L_N3 pending preempt (job 6965501), L_N4 pending preempt (job 6965502).
-- Full documentation audit against disk data — found L_N3 results not in any docs, updated all.
+- **S_N1 timed out** in epoch 200 (batch 479/1603, job 6951736). Best dev WER **3.32%** (ep 190). Resubmitted as job 6987430 on general.
+- **S_N2 completed** training (234 epochs). With-LM eval running (job 6986666, ~96%).
+- **L_N1** running on general, epoch 108. WER: 2.76% (ep 80) → 2.77 (ep 90) → 2.85 (ep 100).
+- **L_N2** running on general, epoch 112. WER: 3.15 (ep 80) → 2.94 (ep 90) → 2.99 (ep 100) → **2.87** (ep 110).
+- **L_N3** running on preempt (job 6965501), epoch 164. Best WER 7.89% (ep 90).
+- **L_N4** pending preempt (job 6965502), epoch 93. Best WER 6.46% (ep 70).
+- Full documentation audit — verified all numbers against actual log.txt, wer_test*.txt files, and SLURM records. Fixed S_N4 best epoch (was 163, actually 160), updated all epoch/WER numbers.
 
-**Days 4-5:**
-- Install Montreal Forced Aligner, download English acoustic model
-- Run MFA alignment on LibriSpeech test-clean and test-other (CPU, overnight)
-- Create ablation configs:
-  - `conformer_dc_small_N2.yaml` — Conformer encoder with DC wrapper at layer 6
-  - `conmamba_fixed2x_small.yaml` — ConMamba with AvgPool at layer 6 (no learned routing)
-- Resubmit small runs after 2-day wall (~April 4 evening)
+**Day 7 (April 7) — TODO:**
+- Monitor S_N1 (should finish remaining training), collect S_N2 with-LM results.
+- Monitor L_N1, L_N2 progress (will hit 2-day wall ~April 8).
+- Consider moving L_N4 from preempt to general when GPU slots open.
+- Begin MFA alignment setup and ablation configs.
 
-**Days 6-7:**
-- Monitor small H-Mamba training: loss curves, compression ratio convergence
-- N=2 compression ratio already stabilized at 0.50 — continue monitoring
-- If compression drifts, adjust DC loss weight and restart affected run
-
-**Deliverable:** 4 small runs training. MFA running. Ablation configs ready.
+**Deliverable:** S_N1/S_N2 fully evaluated. L_N1/L_N2 progressing. MFA setup started.
 
 ---
 
@@ -451,6 +447,9 @@ loss = ((1 - true_ratio) * (1 - average_prob) +
 1. ~~Run GPU smoke test~~ All passed: single GPU (v2), DDP (v3 job 6928765), resume (job 6928816)
 2. ~~Submit small N=1,2,3,4 to SLURM~~ Running since April 2 (jobs 6933669-6933675)
 3. ~~Submit large N=1,2,3,4 to SLURM~~ Running since April 2 (jobs 6933856-6933859, preempt)
-4. **Resubmit small N=1,2,3,4** when they hit the 2-day wall (~April 4 evening). Same scripts, SpeechBrain auto-resumes.
-5. Install MFA and start alignment
-6. Create ablation configs (conformer_dc, fixed-2x)
+4. ~~Resubmit small N=1,2,3,4~~ Resubmitted April 4. S_N2/S_N3/S_N4 completed. S_N1 timed out again April 6, resubmitted as job 6987430.
+5. **Collect S_N2 with-LM eval results** (job 6986666 at ~96%, expected shortly)
+6. **Plan for L_N1/L_N2 2-day wall** (~April 8) — resubmit or move to preempt
+7. **Submit L_N3 no-LM eval** (with-LM results already on disk)
+8. Install MFA and start alignment
+9. Create ablation configs (conformer_dc, fixed-2x)
