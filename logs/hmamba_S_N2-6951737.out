@@ -5940,3 +5940,347 @@ HMamba.hmamba_S_N2 - E218 B0400 | loss=18.883 (ctc=23.743 seq=11.059 dc=0.8038) 
 HMamba.hmamba_S_N2 - E218 B0450 | loss=19.959 (ctc=26.614 seq=11.345 dc=0.8067) | comp=0.499 (target=0.500) | bias=-0.126 (grad=-0.0625) | VRAM=47266MB | t=257ms
 HMamba.hmamba_S_N2 - E218 B0500 | loss=18.315 (ctc=22.524 seq=10.381 dc=0.8583) | comp=0.508 (target=0.500) | bias=-0.127 (grad=5.8594) | VRAM=47274MB | t=148ms
 HMamba.hmamba_S_N2 - E218 B0550 | loss=21.168 (ctc=26.323 seq=13.361 dc=0.7837) | comp=0.499 (target=0.500) | bias=-0.128 (grad=-5.8594) | VRAM=47276MB | t=162ms
+HMamba.hmamba_S_N2 - E218 B0600 | loss=17.816 (ctc=21.153 seq=10.765 dc=0.7870) | comp=0.501 (target=0.500) | bias=-0.128 (grad=-5.9375) | VRAM=46710MB | t=294ms
+HMamba.hmamba_S_N2 - E218 B0650 | loss=19.463 (ctc=23.440 seq=12.158 dc=0.7841) | comp=0.501 (target=0.500) | bias=-0.129 (grad=5.7344) | VRAM=46716MB | t=158ms
+HMamba.hmamba_S_N2 - E218 B0700 | loss=20.237 (ctc=25.018 seq=12.333 dc=0.8198) | comp=0.504 (target=0.500) | bias=-0.127 (grad=0.0156) | VRAM=46738MB | t=223ms
+HMamba.hmamba_S_N2 - E218 B0750 | loss=20.194 (ctc=25.253 seq=12.077 dc=0.8328) | comp=0.495 (target=0.500) | bias=-0.128 (grad=0.0625) | VRAM=47288MB | t=279ms
+HMamba.hmamba_S_N2 - E218 B0800 | loss=21.431 (ctc=26.013 seq=13.518 dc=0.8330) | comp=0.495 (target=0.500) | bias=-0.129 (grad=-5.8906) | VRAM=47332MB | t=164ms
+HMamba.hmamba_S_N2 - E218 B0850 | loss=19.276 (ctc=23.860 seq=11.697 dc=0.7861) | comp=0.502 (target=0.500) | bias=-0.126 (grad=5.9375) | VRAM=47296MB | t=182ms
+HMamba.hmamba_S_N2 - E218 B0900 | loss=18.683 (ctc=23.535 seq=10.974 dc=0.7882) | comp=0.499 (target=0.500) | bias=-0.127 (grad=-0.0312) | VRAM=46734MB | t=165ms
+HMamba.hmamba_S_N2 - E218 B0950 | loss=18.435 (ctc=23.212 seq=10.760 dc=0.7879) | comp=0.501 (target=0.500) | bias=-0.127 (grad=5.8594) | VRAM=47330MB | t=165ms
+HMamba.hmamba_S_N2 - E218 B1000 | loss=18.619 (ctc=22.860 seq=11.095 dc=0.7988) | comp=0.498 (target=0.500) | bias=-0.126 (grad=0.0625) | VRAM=46712MB | t=168ms
+HMamba.hmamba_S_N2 - E218 B1050 | loss=17.853 (ctc=20.663 seq=11.117 dc=0.7745) | comp=0.501 (target=0.500) | bias=-0.127 (grad=-0.0156) | VRAM=47284MB | t=166ms
+HMamba.hmamba_S_N2 - E218 B1100 | loss=17.995 (ctc=21.842 seq=10.595 dc=0.8053) | comp=0.503 (target=0.500) | bias=-0.127 (grad=-0.0781) | VRAM=46722MB | t=223ms
+HMamba.hmamba_S_N2 - E218 B1150 | loss=17.954 (ctc=20.720 seq=11.000 dc=0.8077) | comp=0.504 (target=0.500) | bias=-0.127 (grad=-0.0469) | VRAM=47300MB | t=170ms
+HMamba.hmamba_S_N2 - E218 B1200 | loss=17.535 (ctc=21.334 seq=10.226 dc=0.7953) | comp=0.499 (target=0.500) | bias=-0.127 (grad=-0.1094) | VRAM=46728MB | t=347ms
+HMamba.hmamba_S_N2 - E218 B1250 | loss=18.479 (ctc=21.940 seq=11.177 dc=0.8147) | comp=0.504 (target=0.500) | bias=-0.126 (grad=-0.0938) | VRAM=47318MB | t=169ms
+HMamba.hmamba_S_N2 - E218 B1300 | loss=20.434 (ctc=24.875 seq=12.624 dc=0.8270) | comp=0.495 (target=0.500) | bias=-0.127 (grad=-6.0000) | VRAM=46722MB | t=214ms
+HMamba.hmamba_S_N2 - E218 B1350 | loss=16.289 (ctc=18.251 seq=9.702 dc=0.8045) | comp=0.501 (target=0.500) | bias=-0.128 (grad=-5.8125) | VRAM=47646MB | t=437ms
+HMamba.hmamba_S_N2 - E218 B1400 | loss=20.280 (ctc=25.025 seq=12.605 dc=0.7898) | comp=0.499 (target=0.500) | bias=-0.128 (grad=-5.9062) | VRAM=47300MB | t=157ms
+HMamba.hmamba_S_N2 - E218 B1450 | loss=19.687 (ctc=23.285 seq=12.540 dc=0.7847) | comp=0.502 (target=0.500) | bias=-0.128 (grad=5.7969) | VRAM=47300MB | t=169ms
+HMamba.hmamba_S_N2 - E218 B1500 | loss=21.347 (ctc=26.953 seq=13.276 dc=0.7936) | comp=0.499 (target=0.500) | bias=-0.128 (grad=0.0156) | VRAM=47302MB | t=256ms
+HMamba.hmamba_S_N2 - E218 B1550 | loss=18.429 (ctc=22.095 seq=11.279 dc=0.7811) | comp=0.501 (target=0.500) | bias=-0.128 (grad=0.0000) | VRAM=46716MB | t=173ms
+HMamba.hmamba_S_N2 - E218 B1600 | loss=18.871 (ctc=23.194 seq=11.421 dc=0.7837) | comp=0.501 (target=0.500) | bias=-0.127 (grad=0.0469) | VRAM=47304MB | t=154ms
+__main__ - [H-Mamba] Epoch 218: compression=0.501, dc_loss=0.8009, target_N=2.00
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+HMamba.hmamba_S_N2 - 
+============================================================
+HMamba.hmamba_S_N2 - Epoch 218 Summary
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - Training:
+HMamba.hmamba_S_N2 -   Loss: 18.6783 (CTC=22.7742, Seq=11.2020, DC=0.8009)
+HMamba.hmamba_S_N2 - Validation:
+HMamba.hmamba_S_N2 -   Loss: 6.5101, ACC: 0.9712
+HMamba.hmamba_S_N2 - Dynamic Chunking:
+HMamba.hmamba_S_N2 -   Compression: 0.501 ± 0.003 (target: 0.500)
+HMamba.hmamba_S_N2 -   Avg chunks: 0.0, Boundary prob: 0.000
+HMamba.hmamba_S_N2 - Performance:
+HMamba.hmamba_S_N2 -   RTF: 0.0006 (1625.5x realtime)
+HMamba.hmamba_S_N2 -   Epoch time: 1186.2s, Avg batch: 204.2ms
+HMamba.hmamba_S_N2 -   Audio processed: 535.58 hours
+HMamba.hmamba_S_N2 - GPU:
+HMamba.hmamba_S_N2 -   Peak VRAM: 12567MB, Avg VRAM: 47152MB
+HMamba.hmamba_S_N2 - Optimization:
+HMamba.hmamba_S_N2 -   LR: 0.000267, Grad norm: 26.5992 (max: 286.5813)
+HMamba.hmamba_S_N2 - ============================================================
+
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x14ab185f1310> in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-05+22-47-52+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-05+22-47-52+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-05+19-14-58+00
+speechbrain.utils.epoch_loop - Going into epoch 219
+__main__ - [H-Mamba] Epoch 219: target_N=2.00, gumbel_tau=0.300, temp=2.004, bias=-0.127
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - Starting Epoch 219
+HMamba.hmamba_S_N2 - ============================================================
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+HMamba.hmamba_S_N2 - E219 B0000 | loss=21.927 (ctc=28.022 seq=13.787 dc=0.7739) | comp=0.500 (target=0.500) | bias=-0.127 (grad=-5.8594) | VRAM=46698MB | t=195ms
+HMamba.hmamba_S_N2 - E219 B0050 | loss=18.900 (ctc=23.732 seq=11.139 dc=0.7966) | comp=0.504 (target=0.500) | bias=-0.125 (grad=-0.0312) | VRAM=47332MB | t=167ms
+HMamba.hmamba_S_N2 - E219 B0100 | loss=15.963 (ctc=19.600 seq=8.731 dc=0.7943) | comp=0.498 (target=0.500) | bias=-0.127 (grad=-5.8281) | VRAM=47264MB | t=397ms
+HMamba.hmamba_S_N2 - E219 B0150 | loss=14.749 (ctc=15.329 seq=8.610 dc=0.8248) | comp=0.501 (target=0.500) | bias=-0.126 (grad=-5.8438) | VRAM=47332MB | t=140ms
+HMamba.hmamba_S_N2 - E219 B0200 | loss=18.717 (ctc=23.605 seq=11.055 dc=0.7793) | comp=0.501 (target=0.500) | bias=-0.128 (grad=-0.1250) | VRAM=47304MB | t=160ms
+HMamba.hmamba_S_N2 - E219 B0250 | loss=20.641 (ctc=26.652 seq=12.386 dc=0.7950) | comp=0.504 (target=0.500) | bias=-0.128 (grad=5.6719) | VRAM=47326MB | t=159ms
+HMamba.hmamba_S_N2 - E219 B0300 | loss=17.100 (ctc=20.804 seq=9.883 dc=0.7883) | comp=0.502 (target=0.500) | bias=-0.127 (grad=-0.0938) | VRAM=46722MB | t=214ms
+HMamba.hmamba_S_N2 - E219 B0350 | loss=19.657 (ctc=23.966 seq=11.629 dc=0.8654) | comp=0.493 (target=0.500) | bias=-0.126 (grad=0.0000) | VRAM=46736MB | t=167ms
+HMamba.hmamba_S_N2 - E219 B0400 | loss=20.835 (ctc=27.653 seq=12.116 dc=0.8116) | comp=0.497 (target=0.500) | bias=-0.128 (grad=0.0156) | VRAM=47314MB | t=172ms
+HMamba.hmamba_S_N2 - E219 B0450 | loss=17.942 (ctc=21.558 seq=10.792 dc=0.7840) | comp=0.499 (target=0.500) | bias=-0.127 (grad=-0.0312) | VRAM=47322MB | t=160ms
+HMamba.hmamba_S_N2 - E219 B0500 | loss=18.108 (ctc=22.241 seq=10.552 dc=0.8098) | comp=0.496 (target=0.500) | bias=-0.127 (grad=0.0000) | VRAM=47246MB | t=448ms
+HMamba.hmamba_S_N2 - E219 B0550 | loss=16.772 (ctc=19.826 seq=9.731 dc=0.8026) | comp=0.501 (target=0.500) | bias=-0.128 (grad=-0.0156) | VRAM=47664MB | t=310ms
+HMamba.hmamba_S_N2 - E219 B0600 | loss=13.547 (ctc=14.039 seq=7.469 dc=0.8214) | comp=0.505 (target=0.500) | bias=-0.128 (grad=0.0312) | VRAM=46690MB | t=135ms
+HMamba.hmamba_S_N2 - E219 B0650 | loss=19.860 (ctc=24.084 seq=12.503 dc=0.7765) | comp=0.501 (target=0.500) | bias=-0.128 (grad=-0.0156) | VRAM=47302MB | t=156ms
+HMamba.hmamba_S_N2 - E219 B0700 | loss=16.805 (ctc=20.402 seq=9.611 dc=0.7915) | comp=0.498 (target=0.500) | bias=-0.127 (grad=-5.7812) | VRAM=47304MB | t=537ms
+HMamba.hmamba_S_N2 - E219 B0750 | loss=14.175 (ctc=14.807 seq=8.062 dc=0.8179) | comp=0.504 (target=0.500) | bias=-0.127 (grad=0.0000) | VRAM=47304MB | t=139ms
+HMamba.hmamba_S_N2 - E219 B0800 | loss=21.431 (ctc=27.997 seq=12.882 dc=0.8030) | comp=0.498 (target=0.500) | bias=-0.128 (grad=-5.7812) | VRAM=47282MB | t=280ms
+HMamba.hmamba_S_N2 - E219 B0850 | loss=18.867 (ctc=24.310 seq=11.008 dc=0.7736) | comp=0.502 (target=0.500) | bias=-0.129 (grad=0.1250) | VRAM=47296MB | t=163ms
+HMamba.hmamba_S_N2 - E219 B0900 | loss=13.853 (ctc=14.561 seq=7.517 dc=0.8446) | comp=0.507 (target=0.500) | bias=-0.129 (grad=0.0312) | VRAM=47304MB | t=149ms
+HMamba.hmamba_S_N2 - E219 B0950 | loss=16.617 (ctc=20.082 seq=9.555 dc=0.7809) | comp=0.501 (target=0.500) | bias=-0.127 (grad=0.0781) | VRAM=47276MB | t=160ms
+HMamba.hmamba_S_N2 - E219 B1000 | loss=21.067 (ctc=26.883 seq=13.004 dc=0.7797) | comp=0.500 (target=0.500) | bias=-0.129 (grad=5.8438) | VRAM=47324MB | t=256ms
+HMamba.hmamba_S_N2 - E219 B1050 | loss=19.106 (ctc=23.216 seq=11.523 dc=0.8151) | comp=0.496 (target=0.500) | bias=-0.129 (grad=-0.1094) | VRAM=47284MB | t=155ms
+HMamba.hmamba_S_N2 - E219 B1100 | loss=13.725 (ctc=14.379 seq=7.530 dc=0.8281) | comp=0.514 (target=0.500) | bias=-0.128 (grad=-0.0781) | VRAM=47668MB | t=148ms
+HMamba.hmamba_S_N2 - E219 B1150 | loss=19.903 (ctc=24.724 seq=12.301 dc=0.7749) | comp=0.501 (target=0.500) | bias=-0.128 (grad=0.1406) | VRAM=47258MB | t=165ms
+HMamba.hmamba_S_N2 - E219 B1200 | loss=18.962 (ctc=24.109 seq=11.216 dc=0.7757) | comp=0.500 (target=0.500) | bias=-0.127 (grad=0.0625) | VRAM=47320MB | t=163ms
+HMamba.hmamba_S_N2 - E219 B1250 | loss=17.759 (ctc=21.430 seq=10.466 dc=0.8008) | comp=0.498 (target=0.500) | bias=-0.128 (grad=0.0625) | VRAM=47286MB | t=159ms
+HMamba.hmamba_S_N2 - E219 B1300 | loss=19.589 (ctc=25.493 seq=11.449 dc=0.7853) | comp=0.502 (target=0.500) | bias=-0.127 (grad=0.0000) | VRAM=47276MB | t=471ms
+HMamba.hmamba_S_N2 - E219 B1350 | loss=20.344 (ctc=24.140 seq=12.780 dc=0.8313) | comp=0.507 (target=0.500) | bias=-0.126 (grad=5.8281) | VRAM=46536MB | t=282ms
+HMamba.hmamba_S_N2 - E219 B1400 | loss=18.633 (ctc=23.026 seq=10.751 dc=0.8401) | comp=0.506 (target=0.500) | bias=-0.126 (grad=5.8750) | VRAM=47332MB | t=166ms
+HMamba.hmamba_S_N2 - E219 B1450 | loss=18.464 (ctc=21.942 seq=11.367 dc=0.7850) | comp=0.502 (target=0.500) | bias=-0.127 (grad=-0.0312) | VRAM=47344MB | t=264ms
+HMamba.hmamba_S_N2 - E219 B1500 | loss=23.251 (ctc=30.460 seq=14.628 dc=0.7747) | comp=0.500 (target=0.500) | bias=-0.127 (grad=-5.9531) | VRAM=47292MB | t=164ms
+HMamba.hmamba_S_N2 - E219 B1550 | loss=17.174 (ctc=20.738 seq=9.992 dc=0.7915) | comp=0.502 (target=0.500) | bias=-0.127 (grad=5.8438) | VRAM=47328MB | t=160ms
+HMamba.hmamba_S_N2 - E219 B1600 | loss=23.336 (ctc=29.818 seq=14.963 dc=0.7832) | comp=0.500 (target=0.500) | bias=-0.128 (grad=-5.9219) | VRAM=46688MB | t=159ms
+__main__ - [H-Mamba] Epoch 219: compression=0.501, dc_loss=0.8006, target_N=2.00
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+HMamba.hmamba_S_N2 - 
+============================================================
+HMamba.hmamba_S_N2 - Epoch 219 Summary
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - Training:
+HMamba.hmamba_S_N2 -   Loss: 18.6350 (CTC=22.6977, Seq=11.1752, DC=0.8006)
+HMamba.hmamba_S_N2 - Validation:
+HMamba.hmamba_S_N2 -   Loss: 6.6667, ACC: 0.9705
+HMamba.hmamba_S_N2 - Dynamic Chunking:
+HMamba.hmamba_S_N2 -   Compression: 0.501 ± 0.003 (target: 0.500)
+HMamba.hmamba_S_N2 -   Avg chunks: 0.0, Boundary prob: 0.000
+HMamba.hmamba_S_N2 - Performance:
+HMamba.hmamba_S_N2 -   RTF: 0.0006 (1569.5x realtime)
+HMamba.hmamba_S_N2 -   Epoch time: 1225.9s, Avg batch: 206.9ms
+HMamba.hmamba_S_N2 -   Audio processed: 534.48 hours
+HMamba.hmamba_S_N2 - GPU:
+HMamba.hmamba_S_N2 -   Peak VRAM: 12602MB, Avg VRAM: 47157MB
+HMamba.hmamba_S_N2 - Optimization:
+HMamba.hmamba_S_N2 -   LR: 0.000267, Grad norm: 26.5967 (max: 322.9871)
+HMamba.hmamba_S_N2 - ============================================================
+
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x14ab185f1310> in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-05+23-08-20+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-05+23-08-20+00
+speechbrain.utils.epoch_loop - Going into epoch 220
+__main__ - [H-Mamba] Epoch 220: target_N=2.00, gumbel_tau=0.300, temp=2.004, bias=-0.128
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - Starting Epoch 220
+HMamba.hmamba_S_N2 - ============================================================
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+HMamba.hmamba_S_N2 - E220 B0000 | loss=19.849 (ctc=24.924 seq=12.090 dc=0.7819) | comp=0.501 (target=0.500) | bias=-0.128 (grad=-5.8750) | VRAM=47328MB | t=202ms
+HMamba.hmamba_S_N2 - E220 B0050 | loss=18.085 (ctc=22.726 seq=10.397 dc=0.7978) | comp=0.504 (target=0.500) | bias=-0.127 (grad=-0.0938) | VRAM=46738MB | t=238ms
+HMamba.hmamba_S_N2 - E220 B0100 | loss=19.825 (ctc=24.571 seq=12.213 dc=0.7809) | comp=0.500 (target=0.500) | bias=-0.128 (grad=-0.0469) | VRAM=47328MB | t=172ms
+HMamba.hmamba_S_N2 - E220 B0150 | loss=15.100 (ctc=15.844 seq=9.084 dc=0.7977) | comp=0.499 (target=0.500) | bias=-0.127 (grad=-5.8125) | VRAM=47288MB | t=139ms
+HMamba.hmamba_S_N2 - E220 B0200 | loss=21.137 (ctc=26.315 seq=13.022 dc=0.8254) | comp=0.496 (target=0.500) | bias=-0.128 (grad=-0.0781) | VRAM=47304MB | t=174ms
+HMamba.hmamba_S_N2 - E220 B0250 | loss=20.959 (ctc=25.522 seq=13.300 dc=0.7985) | comp=0.498 (target=0.500) | bias=-0.128 (grad=-5.7656) | VRAM=46730MB | t=170ms
+HMamba.hmamba_S_N2 - E220 B0300 | loss=18.616 (ctc=22.598 seq=11.177 dc=0.8027) | comp=0.498 (target=0.500) | bias=-0.127 (grad=-0.0312) | VRAM=46690MB | t=176ms
+HMamba.hmamba_S_N2 - E220 B0350 | loss=19.889 (ctc=25.230 seq=11.893 dc=0.7989) | comp=0.498 (target=0.500) | bias=-0.129 (grad=0.0938) | VRAM=47304MB | t=168ms
+HMamba.hmamba_S_N2 - E220 B0400 | loss=15.181 (ctc=16.797 seq=8.759 dc=0.8021) | comp=0.504 (target=0.500) | bias=-0.128 (grad=-0.0625) | VRAM=47304MB | t=135ms
+HMamba.hmamba_S_N2 - E220 B0450 | loss=18.082 (ctc=22.650 seq=10.533 dc=0.7829) | comp=0.502 (target=0.500) | bias=-0.128 (grad=-0.1094) | VRAM=47298MB | t=156ms
+HMamba.hmamba_S_N2 - E220 B0500 | loss=22.813 (ctc=29.095 seq=14.429 dc=0.7969) | comp=0.498 (target=0.500) | bias=-0.128 (grad=-5.8750) | VRAM=47304MB | t=160ms
+HMamba.hmamba_S_N2 - E220 B0550 | loss=19.161 (ctc=23.215 seq=11.834 dc=0.7827) | comp=0.500 (target=0.500) | bias=-0.128 (grad=0.0000) | VRAM=46694MB | t=160ms
+HMamba.hmamba_S_N2 - E220 B0600 | loss=17.620 (ctc=21.487 seq=10.227 dc=0.8031) | comp=0.498 (target=0.500) | bias=-0.128 (grad=-5.9375) | VRAM=47308MB | t=170ms
+HMamba.hmamba_S_N2 - E220 B0650 | loss=18.827 (ctc=23.117 seq=11.462 dc=0.7737) | comp=0.501 (target=0.500) | bias=-0.127 (grad=-5.8125) | VRAM=46712MB | t=156ms
+HMamba.hmamba_S_N2 - E220 B0700 | loss=18.391 (ctc=22.542 seq=11.054 dc=0.7780) | comp=0.500 (target=0.500) | bias=-0.127 (grad=5.8125) | VRAM=47330MB | t=155ms
+HMamba.hmamba_S_N2 - E220 B0750 | loss=18.821 (ctc=23.447 seq=11.100 dc=0.8034) | comp=0.503 (target=0.500) | bias=-0.127 (grad=5.9062) | VRAM=47328MB | t=160ms
+HMamba.hmamba_S_N2 - E220 B0800 | loss=19.576 (ctc=24.374 seq=11.950 dc=0.7796) | comp=0.500 (target=0.500) | bias=-0.126 (grad=0.0781) | VRAM=47320MB | t=161ms
+HMamba.hmamba_S_N2 - E220 B0850 | loss=20.904 (ctc=25.931 seq=12.735 dc=0.8420) | comp=0.507 (target=0.500) | bias=-0.126 (grad=5.9375) | VRAM=47282MB | t=318ms
+HMamba.hmamba_S_N2 - E220 B0900 | loss=18.125 (ctc=21.740 seq=10.834 dc=0.8038) | comp=0.496 (target=0.500) | bias=-0.127 (grad=-5.8125) | VRAM=47308MB | t=165ms
+HMamba.hmamba_S_N2 - E220 B0950 | loss=17.976 (ctc=21.420 seq=10.536 dc=0.8351) | comp=0.507 (target=0.500) | bias=-0.128 (grad=-0.0469) | VRAM=47318MB | t=171ms
+HMamba.hmamba_S_N2 - E220 B1000 | loss=18.972 (ctc=24.370 seq=10.882 dc=0.8087) | comp=0.497 (target=0.500) | bias=-0.128 (grad=-0.0625) | VRAM=46710MB | t=250ms
+HMamba.hmamba_S_N2 - E220 B1050 | loss=18.453 (ctc=23.028 seq=10.898 dc=0.7833) | comp=0.500 (target=0.500) | bias=-0.127 (grad=0.0000) | VRAM=47316MB | t=163ms
+HMamba.hmamba_S_N2 - E220 B1100 | loss=14.481 (ctc=14.943 seq=8.376 dc=0.8269) | comp=0.504 (target=0.500) | bias=-0.128 (grad=-5.8281) | VRAM=47342MB | t=134ms
+HMamba.hmamba_S_N2 - E220 B1150 | loss=21.976 (ctc=27.983 seq=13.808 dc=0.7831) | comp=0.499 (target=0.500) | bias=-0.128 (grad=-5.8750) | VRAM=46702MB | t=165ms
+HMamba.hmamba_S_N2 - E220 B1200 | loss=19.224 (ctc=23.191 seq=11.839 dc=0.7959) | comp=0.501 (target=0.500) | bias=-0.128 (grad=5.8594) | VRAM=47320MB | t=164ms
+HMamba.hmamba_S_N2 - E220 B1250 | loss=17.791 (ctc=21.719 seq=10.424 dc=0.7956) | comp=0.498 (target=0.500) | bias=-0.128 (grad=-5.8906) | VRAM=46720MB | t=157ms
+HMamba.hmamba_S_N2 - E220 B1300 | loss=18.301 (ctc=21.351 seq=11.277 dc=0.8003) | comp=0.498 (target=0.500) | bias=-0.129 (grad=-5.8281) | VRAM=47302MB | t=428ms
+HMamba.hmamba_S_N2 - E220 B1350 | loss=18.925 (ctc=23.007 seq=11.483 dc=0.7969) | comp=0.498 (target=0.500) | bias=-0.128 (grad=-5.7969) | VRAM=47344MB | t=298ms
+HMamba.hmamba_S_N2 - E220 B1400 | loss=20.215 (ctc=25.457 seq=12.351 dc=0.7863) | comp=0.502 (target=0.500) | bias=-0.129 (grad=-0.0156) | VRAM=47344MB | t=158ms
+HMamba.hmamba_S_N2 - E220 B1450 | loss=19.291 (ctc=23.974 seq=11.753 dc=0.7743) | comp=0.500 (target=0.500) | bias=-0.128 (grad=5.8281) | VRAM=47328MB | t=170ms
+HMamba.hmamba_S_N2 - E220 B1500 | loss=19.241 (ctc=23.679 seq=11.665 dc=0.7943) | comp=0.501 (target=0.500) | bias=-0.129 (grad=-0.1406) | VRAM=46734MB | t=267ms
+HMamba.hmamba_S_N2 - E220 B1550 | loss=14.785 (ctc=15.255 seq=8.753 dc=0.8164) | comp=0.507 (target=0.500) | bias=-0.128 (grad=5.9375) | VRAM=47672MB | t=140ms
+HMamba.hmamba_S_N2 - E220 B1600 | loss=18.824 (ctc=23.632 seq=11.213 dc=0.7770) | comp=0.499 (target=0.500) | bias=-0.128 (grad=-0.0312) | VRAM=46700MB | t=162ms
+__main__ - [H-Mamba] Epoch 220: compression=0.501, dc_loss=0.8005, target_N=2.00
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+HMamba.hmamba_S_N2 - 
+============================================================
+HMamba.hmamba_S_N2 - Epoch 220 Summary
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - Training:
+HMamba.hmamba_S_N2 -   Loss: 18.6585 (CTC=22.7781, Seq=11.1750, DC=0.8005)
+HMamba.hmamba_S_N2 - Validation:
+HMamba.hmamba_S_N2 -   Loss: 6.7126, ACC: 0.9702
+HMamba.hmamba_S_N2 -   WER: 3.50%
+HMamba.hmamba_S_N2 - Dynamic Chunking:
+HMamba.hmamba_S_N2 -   Compression: 0.501 ± 0.003 (target: 0.500)
+HMamba.hmamba_S_N2 -   Avg chunks: 0.0, Boundary prob: 0.000
+HMamba.hmamba_S_N2 - Performance:
+HMamba.hmamba_S_N2 -   RTF: 0.0011 (883.7x realtime)
+HMamba.hmamba_S_N2 -   Epoch time: 2175.5s, Avg batch: 203.8ms
+HMamba.hmamba_S_N2 -   Audio processed: 534.03 hours
+HMamba.hmamba_S_N2 - GPU:
+HMamba.hmamba_S_N2 -   Peak VRAM: 12592MB, Avg VRAM: 47152MB
+HMamba.hmamba_S_N2 - Optimization:
+HMamba.hmamba_S_N2 -   LR: 0.000266, Grad norm: 25.9276 (max: 577.5771)
+HMamba.hmamba_S_N2 - ============================================================
+
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x14ab185f1310> in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-05+23-44-38+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-05+23-44-38+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-05+20-09-45+00
+speechbrain.utils.epoch_loop - Going into epoch 221
+__main__ - [H-Mamba] Epoch 221: target_N=2.00, gumbel_tau=0.300, temp=2.004, bias=-0.128
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - Starting Epoch 221
+HMamba.hmamba_S_N2 - ============================================================
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+HMamba.hmamba_S_N2 - E221 B0000 | loss=17.893 (ctc=22.649 seq=10.029 dc=0.8157) | comp=0.505 (target=0.500) | bias=-0.128 (grad=5.7969) | VRAM=47260MB | t=379ms
+HMamba.hmamba_S_N2 - E221 B0050 | loss=20.233 (ctc=26.269 seq=12.119 dc=0.7738) | comp=0.501 (target=0.500) | bias=-0.128 (grad=-0.0156) | VRAM=47300MB | t=163ms
+HMamba.hmamba_S_N2 - E221 B0100 | loss=20.230 (ctc=25.504 seq=12.269 dc=0.7981) | comp=0.503 (target=0.500) | bias=-0.128 (grad=5.8281) | VRAM=46714MB | t=168ms
+HMamba.hmamba_S_N2 - E221 B0150 | loss=19.613 (ctc=23.850 seq=12.059 dc=0.8034) | comp=0.499 (target=0.500) | bias=-0.128 (grad=-5.7969) | VRAM=47312MB | t=161ms
+HMamba.hmamba_S_N2 - E221 B0200 | loss=21.221 (ctc=27.763 seq=12.675 dc=0.8040) | comp=0.504 (target=0.500) | bias=-0.126 (grad=5.8438) | VRAM=47244MB | t=510ms
+HMamba.hmamba_S_N2 - E221 B0250 | loss=23.425 (ctc=30.176 seq=14.827 dc=0.7985) | comp=0.503 (target=0.500) | bias=-0.127 (grad=5.8125) | VRAM=46676MB | t=167ms
+HMamba.hmamba_S_N2 - E221 B0300 | loss=17.424 (ctc=20.632 seq=10.365 dc=0.7957) | comp=0.498 (target=0.500) | bias=-0.128 (grad=0.0312) | VRAM=46724MB | t=209ms
+HMamba.hmamba_S_N2 - E221 B0350 | loss=18.735 (ctc=23.716 seq=10.922 dc=0.7950) | comp=0.502 (target=0.500) | bias=-0.128 (grad=5.9688) | VRAM=46722MB | t=466ms
+HMamba.hmamba_S_N2 - E221 B0400 | loss=19.438 (ctc=23.768 seq=11.760 dc=0.8151) | comp=0.505 (target=0.500) | bias=-0.128 (grad=5.8594) | VRAM=46748MB | t=464ms
+HMamba.hmamba_S_N2 - E221 B0450 | loss=20.965 (ctc=25.095 seq=13.488 dc=0.7989) | comp=0.497 (target=0.500) | bias=-0.128 (grad=-0.0938) | VRAM=47330MB | t=160ms
+HMamba.hmamba_S_N2 - E221 B0500 | loss=21.275 (ctc=26.865 seq=13.261 dc=0.7866) | comp=0.499 (target=0.500) | bias=-0.127 (grad=-5.7344) | VRAM=47346MB | t=174ms
+HMamba.hmamba_S_N2 - E221 B0550 | loss=17.131 (ctc=20.978 seq=9.916 dc=0.7792) | comp=0.501 (target=0.500) | bias=-0.130 (grad=-5.9688) | VRAM=47282MB | t=153ms
+HMamba.hmamba_S_N2 - E221 B0600 | loss=14.965 (ctc=16.544 seq=8.539 dc=0.8049) | comp=0.504 (target=0.500) | bias=-0.129 (grad=-0.0781) | VRAM=46698MB | t=148ms
+HMamba.hmamba_S_N2 - E221 B0650 | loss=19.511 (ctc=25.416 seq=11.249 dc=0.8024) | comp=0.505 (target=0.500) | bias=-0.128 (grad=5.9531) | VRAM=47332MB | t=159ms
+HMamba.hmamba_S_N2 - E221 B0700 | loss=18.064 (ctc=21.512 seq=10.948 dc=0.7893) | comp=0.500 (target=0.500) | bias=-0.128 (grad=0.0625) | VRAM=46734MB | t=245ms
+HMamba.hmamba_S_N2 - E221 B0750 | loss=17.403 (ctc=21.453 seq=10.023 dc=0.7902) | comp=0.499 (target=0.500) | bias=-0.127 (grad=-5.7812) | VRAM=47332MB | t=171ms
+HMamba.hmamba_S_N2 - E221 B0800 | loss=18.570 (ctc=22.552 seq=11.299 dc=0.7791) | comp=0.501 (target=0.500) | bias=-0.128 (grad=0.0000) | VRAM=47328MB | t=162ms
+HMamba.hmamba_S_N2 - E221 B0850 | loss=19.109 (ctc=24.607 seq=11.050 dc=0.7984) | comp=0.503 (target=0.500) | bias=-0.126 (grad=-0.0781) | VRAM=46710MB | t=160ms
+HMamba.hmamba_S_N2 - E221 B0900 | loss=17.652 (ctc=21.777 seq=10.156 dc=0.8020) | comp=0.499 (target=0.500) | bias=-0.129 (grad=-0.1562) | VRAM=46704MB | t=174ms
+HMamba.hmamba_S_N2 - E221 B0950 | loss=20.272 (ctc=25.565 seq=12.434 dc=0.7798) | comp=0.500 (target=0.500) | bias=-0.128 (grad=-0.0469) | VRAM=47264MB | t=307ms
+HMamba.hmamba_S_N2 - E221 B1000 | loss=17.871 (ctc=21.138 seq=10.653 dc=0.8144) | comp=0.504 (target=0.500) | bias=-0.129 (grad=0.1094) | VRAM=46748MB | t=255ms
+HMamba.hmamba_S_N2 - E221 B1050 | loss=20.790 (ctc=26.109 seq=12.979 dc=0.7745) | comp=0.502 (target=0.500) | bias=-0.128 (grad=-5.8906) | VRAM=47328MB | t=156ms
+HMamba.hmamba_S_N2 - E221 B1100 | loss=18.082 (ctc=22.714 seq=10.524 dc=0.7802) | comp=0.500 (target=0.500) | bias=-0.129 (grad=-0.0781) | VRAM=47328MB | t=156ms
+HMamba.hmamba_S_N2 - E221 B1150 | loss=17.763 (ctc=22.136 seq=10.179 dc=0.7993) | comp=0.498 (target=0.500) | bias=-0.127 (grad=-0.0156) | VRAM=47302MB | t=172ms
+HMamba.hmamba_S_N2 - E221 B1200 | loss=19.657 (ctc=25.229 seq=11.721 dc=0.7767) | comp=0.501 (target=0.500) | bias=-0.127 (grad=5.9375) | VRAM=47330MB | t=540ms
+HMamba.hmamba_S_N2 - E221 B1250 | loss=20.640 (ctc=26.348 seq=12.666 dc=0.7740) | comp=0.501 (target=0.500) | bias=-0.128 (grad=-5.8281) | VRAM=46688MB | t=164ms
+HMamba.hmamba_S_N2 - E221 B1300 | loss=17.883 (ctc=21.610 seq=10.594 dc=0.7969) | comp=0.503 (target=0.500) | bias=-0.127 (grad=0.0000) | VRAM=47302MB | t=245ms
+HMamba.hmamba_S_N2 - E221 B1350 | loss=17.733 (ctc=21.829 seq=10.430 dc=0.7767) | comp=0.499 (target=0.500) | bias=-0.127 (grad=-5.9688) | VRAM=47324MB | t=152ms
+HMamba.hmamba_S_N2 - E221 B1400 | loss=22.020 (ctc=28.515 seq=13.676 dc=0.7784) | comp=0.501 (target=0.500) | bias=-0.127 (grad=-0.0781) | VRAM=46706MB | t=168ms
+HMamba.hmamba_S_N2 - E221 B1450 | loss=20.636 (ctc=25.682 seq=12.604 dc=0.8216) | comp=0.506 (target=0.500) | bias=-0.127 (grad=6.0156) | VRAM=47270MB | t=418ms
+HMamba.hmamba_S_N2 - E221 B1500 | loss=18.463 (ctc=22.207 seq=10.985 dc=0.8223) | comp=0.507 (target=0.500) | bias=-0.128 (grad=-0.1719) | VRAM=47318MB | t=171ms
+HMamba.hmamba_S_N2 - E221 B1550 | loss=18.106 (ctc=20.876 seq=11.089 dc=0.8163) | comp=0.497 (target=0.500) | bias=-0.129 (grad=0.0781) | VRAM=47326MB | t=360ms
+HMamba.hmamba_S_N2 - E221 B1600 | loss=20.256 (ctc=24.464 seq=12.642 dc=0.8135) | comp=0.506 (target=0.500) | bias=-0.128 (grad=0.0625) | VRAM=47320MB | t=177ms
+__main__ - [H-Mamba] Epoch 221: compression=0.501, dc_loss=0.8017, target_N=2.00
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+HMamba.hmamba_S_N2 - 
+============================================================
+HMamba.hmamba_S_N2 - Epoch 221 Summary
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - Training:
+HMamba.hmamba_S_N2 -   Loss: 18.6401 (CTC=22.6926, Seq=11.1768, DC=0.8017)
+HMamba.hmamba_S_N2 - Validation:
+HMamba.hmamba_S_N2 -   Loss: 6.4902, ACC: 0.9716
+HMamba.hmamba_S_N2 - Dynamic Chunking:
+HMamba.hmamba_S_N2 -   Compression: 0.501 ± 0.003 (target: 0.500)
+HMamba.hmamba_S_N2 -   Avg chunks: 0.0, Boundary prob: 0.000
+HMamba.hmamba_S_N2 - Performance:
+HMamba.hmamba_S_N2 -   RTF: 0.0006 (1596.2x realtime)
+HMamba.hmamba_S_N2 -   Epoch time: 1204.9s, Avg batch: 202.1ms
+HMamba.hmamba_S_N2 -   Audio processed: 534.21 hours
+HMamba.hmamba_S_N2 - GPU:
+HMamba.hmamba_S_N2 -   Peak VRAM: 12594MB, Avg VRAM: 47149MB
+HMamba.hmamba_S_N2 - Optimization:
+HMamba.hmamba_S_N2 -   LR: 0.000266, Grad norm: 26.0540 (max: 444.1190)
+HMamba.hmamba_S_N2 - ============================================================
+
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x14ab185f1310> in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-06+00-04-46+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-06+00-04-46+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-05+15-39-10+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-05+20-29-55+00
+speechbrain.utils.epoch_loop - Going into epoch 222
+__main__ - [H-Mamba] Epoch 222: target_N=2.00, gumbel_tau=0.300, temp=2.004, bias=-0.128
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - Starting Epoch 222
+HMamba.hmamba_S_N2 - ============================================================
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+HMamba.hmamba_S_N2 - E222 B0000 | loss=17.969 (ctc=21.425 seq=10.522 dc=0.8352) | comp=0.507 (target=0.500) | bias=-0.128 (grad=5.7969) | VRAM=47270MB | t=344ms
+HMamba.hmamba_S_N2 - E222 B0050 | loss=20.811 (ctc=25.849 seq=12.954 dc=0.7978) | comp=0.499 (target=0.500) | bias=-0.128 (grad=-5.8125) | VRAM=47344MB | t=177ms
+HMamba.hmamba_S_N2 - E222 B0100 | loss=17.201 (ctc=21.595 seq=9.772 dc=0.7764) | comp=0.502 (target=0.500) | bias=-0.128 (grad=-5.8438) | VRAM=47328MB | t=162ms
+HMamba.hmamba_S_N2 - E222 B0150 | loss=19.733 (ctc=24.505 seq=12.074 dc=0.7860) | comp=0.500 (target=0.500) | bias=-0.126 (grad=-5.7812) | VRAM=47314MB | t=158ms
+HMamba.hmamba_S_N2 - E222 B0200 | loss=18.635 (ctc=23.419 seq=10.759 dc=0.8154) | comp=0.506 (target=0.500) | bias=-0.128 (grad=0.1406) | VRAM=47332MB | t=162ms
+HMamba.hmamba_S_N2 - E222 B0250 | loss=15.778 (ctc=16.902 seq=9.587 dc=0.7994) | comp=0.503 (target=0.500) | bias=-0.128 (grad=5.8594) | VRAM=47318MB | t=145ms
+HMamba.hmamba_S_N2 - E222 B0300 | loss=19.560 (ctc=24.622 seq=11.749 dc=0.7898) | comp=0.499 (target=0.500) | bias=-0.128 (grad=-5.9062) | VRAM=46720MB | t=211ms
+HMamba.hmamba_S_N2 - E222 B0350 | loss=18.282 (ctc=21.855 seq=11.104 dc=0.7906) | comp=0.499 (target=0.500) | bias=-0.128 (grad=-0.0312) | VRAM=47344MB | t=161ms
+HMamba.hmamba_S_N2 - E222 B0400 | loss=19.703 (ctc=23.871 seq=12.239 dc=0.7949) | comp=0.502 (target=0.500) | bias=-0.127 (grad=-0.1094) | VRAM=47324MB | t=162ms
+HMamba.hmamba_S_N2 - E222 B0450 | loss=17.503 (ctc=21.329 seq=10.260 dc=0.7845) | comp=0.502 (target=0.500) | bias=-0.128 (grad=-0.0156) | VRAM=46694MB | t=164ms
+HMamba.hmamba_S_N2 - E222 B0500 | loss=17.215 (ctc=20.915 seq=9.825 dc=0.8126) | comp=0.496 (target=0.500) | bias=-0.128 (grad=0.1250) | VRAM=47324MB | t=218ms
+HMamba.hmamba_S_N2 - E222 B0550 | loss=20.408 (ctc=26.161 seq=12.301 dc=0.7898) | comp=0.501 (target=0.500) | bias=-0.129 (grad=0.1094) | VRAM=46722MB | t=243ms
+HMamba.hmamba_S_N2 - E222 B0600 | loss=20.593 (ctc=25.709 seq=12.790 dc=0.7854) | comp=0.503 (target=0.500) | bias=-0.127 (grad=5.8594) | VRAM=47316MB | t=162ms
+HMamba.hmamba_S_N2 - E222 B0650 | loss=14.281 (ctc=14.876 seq=8.025 dc=0.8401) | comp=0.505 (target=0.500) | bias=-0.126 (grad=5.8438) | VRAM=47268MB | t=137ms
+HMamba.hmamba_S_N2 - E222 B0700 | loss=15.212 (ctc=15.838 seq=8.457 dc=0.9082) | comp=0.515 (target=0.500) | bias=-0.128 (grad=0.0469) | VRAM=46694MB | t=139ms
+HMamba.hmamba_S_N2 - E222 B0750 | loss=22.434 (ctc=28.785 seq=13.890 dc=0.8151) | comp=0.505 (target=0.500) | bias=-0.127 (grad=-0.0312) | VRAM=47328MB | t=176ms
+HMamba.hmamba_S_N2 - E222 B0800 | loss=19.318 (ctc=23.910 seq=11.713 dc=0.7893) | comp=0.498 (target=0.500) | bias=-0.128 (grad=-5.9219) | VRAM=47298MB | t=162ms
+HMamba.hmamba_S_N2 - E222 B0850 | loss=18.792 (ctc=22.041 seq=11.432 dc=0.8353) | comp=0.499 (target=0.500) | bias=-0.127 (grad=-5.8750) | VRAM=47660MB | t=262ms
+HMamba.hmamba_S_N2 - E222 B0900 | loss=22.545 (ctc=29.190 seq=14.140 dc=0.7780) | comp=0.499 (target=0.500) | bias=-0.128 (grad=-0.0469) | VRAM=47332MB | t=157ms
+HMamba.hmamba_S_N2 - E222 B0950 | loss=15.137 (ctc=15.688 seq=8.905 dc=0.8395) | comp=0.503 (target=0.500) | bias=-0.128 (grad=-0.0625) | VRAM=47306MB | t=133ms
+HMamba.hmamba_S_N2 - E222 B1000 | loss=18.674 (ctc=23.506 seq=11.087 dc=0.7723) | comp=0.501 (target=0.500) | bias=-0.128 (grad=0.0625) | VRAM=47274MB | t=222ms
+HMamba.hmamba_S_N2 - E222 B1050 | loss=18.210 (ctc=22.879 seq=10.669 dc=0.7755) | comp=0.502 (target=0.500) | bias=-0.127 (grad=-0.0156) | VRAM=47314MB | t=180ms
+HMamba.hmamba_S_N2 - E222 B1100 | loss=20.622 (ctc=25.628 seq=12.650 dc=0.8158) | comp=0.506 (target=0.500) | bias=-0.128 (grad=5.8594) | VRAM=46712MB | t=228ms
+HMamba.hmamba_S_N2 - E222 B1150 | loss=22.386 (ctc=28.146 seq=14.069 dc=0.8189) | comp=0.498 (target=0.500) | bias=-0.130 (grad=-5.8906) | VRAM=47300MB | t=569ms
+HMamba.hmamba_S_N2 - E222 B1200 | loss=17.890 (ctc=21.567 seq=10.721 dc=0.7830) | comp=0.501 (target=0.500) | bias=-0.129 (grad=5.8750) | VRAM=47328MB | t=174ms
+HMamba.hmamba_S_N2 - E222 B1250 | loss=18.323 (ctc=22.131 seq=11.134 dc=0.7780) | comp=0.501 (target=0.500) | bias=-0.128 (grad=-0.0938) | VRAM=47328MB | t=178ms
+HMamba.hmamba_S_N2 - E222 B1300 | loss=20.067 (ctc=25.446 seq=12.147 dc=0.7860) | comp=0.502 (target=0.500) | bias=-0.129 (grad=-0.1562) | VRAM=47330MB | t=167ms
+HMamba.hmamba_S_N2 - E222 B1350 | loss=18.482 (ctc=22.675 seq=11.127 dc=0.7780) | comp=0.501 (target=0.500) | bias=-0.128 (grad=5.8594) | VRAM=47318MB | t=161ms
+HMamba.hmamba_S_N2 - E222 B1400 | loss=19.022 (ctc=23.698 seq=11.309 dc=0.7994) | comp=0.502 (target=0.500) | bias=-0.129 (grad=0.0156) | VRAM=46724MB | t=228ms
+HMamba.hmamba_S_N2 - E222 B1450 | loss=15.381 (ctc=17.033 seq=8.861 dc=0.8137) | comp=0.497 (target=0.500) | bias=-0.127 (grad=-5.8281) | VRAM=47102MB | t=252ms
+HMamba.hmamba_S_N2 - E222 B1500 | loss=14.710 (ctc=14.923 seq=8.449 dc=0.8638) | comp=0.514 (target=0.500) | bias=-0.128 (grad=0.0000) | VRAM=47320MB | t=136ms
+HMamba.hmamba_S_N2 - E222 B1550 | loss=19.361 (ctc=23.597 seq=11.890 dc=0.7918) | comp=0.503 (target=0.500) | bias=-0.128 (grad=0.0156) | VRAM=46734MB | t=257ms
+HMamba.hmamba_S_N2 - E222 B1600 | loss=22.898 (ctc=28.779 seq=14.505 dc=0.8222) | comp=0.506 (target=0.500) | bias=-0.129 (grad=0.2188) | VRAM=47264MB | t=273ms
+__main__ - [H-Mamba] Epoch 222: compression=0.501, dc_loss=0.8007, target_N=2.00
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+HMamba.hmamba_S_N2 - 
+============================================================
+HMamba.hmamba_S_N2 - Epoch 222 Summary
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - Training:
+HMamba.hmamba_S_N2 -   Loss: 18.6013 (CTC=22.6643, Seq=11.1405, DC=0.8007)
+HMamba.hmamba_S_N2 - Validation:
+HMamba.hmamba_S_N2 -   Loss: 6.6138, ACC: 0.9717
+HMamba.hmamba_S_N2 - Dynamic Chunking:
+HMamba.hmamba_S_N2 -   Compression: 0.501 ± 0.003 (target: 0.500)
+HMamba.hmamba_S_N2 -   Avg chunks: 0.0, Boundary prob: 0.000
+HMamba.hmamba_S_N2 - Performance:
+HMamba.hmamba_S_N2 -   RTF: 0.0006 (1602.7x realtime)
+HMamba.hmamba_S_N2 -   Epoch time: 1200.5s, Avg batch: 204.3ms
+HMamba.hmamba_S_N2 -   Audio processed: 534.47 hours
+HMamba.hmamba_S_N2 - GPU:
+HMamba.hmamba_S_N2 -   Peak VRAM: 12571MB, Avg VRAM: 47147MB
+HMamba.hmamba_S_N2 - Optimization:
+HMamba.hmamba_S_N2 -   LR: 0.000265, Grad norm: 26.3316 (max: 664.1029)
+HMamba.hmamba_S_N2 - ============================================================
+
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x14ab185f1310> in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-06+00-24-49+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-06+00-24-49+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N2/save/CKPT+2026-04-05+20-49-25+00
+speechbrain.utils.epoch_loop - Going into epoch 223
+__main__ - [H-Mamba] Epoch 223: target_N=2.00, gumbel_tau=0.300, temp=2.004, bias=-0.129
+HMamba.hmamba_S_N2 - ============================================================
+HMamba.hmamba_S_N2 - Starting Epoch 223
+HMamba.hmamba_S_N2 - ============================================================
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+HMamba.hmamba_S_N2 - E223 B0000 | loss=18.920 (ctc=23.571 seq=11.267 dc=0.7924) | comp=0.499 (target=0.500) | bias=-0.128 (grad=-5.7969) | VRAM=47254MB | t=298ms
+HMamba.hmamba_S_N2 - E223 B0050 | loss=20.919 (ctc=26.308 seq=12.569 dc=0.8457) | comp=0.493 (target=0.500) | bias=-0.128 (grad=-5.9219) | VRAM=47344MB | t=158ms
+HMamba.hmamba_S_N2 - E223 B0100 | loss=15.249 (ctc=16.571 seq=8.850 dc=0.8166) | comp=0.500 (target=0.500) | bias=-0.128 (grad=-5.9219) | VRAM=47314MB | t=137ms
+HMamba.hmamba_S_N2 - E223 B0150 | loss=16.923 (ctc=20.179 seq=9.823 dc=0.7986) | comp=0.504 (target=0.500) | bias=-0.128 (grad=0.0312) | VRAM=47298MB | t=173ms
+HMamba.hmamba_S_N2 - E223 B0200 | loss=19.582 (ctc=23.444 seq=12.144 dc=0.8097) | comp=0.497 (target=0.500) | bias=-0.128 (grad=-0.0469) | VRAM=47292MB | t=166ms
+HMamba.hmamba_S_N2 - E223 B0250 | loss=21.315 (ctc=27.082 seq=13.058 dc=0.8099) | comp=0.497 (target=0.500) | bias=-0.127 (grad=-0.0625) | VRAM=47342MB | t=163ms
+HMamba.hmamba_S_N2 - E223 B0300 | loss=19.595 (ctc=24.138 seq=11.973 dc=0.7946) | comp=0.500 (target=0.500) | bias=-0.127 (grad=-5.7500) | VRAM=47328MB | t=550ms
+HMamba.hmamba_S_N2 - E223 B0350 | loss=17.212 (ctc=20.227 seq=10.058 dc=0.8208) | comp=0.506 (target=0.500) | bias=-0.130 (grad=0.0312) | VRAM=47320MB | t=178ms
+HMamba.hmamba_S_N2 - E223 B0400 | loss=19.906 (ctc=25.248 seq=12.094 dc=0.7732) | comp=0.500 (target=0.500) | bias=-0.128 (grad=5.8125) | VRAM=47304MB | t=155ms
+HMamba.hmamba_S_N2 - E223 B0450 | loss=15.371 (ctc=16.226 seq=9.313 dc=0.7968) | comp=0.504 (target=0.500) | bias=-0.129 (grad=-5.8125) | VRAM=47332MB | t=145ms
+HMamba.hmamba_S_N2 - E223 B0500 | loss=13.725 (ctc=13.403 seq=7.279 dc=0.9218) | comp=0.493 (target=0.500) | bias=-0.128 (grad=-5.7344) | VRAM=47282MB | t=145ms
+HMamba.hmamba_S_N2 - E223 B0550 | loss=17.869 (ctc=22.159 seq=10.273 dc=0.8060) | comp=0.504 (target=0.500) | bias=-0.129 (grad=6.0000) | VRAM=47328MB | t=160ms
+HMamba.hmamba_S_N2 - E223 B0600 | loss=18.147 (ctc=22.816 seq=10.535 dc=0.7854) | comp=0.499 (target=0.500) | bias=-0.128 (grad=0.0469) | VRAM=47326MB | t=155ms
+HMamba.hmamba_S_N2 - E223 B0650 | loss=18.656 (ctc=22.367 seq=11.282 dc=0.8098) | comp=0.498 (target=0.500) | bias=-0.128 (grad=-5.8750) | VRAM=47324MB | t=157ms
+HMamba.hmamba_S_N2 - E223 B0700 | loss=12.746 (ctc=12.854 seq=6.971 dc=0.8021) | comp=0.502 (target=0.500) | bias=-0.128 (grad=5.8750) | VRAM=46710MB | t=131ms
+HMamba.hmamba_S_N2 - E223 B0750 | loss=18.844 (ctc=23.600 seq=11.223 dc=0.7817) | comp=0.502 (target=0.500) | bias=-0.128 (grad=5.9844) | VRAM=46708MB | t=171ms
+HMamba.hmamba_S_N2 - E223 B0800 | loss=18.782 (ctc=22.731 seq=11.291 dc=0.8118) | comp=0.496 (target=0.500) | bias=-0.130 (grad=-0.0781) | VRAM=47268MB | t=174ms
+HMamba.hmamba_S_N2 - E223 B0850 | loss=21.783 (ctc=27.718 seq=13.356 dc=0.8237) | comp=0.505 (target=0.500) | bias=-0.127 (grad=5.8125) | VRAM=47318MB | t=266ms
+HMamba.hmamba_S_N2 - E223 B0900 | loss=14.723 (ctc=15.668 seq=8.206 dc=0.8557) | comp=0.508 (target=0.500) | bias=-0.129 (grad=5.9844) | VRAM=47318MB | t=135ms
+HMamba.hmamba_S_N2 - E223 B0950 | loss=19.699 (ctc=25.567 seq=11.487 dc=0.7975) | comp=0.499 (target=0.500) | bias=-0.128 (grad=0.0312) | VRAM=47328MB | t=159ms
+HMamba.hmamba_S_N2 - E223 B1000 | loss=18.253 (ctc=21.472 seq=11.009 dc=0.8211) | comp=0.497 (target=0.500) | bias=-0.128 (grad=-0.0156) | VRAM=47330MB | t=241ms
+HMamba.hmamba_S_N2 - E223 B1050 | loss=20.289 (ctc=25.311 seq=12.309 dc=0.8158) | comp=0.503 (target=0.500) | bias=-0.128 (grad=5.9375) | VRAM=47328MB | t=168ms
+HMamba.hmamba_S_N2 - E223 B1100 | loss=18.228 (ctc=21.806 seq=10.905 dc=0.8105) | comp=0.496 (target=0.500) | bias=-0.128 (grad=-6.0000) | VRAM=47308MB | t=163ms
+HMamba.hmamba_S_N2 - E223 B1150 | loss=20.279 (ctc=23.893 seq=13.048 dc=0.7956) | comp=0.499 (target=0.500) | bias=-0.129 (grad=-5.9375) | VRAM=47270MB | t=165ms
+HMamba.hmamba_S_N2 - E223 B1200 | loss=19.379 (ctc=24.443 seq=11.617 dc=0.7827) | comp=0.500 (target=0.500) | bias=-0.128 (grad=-5.9219) | VRAM=47276MB | t=159ms

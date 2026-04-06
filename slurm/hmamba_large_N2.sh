@@ -2,17 +2,16 @@
 #SBATCH --job-name=hmamba_L_N2
 #SBATCH --output=/home/anshulk/h-mamba_asr/logs/hmamba_L_N2-%j.out
 #SBATCH --error=/home/anshulk/h-mamba_asr/logs/hmamba_L_N2-%j.err
-#SBATCH --partition=preempt
-#SBATCH --requeue
+#SBATCH --partition=general
 #SBATCH --gres=gpu:A6000:2
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=256G
-#SBATCH --time=14-00:00:00
+#SBATCH --time=2-00:00:00
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE
 #SBATCH --mail-user=anshulk@andrew.cmu.edu
 
 echo "============================================================"
-echo "H-Mamba Large N2 — 2x A6000, preempt"
+echo "H-Mamba Large N2 — 2x A6000, general"
 echo "============================================================"
 echo "Job ID   : $SLURM_JOB_ID"
 echo "Node     : $SLURM_NODELIST"

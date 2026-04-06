@@ -23,8 +23,8 @@ This establishes the baselines against which H-Mamba is compared.
 
 ### Phase 2: H-Mamba Training (In Progress)
 Train H-Mamba models (ConMamba + Dynamic Chunking) at 8 configurations:
-- Small model (14.1M params): N=1, N=2, N=3, N=4 — **S_N3 and S_N4 completed, S_N1 and S_N2 still training (Apr 5)**
-- Large model (115.2M params): N=1, N=2, N=3, N=4 — **L_N1 crashed (NumPy), L_N2/L_N3/L_N4 pending in queue (Apr 5)**
+- Small model (14.1M params): N=1, N=2, N=3, N=4 — **S_N3 and S_N4 completed, S_N1 and S_N2 still training (Apr 6)**
+- Large model (115.2M params): N=1, N=2, N=3, N=4 — **L_N1/L_N2 running (general), L_N3 with-LM done (5.21/10.10), L_N4 pending (Apr 6)**
 
 Where N is the target compression factor (N=2 keeps 50% of frames, N=4 keeps 25%).
 
@@ -237,40 +237,40 @@ Previous issues resolved:
 - Grad norm showed 0.0 on large models (grad_accum=8 misaligned with log interval). Fixed: persist last real grad_norm across non-step batches.
 - Smoke test v1 (6912668) timed out during beam search eval (2h limit too short).
 
-### 6.5 H-Mamba Results (960h, updated April 5)
+### 6.5 H-Mamba Results (960h, updated April 6)
 
 #### Completed runs — test-set WER (beam=66, CTC weight=0.40)
 
 | Model | target_N | Compression | Epochs | Best Epoch | With LM (clean / other) | Without LM (clean / other) | Status |
 |-------|----------|-------------|--------|------------|------------------------|---------------------------|--------|
 | hmamba_small_N3 | 3.0 | 0.335 | 205 (patience) | 160 | 5.31 / 10.29 | 10.62 / 18.66 | **Done** |
-| hmamba_small_N4 | 4.0 | 0.251 | 193 (patience) | 163 | With-LM eval running (job 6951739) | 9.24 / 17.38 | **Done** |
+| hmamba_small_N4 | 4.0 | 0.251 | 193 (patience) | 163 | 5.21 / 11.06 | 9.24 / 17.38 | **Done** |
+| hmamba_large_N3 | 3.0 | 0.334 | ~120 (patience) | ~90 | 5.21 / 10.10 | — (needs eval) | **With-LM done** |
 
 #### In-progress runs — dev-set WER (valid_search, beam=10, greedy, no LM)
 
 | Model | target_N | Compression | Epoch | ACC | WER (dev) | Status |
 |-------|----------|-------------|-------|-----|-----------|--------|
-| hmamba_small_N1 | 1.0 | 0.800 | 159+ | 97.1% | 3.54% (ep 120) | Training (job 6951736, general) |
-| hmamba_small_N2 | 2.0 | 0.501 | 214+ | 97.1% | **3.49%** (ep 170) | Training (job 6951737, general) |
-| hmamba_large_N1 | 1.0 | 0.858 | 81 | 97.6% | **2.76%** (ep 80) | Crashed — NumPy 2.0 error. Needs resubmit |
-| hmamba_large_N2 | 2.0 | 0.501 | 83 (resuming) | 97.4% | 3.04% (ep 70) | Pending (job 6959511, preempt) |
-| hmamba_large_N3 | 3.0 | 0.354 | 142 | 83.1% | 7.95% (ep 140) | Pending (job 6933858, preempt) |
-| hmamba_large_N4 | 4.0 | 0.250 | 94 (resuming) | 87.8% | 6.48% (ep 90) | Pending (job 6959512, preempt) |
+| hmamba_small_N1 | 1.0 | 0.803 | 165 | 97.2% | 3.54% (ep 120) | Training (job 6951736, general) |
+| hmamba_small_N2 | 2.0 | 0.501 | 221 | 97.2% | **3.50%** (ep 220) | Training (job 6951737, general) |
+| hmamba_large_N1 | 1.0 | 0.854 | 84 | 97.5% | **2.76%** (ep 80) | Running (job 6965857, general) |
+| hmamba_large_N2 | 2.0 | 0.501 | 82 | 97.4% | 3.15% (ep 80) | Running (job 6968230, general) |
+| hmamba_large_N4 | 4.0 | 0.251 | 93 | 87.3% | 6.48% (ep 90) | Pending (job 6965502, preempt) |
 
-**Highlights (April 5, evening):**
+**Highlights (April 6):**
 - **S_N3 completed** (205 epochs, patience exhausted at 30). Best epoch 160. With-LM: **5.31 / 10.29**. No-LM: **10.62 / 18.66**.
-- **S_N4 completed** (193 epochs, patience exhausted at 30). Best epoch 163. No-LM: **9.24 / 17.38**. With-LM eval still running (job 6951739).
-- **S_N2 (3.49% dev) still leads S_N1 (3.54% dev)** — 50% compression with equal or better WER. Key paper result.
-- **L_N1 WER 2.76% (ep 80)** beats ConMamba Large no-LM baseline (2.82%), but crashed on NumPy 2.0 at epoch 81.
-- **L_N2 WER 3.04% (ep 70)** — only 0.28% behind L_N1 at epoch-matched comparison (L_N1=2.88% at ep 70).
+- **S_N4 completed** (193 epochs, patience exhausted at 30). Best epoch 163. With-LM: **5.21 / 11.06**. No-LM: **9.24 / 17.38**.
+- **L_N3 with-LM eval completed**: **5.21 / 10.10**. Patience exhausted ~epoch 120 (best ~ep 90). No-LM eval still needed.
+- **S_N2 (3.50% dev) still leads S_N1 (3.54% dev)** — 50% compression with equal or better WER. Key paper result.
+- **L_N1 moved to general** (job 6965857), epoch 84. WER **2.76%** (ep 80) beats ConMamba Large no-LM baseline (2.82%).
+- **L_N2 moved to general** (job 6968230), epoch 82. WER **3.15%** (ep 80).
 - S_N4 WER recovered from degradation: 14.61% (ep 70) → 9.70% (ep 160).
 - N=3 anomaly confirmed structural: S_N3 plateaued ~10%, L_N3 ~8%, at both model scales.
-- L_N1 crashed on NumPy 2.0 error (resubmission). L_N2, L_N3, L_N4 pending in preempt queue.
-- All first-round large runs (6933856-6933859) crashed on huggingface-hub 1.8.0 incompatibility with transformers 4.40.0. Fixed and resubmitted.
+- L_N3 pending in preempt (job 6965501, epoch 142 — training continued after eval due to requeue). L_N4 pending in preempt (job 6965502, epoch 93).
 
 **Known issues:**
-- NumPy 2.0 crash affects L_N1 (resubmission, job 6959510). Small runs on `general` partition are unaffected.
-- L_N1 needs NumPy fix re-applied before resubmitting.
+- L_N3 needs no-LM eval submitted (with-LM results already on disk).
+- L_N3/L_N4 still on preempt — consider moving to general when GPU slots open.
 
 **Evaluation pipeline:** Interim dev WERs use beam=10, CTC only, no LM (valid_search). Final evaluation uses beam=66, CTC(0.40) + TransformerLM(0.60) (test_search). No-LM eval uses beam=10, no LM rescoring. LM decoding typically improves WER by 1.0–1.5% absolute on test-clean.
 
@@ -340,8 +340,9 @@ h-mamba_asr/
 
 ---
 
-## 8. Citation
+## 8. Citations
 
+ConMamba baseline (Speech Slytherin):
 ```bibtex
 @misc{jiang2024speechslytherin,
     title={Speech Slytherin: Examining the Performance and Efficiency of Mamba
@@ -352,5 +353,17 @@ h-mamba_asr/
     eprint={2407.09732},
     archivePrefix={arXiv},
     primaryClass={eess.AS},
+}
+```
+
+H-Net Dynamic Chunking (the "H" in H-Mamba):
+```bibtex
+@misc{hwang2025dynamicchunkingendtoendhierarchical,
+    title={Dynamic Chunking for End-to-End Hierarchical Sequence Modeling},
+    author={Sukjun Hwang and Brandon Wang and Albert Gu},
+    year={2025},
+    eprint={2507.07955},
+    archivePrefix={arXiv},
+    primaryClass={cs.LG},
 }
 ```

@@ -3,9 +3,9 @@
 **Target:** ARR May 2026 cycle (deadline May 25, 2026)  
 **Venue:** EMNLP 2026, Budapest, October 24-29  
 **Notification:** August 20, 2026  
-**Today:** April 5, 2026 (Week 1, Day 5)  
+**Today:** April 6, 2026 (Week 1, Day 6)  
 **Authors:** Anshul Kumar, Shinji Watanabe (CMU)  
-**Last updated:** April 5, 2026
+**Last updated:** April 6, 2026
 
 **Proposed title:** Learning Acoustic Compression Hierarchies: Dynamic Chunking with Mamba for Variable-Rate Speech Recognition
 
@@ -40,7 +40,7 @@
 | Final validation (job 6928979) | DDP training + grad norm fix verified. Grad norm 1195.0 (max 1770.9), bias_grad 4.9→13.5. |
 | Comprehensive documentation | docs/hmamba_dynamic_chunking.md (2500+ lines), BiMamba v2, SSM math, decoder, pos encoding |
 | NumPy downgrade fix | numpy 2.0.2 → 1.26.4, fixes DDP broadcast crash (PyTorch 2.1.1 incompatible with NumPy 2.x) |
-| SLURM partition config | Small: general (2d). Large: preempt (14d, --requeue). |
+| SLURM partition config | Small: general (2d). Large: started on preempt, L_N1/L_N2 moved to general (2d). |
 | Baseline reproduction docs | docs/baseline_reproduction.md |
 
 ### 1.2 Bug Fixes (All Verified)
@@ -79,16 +79,16 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 
 | Item | Status |
 |------|--------|
-| H-Mamba Small N=1 (job 6951736) | Running, general, epoch ~130, ACC 97.1%, WER **3.54%** (ep 120), comp 0.814. Converging slowly. |
-| H-Mamba Small N=2 (job 6951737) | Running, general, epoch ~180, ACC 97.1%, WER **3.49%** (ep 170), comp 0.501. Now ahead of S_N1. |
+| H-Mamba Small N=1 (job 6951736) | Running, general, epoch 165, ACC 97.2%, WER **3.54%** (ep 120), comp 0.803. Converging slowly. |
+| H-Mamba Small N=2 (job 6951737) | Running, general, epoch 221, ACC 97.2%, WER **3.50%** (ep 220), comp 0.501. Still ahead of S_N1. |
 | H-Mamba Small N=3 | **Done.** 205 epochs (patience). With LM: **5.31/10.29**. No LM: **10.62/18.66**. Best ep 160. |
-| H-Mamba Small N=4 (job 6951739) | With-LM eval running. 193 epochs (patience). No LM: **9.24/17.38**. Best ep 163. |
-| H-Mamba Large N=1 (job 6959510) | Pending (preempt), last epoch 80, ACC 97.5%, WER **2.76%**, comp 0.859. Crashed (huggingface-hub fix applied), resubmitted. |
-| H-Mamba Large N=2 (job 6959511) | Pending (preempt), last epoch 82, ACC 97.4%, WER **3.04%** (ep 70), comp 0.501. Crashed, resubmitted. |
-| H-Mamba Large N=3 (job 6933858) | Running, preempt, epoch ~141, ACC 83.1%, WER **7.95%** (ep 140), comp 0.334. Still improving. |
-| H-Mamba Large N=4 (job 6959512) | Pending (preempt), last epoch 90, ACC 87.8%, WER **6.48%** (ep 90), comp 0.251. Crashed, resubmitted. |
+| H-Mamba Small N=4 | **Done.** 193 epochs (patience). With LM: **5.21/11.06**. No LM: **9.24/17.38**. Best ep 163. |
+| H-Mamba Large N=1 (job 6965857) | Running (general), epoch 84, ACC 97.5%, WER **2.76%** (ep 80), comp 0.854. Moved from preempt. |
+| H-Mamba Large N=2 (job 6968230) | Running (general), epoch 82, ACC 97.4%, WER **3.15%** (ep 80), comp 0.501. Moved from preempt. |
+| H-Mamba Large N=3 (job 6965501) | **With-LM done: 5.21/10.10.** Patience exhausted ~ep 120 (best ~ep 90). Pending preempt, ep 142. Needs no-LM eval. |
+| H-Mamba Large N=4 (job 6965502) | Pending (preempt), epoch 93, ACC 87.3%, WER **6.48%** (ep 90), comp 0.251. |
 
-**Note:** Small runs hit 2-day wall on April 4, resubmitted same day. L_N1, L_N2, L_N4 crashed on preempt restart due to `huggingface-hub` 1.8.0 incompatibility with `transformers` 4.40.0 — fixed by downgrading to 0.36.2, resubmitted April 5. SLURM logs were overwritten on restart but all data recovered from `epoch_metrics.csv` (persistent, never overwritten).
+**Note:** Small runs hit 2-day wall on April 4, resubmitted same day. L_N1, L_N2, L_N4 crashed on preempt restart due to `huggingface-hub` 1.8.0 incompatibility with `transformers` 4.40.0 — fixed by downgrading to 0.36.2, resubmitted April 5. L_N1 and L_N2 moved from preempt to general on April 5-6. L_N3 with-LM eval completed (5.21/10.10) — patience exhausted ~epoch 120, then requeued job continued training to epoch 142. SLURM logs were overwritten on restart but all data recovered from `epoch_metrics.csv` (persistent, never overwritten).
 
 ### 1.5 Not Started
 
@@ -158,18 +158,21 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 - L_N1, L_N2 preempted and crashed on restart — `huggingface-hub` upgraded to 1.8.0
   (incompatible with `transformers` 4.40.0). SLURM logs overwritten on restart.
 
-**Day 5 (April 5) — IN PROGRESS:**
+**Day 5 (April 5) — DONE:**
 - L_N4 also crashed on preempt restart (same huggingface-hub bug).
 - Fixed: downgraded `huggingface-hub` 1.8.0 → 0.36.2 in hnetasr env.
 - Resubmitted L_N1 (6959510), L_N2 (6959511), L_N4 (6959512).
 - Recovered all WER/ACC data from `epoch_metrics.csv` (persistent logs, never overwritten).
-- **Key results at ~60h:**
-  - **S_N2 (3.49%) now ahead of S_N1 (3.54%)** — first time N=2 genuinely leads the control.
-  - **L_N1 WER 2.76% (ep 80)** — already beats ConMamba Large no-LM baseline (2.82%).
-  - **L_N2 WER 3.04% (ep 70)** — only 0.28% behind L_N1 at matched epoch 70 (2.88%).
-  - S_N4 WER recovered: 14.61% (ep 70) → 9.70% (ep 160). Was degrading, now improving.
-  - L_N4 WER 6.48% (ep 90) — steadily improving, large model handles 75% compression.
-  - S_N3/L_N3 both plateaued ~10% / ~8% — N=3 anomaly confirmed structural.
+- S_N4 with-LM eval completed: **5.21/11.06**. No-LM: **9.24/17.38**. Best ep 163.
+- L_N1 moved from preempt to general (job 6965857). L_N2 moved to general (job 6968230).
+- **L_N3 with-LM eval completed on disk: 5.21/10.10** (patience exhausted ~ep 120, requeued job continued to ep 142).
+- Removed all conformer_large_CTC traces (code, logs, configs, docs, results on disk).
+
+**Day 6 (April 6) — IN PROGRESS:**
+- L_N1 running on general, epoch 84. L_N2 running on general, epoch 82.
+- S_N1 epoch 165, S_N2 epoch 221. Both still training.
+- L_N3 pending preempt (job 6965501), L_N4 pending preempt (job 6965502).
+- Full documentation audit against disk data — found L_N3 results not in any docs, updated all.
 
 **Days 4-5:**
 - Install Montreal Forced Aligner, download English acoustic model

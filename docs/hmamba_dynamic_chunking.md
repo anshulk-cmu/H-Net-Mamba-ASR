@@ -2036,10 +2036,15 @@ The partition split is intentional: the 4 small runs consume all 8 GPU slots on 
 | Run | Final Epoch | Best Epoch | Patience | With LM (clean / other) | Without LM (clean / other) |
 |-----|------------|------------|----------|------------------------|---------------------------|
 | S_N3 | 205 | 160 | Exhausted (30) | **5.31 / 10.29** | **10.62 / 18.66** |
-| S_N4 | 193 | 163 | Exhausted (30) | With-LM eval running (job 6951739) | **9.24 / 17.38** |
+| S_N4 | 193 | 163 | Exhausted (30) | **5.21 / 11.06** | **9.24 / 17.38** |
+| L_N3 | ~120 (patience) | ~90 | Exhausted (30) | **5.21 / 10.10** | — (needs eval) |
 
-S_N3 and S_N4 both completed training with early stopping (patience=30 epochs without
-improvement). Final test-set evaluation uses beam=66, CTC weight=0.40, LM weight=0.60.
+S_N3, S_N4, and L_N3 completed training with early stopping (patience=30 epochs without
+improvement). L_N3's with-LM eval files were found on disk (created Apr 5 10:47/12:26)
+after patience exhaustion ~epoch 120. The requeued SLURM job then continued training to
+epoch 142 (early stopping state not preserved across requeue). L_N3 still needs no-LM eval.
+
+Final test-set evaluation uses beam=66, CTC weight=0.40, LM weight=0.60.
 No-LM evaluation uses beam=10, no LM rescoring (same as valid_search). No-LM eval
 scripts: `slurm/eval_nolm_hmamba_small_N3.sh` and `slurm/eval_nolm_hmamba_small_N4.sh`
 (1x A6000 each, single-GPU inference).
@@ -2048,20 +2053,16 @@ scripts: `slurm/eval_nolm_hmamba_small_N3.sh` and `slurm/eval_nolm_hmamba_small_
 
 | Run | Epoch | ACC | WER (dev) | Compression | Status |
 |-----|-------|-----|-----------|-------------|--------|
-| S_N1 | 159+ | 97.1% | **3.54%** (ep 120) | 0.800 | Running (job 6951736, general) |
-| S_N2 | 214+ | 97.1% | **3.49%** (ep 170) | 0.501 | Running (job 6951737, general) |
-| L_N1 | 81 | 97.6% | **2.76%** (ep 80) | 0.858 | Crashed — NumPy 2.0 error (job 6959510). Needs resubmit |
-| L_N2 | 83 (resuming) | 97.4% | **3.04%** (ep 70) | 0.501 | Pending restart (job 6959511, preempt) |
-| L_N3 | 142 | 83.1% | 7.95% (ep 140) | 0.354 | Pending (job 6933858, preempt) |
-| L_N4 | 94 (resuming) | 87.8% | **6.48%** (ep 90) | 0.250 | Pending restart (job 6959512, preempt) |
+| S_N1 | 165 | 97.2% | **3.54%** (ep 120) | 0.803 | Running (job 6951736, general) |
+| S_N2 | 221 | 97.2% | **3.50%** (ep 220) | 0.501 | Running (job 6951737, general) |
+| L_N1 | 84 | 97.5% | **2.76%** (ep 80) | 0.854 | Running (job 6965857, general) |
+| L_N2 | 82 | 97.4% | **3.15%** (ep 80) | 0.501 | Running (job 6968230, general) |
+| L_N4 | 93 | 87.3% | **6.48%** (ep 90) | 0.251 | Pending (job 6965502, preempt) |
 
-Notes on the table:
-- L_N1 first run (6933856) crashed on `huggingface-hub` 1.8.0 incompatibility with
-  `transformers` 4.40.0. Resubmission (6959510) ran 81 epochs then crashed on NumPy 2.0
-  (`RuntimeError: Numpy is not available`). Needs NumPy fix re-applied before resubmitting.
-- L_N2, L_N4 first runs also crashed on huggingface-hub. Resubmissions pending in preempt queue.
-- L_N3 original job (6933858) has been pending since submission. Has 1 checkpoint at epoch 142
-  from a prior run on a different node.
+Notes on the table (updated April 6):
+- L_N1 and L_N2 moved from preempt to general partition (Apr 5-6). NumPy fix applied.
+- L_N3 moved to completed runs table above — with-LM eval done (5.21/10.10), needs no-LM eval.
+- L_N4 pending in preempt queue (job 6965502). Original jobs crashed on huggingface-hub 1.8.0.
 - SLURM logs were overwritten on restart, but all data recovered from persistent
   `epoch_metrics.csv` files (written by HMambaLogger, never overwritten).
 - Small runs hit 2-day general wall on April 4, resubmitted same day. S_N3 and S_N4
@@ -2082,28 +2083,28 @@ targets with remarkable precision**.
 
 | Run | Target Ratio (1/N) | Actual Ratio | Error |
 |-----|-------------------|--------------|-------|
-| S_N1 | 1.000 | 0.800 (ep 159) | -0.200 (emergent compression, increasing over time) |
-| S_N2 | 0.500 | 0.501 (ep 213) | +0.001 |
+| S_N1 | 1.000 | 0.803 (ep 165) | -0.197 (emergent compression, increasing over time) |
+| S_N2 | 0.500 | 0.501 (ep 221) | +0.001 |
 | S_N3 | 0.333 | 0.334 (final, ep 205) | +0.001 |
 | S_N4 | 0.250 | 0.251 (final, ep 193) | +0.001 |
-| L_N1 | 1.000 | 0.858 (ep 81) | -0.142 (emergent compression) |
-| L_N2 | 0.500 | 0.501 (ep 83) | +0.001 |
-| L_N3 | 0.333 | 0.354 (ep 142) | +0.021 (still converging toward target) |
-| L_N4 | 0.250 | 0.250 (ep 94) | +0.000 |
+| L_N1 | 1.000 | 0.854 (ep 84) | -0.146 (emergent compression) |
+| L_N2 | 0.500 | 0.501 (ep 82) | +0.001 |
+| L_N3 | 0.333 | 0.334 (ep 142) | +0.001 (converged) |
+| L_N4 | 0.250 | 0.251 (ep 93) | +0.001 |
 
 The N=2,3,4 runs are all within 0.2% of their targets. This confirms that the 5-term
 load balancing loss (Section 18) provides sufficient gradient signal to control the
 compression ratio precisely. The ratio_loss term (weight=10.0) dominates the DC loss
 and drives the boundary_bias toward the value needed to achieve the target.
 
-The N=1 controls are interesting: they compress to 0.838 (small) and 0.903 (large)
+The N=1 controls are interesting: they compress to 0.803 (small, ep 165) and 0.854 (large, ep 84)
 despite having dc_loss_weight=0. The routing module receives no compression loss — only
 ASR loss (via the STE connection). This means the model independently discovers that
-some compression is beneficial for recognition. The large model compresses less (0.903
-vs 0.838), suggesting that with more capacity, fewer frames need to be discarded.
+some compression is beneficial for recognition. The large model compresses less (0.854
+vs 0.803), suggesting that with more capacity, fewer frames need to be discarded.
 
 This emergent compression is a paper-worthy finding: even without an explicit compression
-objective, the model learns to discard ~10-16% of frames. This implies that these frames
+objective, the model learns to discard ~15-20% of frames. This implies that these frames
 carry redundant information that the second-half encoder layers do not need.
 
 ### The boundary_bias trajectory: how the routing module learns to compress
@@ -2250,7 +2251,7 @@ Here is the WER progression over training for each run (dev-clean, greedy, no LM
 | 200 | — | — | 10.15% | — | S_N3 patience exhausted at ep 205 |
 
 **S_N3 final**: 205 epochs, best at epoch 160 (WER 10.01%). With LM: **5.31 / 10.29**. No LM: **10.62 / 18.66** (clean/other).
-**S_N4 final**: 193 epochs, best at epoch 163. No LM: **9.24 / 17.38**. With-LM eval still running (job 6951739).
+**S_N4 final**: 193 epochs, best at epoch 163 (WER 9.70%). With LM: **5.21 / 11.06**. No LM: **9.24 / 17.38** (clean/other).
 
 **Large model WER trajectory** (data recovered from epoch_metrics.csv):
 
@@ -2272,8 +2273,9 @@ Here is the WER progression over training for each run (dev-clean, greedy, no LM
 | 140 | — | — | **7.95%** | — | |
 
 Note: L_N1 and L_N2 data was recovered from persistent `epoch_metrics.csv` files
-after SLURM logs were overwritten by preemption restarts. L_N3 ACC remains volatile
-(74%-83%), suggesting the model oscillates between learning regimes at 67% compression.
+after SLURM logs were overwritten by preemption restarts. L_N3 ACC remained volatile
+(74%-83%) through training, but ultimately hit patience exhaustion ~epoch 120 (best ~ep 90,
+dev WER 7.89%). With-LM test eval: **5.21 / 10.10**. No-LM eval still needed.
 
 Five patterns emerge from this data:
 
@@ -3285,18 +3287,18 @@ When all 8 experiments complete and are evaluated, this stage will answer:
    - The boundary analysis (MFA alignment comparison, phone-class compression heatmap)
      will reveal whether the model learns linguistically meaningful boundaries.
 
-### Results table (to be filled)
+### Results table (updated April 6)
 
 | Model | target_N | Actual Comp. | With LM (c/o) | No LM (c/o) | Status |
 |-------|----------|-------------|---------------|-------------|--------|
-| hmamba_small_N1 | 1.0 | — | — / — | — / — | Training (job 6933669, epoch 1) |
-| hmamba_small_N2 | 2.0 | — | — / — | — / — | Training (job 6933673, epoch 1) |
-| hmamba_small_N3 | 3.0 | — | — / — | — / — | Training (job 6933674, epoch 1) |
-| hmamba_small_N4 | 4.0 | — | — / — | — / — | Training (job 6933675, epoch 1) |
-| hmamba_large_N1 | 1.0 | — | — / — | — / — | Submitted (job 6933856, preempt) |
-| hmamba_large_N2 | 2.0 | — | — / — | — / — | Submitted (job 6933857, preempt) |
-| hmamba_large_N3 | 3.0 | — | — / — | — / — | Submitted (job 6933858, preempt) |
-| hmamba_large_N4 | 4.0 | — | — / — | — / — | Submitted (job 6933859, preempt) |
+| hmamba_small_N1 | 1.0 | 0.803 | — / — | — / — | Training (job 6951736, ep 165, general) |
+| hmamba_small_N2 | 2.0 | 0.501 | — / — | — / — | Training (job 6951737, ep 221, general) |
+| hmamba_small_N3 | 3.0 | 0.334 | 5.31 / 10.29 | 10.62 / 18.66 | **Done** (205 ep, patience) |
+| hmamba_small_N4 | 4.0 | 0.251 | 5.21 / 11.06 | 9.24 / 17.38 | **Done** (193 ep, patience) |
+| hmamba_large_N1 | 1.0 | 0.854 | — / — | — / — | Running (job 6965857, ep 84, general) |
+| hmamba_large_N2 | 2.0 | 0.501 | — / — | — / — | Running (job 6968230, ep 82, general) |
+| hmamba_large_N3 | 3.0 | 0.334 | 5.21 / 10.10 | — (needs eval) | **With-LM done** (~120 ep, patience) |
+| hmamba_large_N4 | 4.0 | 0.251 | — / — | — / — | Pending (job 6965502, ep 93, preempt) |
 
 ### Baseline reference (from baseline_reproduction.md)
 
