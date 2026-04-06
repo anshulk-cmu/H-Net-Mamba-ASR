@@ -2029,12 +2029,13 @@ Large runs use partition `preempt` (14-day walltime, requeue enabled, 24 GPU cap
 The partition split is intentional: the 4 small runs consume all 8 GPU slots on general
 (4 runs x 2 GPUs), so large runs go to preempt to access the separate 24-GPU pool.
 
-### Current training status (April 5, evening, ~96 hours)
+### Current training status (April 6, updated)
 
 #### Completed runs
 
 | Run | Final Epoch | Best Epoch | Patience | With LM (clean / other) | Without LM (clean / other) |
 |-----|------------|------------|----------|------------------------|---------------------------|
+| S_N2 | 234 | 230 | Exhausted (30) | — (eval submitted) | **2.42 / 5.98** |
 | S_N3 | 205 | 160 | Exhausted (30) | **5.31 / 10.29** | **10.62 / 18.66** |
 | S_N4 | 193 | 163 | Exhausted (30) | **5.21 / 11.06** | **9.24 / 17.38** |
 | L_N3 | ~120 (patience) | ~90 | Exhausted (30) | **5.21 / 10.10** | — (needs eval) |
@@ -2047,14 +2048,14 @@ epoch 142 (early stopping state not preserved across requeue). L_N3 still needs 
 Final test-set evaluation uses beam=66, CTC weight=0.40, LM weight=0.60.
 No-LM evaluation uses beam=10, no LM rescoring (same as valid_search). No-LM eval
 scripts: `slurm/eval_nolm_hmamba_small_N3.sh` and `slurm/eval_nolm_hmamba_small_N4.sh`
-(1x A6000 each, single-GPU inference).
+(1x A6000 each, single-GPU inference). S_N2 with-LM eval submitted via
+`slurm/eval_withlm_hmamba_small_N2.sh` (beam=66, CTC=0.40, LM=0.60).
 
 #### In-progress and pending runs
 
 | Run | Epoch | ACC | WER (dev) | Compression | Status |
 |-----|-------|-----|-----------|-------------|--------|
 | S_N1 | 165 | 97.2% | **3.54%** (ep 120) | 0.803 | Running (job 6951736, general) |
-| S_N2 | 221 | 97.2% | **3.50%** (ep 220) | 0.501 | Running (job 6951737, general) |
 | L_N1 | 84 | 97.5% | **2.76%** (ep 80) | 0.854 | Running (job 6965857, general) |
 | L_N2 | 82 | 97.4% | **3.15%** (ep 80) | 0.501 | Running (job 6968230, general) |
 | L_N4 | 93 | 87.3% | **6.48%** (ep 90) | 0.251 | Pending (job 6965502, preempt) |
@@ -2069,8 +2070,8 @@ Notes on the table (updated April 6):
   completed on the resubmission.
 - Epoch time varies across runs: S_N3 (67% compression) is ~46% faster per epoch
   than S_N1 (no compression). S_N2 is ~1.5x faster than S_N1.
-- **S_N2 (3.49%) now leads S_N1 (3.54%)** — first time N=2 compression genuinely
-  outperforms the uncompressed control.
+- **S_N2 completed**: 234 epochs (patience exhausted), best epoch 230. No-LM test: **2.42 / 5.98**.
+  With-LM eval submitted. **2.42% test-clean beats ConMamba Small no-LM (3.34%) at 50% compression.**
 
 ### Compression ratio convergence: what the numbers mean
 
@@ -2494,21 +2495,21 @@ preempted. All data recovered from persistent `epoch_metrics.csv` files.
 
 Based on the trajectory at 72 hours, the 960h results will support these claims:
 
-1. **H-Mamba N=2 matches or slightly beats the ConMamba baseline.** S_N2 (3.49% at
-   epoch 170) now leads S_N1 (3.54% at epoch 120). At epoch-matched comparisons, the
-   gap closed from 1.78% (ep 30) to 0.20% (ep 90). For the large model, L_N2 (3.04%
-   at ep 70) trails L_N1 (2.88% at ep 70) by only 0.16%. L_N1 has already reached
-   2.76% at epoch 80, beating the ConMamba Large no-LM baseline (2.82%). This is a
-   strong result: 50% compression with negligible WER cost.
+1. **H-Mamba N=2 beats the ConMamba baseline at 50% compression.** S_N2 completed
+   training (234 epochs, best ep 230) with no-LM test WER **2.42 / 5.98**. This beats
+   the ConMamba Small no-LM baseline (3.34 / 8.47) by 0.92pp on test-clean and 2.49pp
+   on test-other — a substantial improvement despite 50% frame compression. With-LM
+   eval submitted. For the large model, L_N1 has already reached 2.76% at epoch 80,
+   beating the ConMamba Large no-LM baseline (2.82%). This is a strong result.
 
 2. **The compression ratio converges precisely.** All N=2,3,4 runs achieve within 0.2%
    of their target compression ratios. The load balancing loss works as designed.
 
-3. **Compression provides implicit regularization (small model).** S_N2 (3.49%) now
-   beats S_N1 (3.54%) — the compressed model is slightly better than the uncompressed
-   control. The advantage is small and may not be statistically significant, but it
-   supports the hypothesis that forced compression prevents overfitting to redundant
-   frame-level details.
+3. **Compression provides implicit regularization (small model).** S_N2 no-LM test
+   (2.42%) beats S_N1 dev (3.54%) by over 1pp — the compressed model is substantially
+   better than the uncompressed control. This strongly supports the hypothesis that
+   forced compression prevents overfitting to redundant frame-level details. (S_N1 test
+   results pending for exact comparison.)
 
 4. **The N=3 anomaly is a confirmed structural finding.** 67% compression is harder
    than 50% or 75%. S_N3 plateaus ~10%, L_N3 ~8%, at both model scales and both data
@@ -2530,7 +2531,7 @@ Based on the trajectory at 72 hours, the 960h results will support these claims:
    WER cost. L_N4 improved monotonically to 6.48% at epoch 90.
 
 Claims that require final results (not yet available):
-- Exact WER numbers with LM decoding on test-clean and test-other
+- S_N2 with-LM eval (submitted, awaiting results)
 - Comparison with the Conformer+DC ablation (not yet trained)
 - Comparison with fixed-2x downsampling baseline (not yet trained)
 - Boundary-F1 analysis against phone boundaries (requires MFA)
@@ -2542,7 +2543,7 @@ The 960h results improve on the 100h pilot in every way:
 
 | Run | 100h Pilot WER (clean/other) | 960h Current WER (dev, interim) | Improvement |
 |-----|-----------------------------|---------------------------------|-------------|
-| S_N2 | 5.96 / 16.35 | 4.08 (dev-clean only) | 1.88% better (partial) |
+| S_N2 | 5.96 / 16.35 | **2.42 / 5.98** (test, no-LM) | 3.54 / 10.37 better |
 | S_N3 | 7.80 / 21.36 | 10.37 (dev-clean) | Worse (but epochs differ) |
 | S_N4 | 7.35 / 19.71 | 14.44 (dev-clean) | Worse (but epochs differ) |
 

@@ -243,6 +243,7 @@ Previous issues resolved:
 
 | Model | target_N | Compression | Epochs | Best Epoch | With LM (clean / other) | Without LM (clean / other) | Status |
 |-------|----------|-------------|--------|------------|------------------------|---------------------------|--------|
+| hmamba_small_N2 | 2.0 | 0.501 | 234 (patience) | 230 | — (eval submitted) | **2.42 / 5.98** | **No-LM done, with-LM pending** |
 | hmamba_small_N3 | 3.0 | 0.335 | 205 (patience) | 160 | 5.31 / 10.29 | 10.62 / 18.66 | **Done** |
 | hmamba_small_N4 | 4.0 | 0.251 | 193 (patience) | 163 | 5.21 / 11.06 | 9.24 / 17.38 | **Done** |
 | hmamba_large_N3 | 3.0 | 0.334 | ~120 (patience) | ~90 | 5.21 / 10.10 | — (needs eval) | **With-LM done** |
@@ -252,16 +253,15 @@ Previous issues resolved:
 | Model | target_N | Compression | Epoch | ACC | WER (dev) | Status |
 |-------|----------|-------------|-------|-----|-----------|--------|
 | hmamba_small_N1 | 1.0 | 0.803 | 165 | 97.2% | 3.54% (ep 120) | Training (job 6951736, general) |
-| hmamba_small_N2 | 2.0 | 0.501 | 221 | 97.2% | **3.50%** (ep 220) | Training (job 6951737, general) |
 | hmamba_large_N1 | 1.0 | 0.854 | 84 | 97.5% | **2.76%** (ep 80) | Running (job 6965857, general) |
 | hmamba_large_N2 | 2.0 | 0.501 | 82 | 97.4% | 3.15% (ep 80) | Running (job 6968230, general) |
 | hmamba_large_N4 | 4.0 | 0.251 | 93 | 87.3% | 6.48% (ep 90) | Pending (job 6965502, preempt) |
 
 **Highlights (April 6):**
+- **S_N2 completed** (234 epochs, patience exhausted). Best epoch 230. No-LM test: **2.42 / 5.98**. With-LM eval submitted (`eval_withlm_hmamba_small_N2.sh`). **Key result: 2.42% test-clean beats ConMamba Small no-LM baseline (3.34%) at 50% compression.**
 - **S_N3 completed** (205 epochs, patience exhausted at 30). Best epoch 160. With-LM: **5.31 / 10.29**. No-LM: **10.62 / 18.66**.
 - **S_N4 completed** (193 epochs, patience exhausted at 30). Best epoch 163. With-LM: **5.21 / 11.06**. No-LM: **9.24 / 17.38**.
 - **L_N3 with-LM eval completed**: **5.21 / 10.10**. Patience exhausted ~epoch 120 (best ~ep 90). No-LM eval still needed.
-- **S_N2 (3.50% dev) still leads S_N1 (3.54% dev)** — 50% compression with equal or better WER. Key paper result.
 - **L_N1 moved to general** (job 6965857), epoch 84. WER **2.76%** (ep 80) beats ConMamba Large no-LM baseline (2.82%).
 - **L_N2 moved to general** (job 6968230), epoch 82. WER **3.15%** (ep 80).
 - S_N4 WER recovered from degradation: 14.61% (ep 70) → 9.70% (ep 160).
@@ -269,10 +269,11 @@ Previous issues resolved:
 - L_N3 pending in preempt (job 6965501, epoch 142 — training continued after eval due to requeue). L_N4 pending in preempt (job 6965502, epoch 93).
 
 **Known issues:**
+- S_N2 with-LM eval submitted — awaiting results.
 - L_N3 needs no-LM eval submitted (with-LM results already on disk).
 - L_N3/L_N4 still on preempt — consider moving to general when GPU slots open.
 
-**Evaluation pipeline:** Interim dev WERs use beam=10, CTC only, no LM (valid_search). Final evaluation uses beam=66, CTC(0.40) + TransformerLM(0.60) (test_search). No-LM eval uses beam=10, no LM rescoring. LM decoding typically improves WER by 1.0–1.5% absolute on test-clean.
+**Evaluation pipeline:** Interim dev WERs use beam=10, CTC only, no LM (valid_search). Final evaluation uses beam=66, CTC(0.40) + TransformerLM(0.60) (test_search). No-LM eval uses beam=66, no LM rescoring. LM decoding typically improves WER by 1.0–1.5% absolute on test-clean. Eval scripts: `slurm/eval_nolm_hmamba_small_N*.sh`, `slurm/eval_withlm_hmamba_small_N2.sh`.
 
 ### 6.6 Competitive Landscape (LibriSpeech 960h)
 

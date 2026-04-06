@@ -75,12 +75,12 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 | Streaming incompatibility | BiMamba is bidirectional, routing uses look-ahead. Offline-only by design. |
 | N=3 anomaly (WER ~10% vs N=2's ~4%) | Persists at both small and large scales after all bug fixes. Likely intrinsic difficulty of 67% compression, not a code bug. Paper will discuss as a finding. |
 
-### 1.4 In Progress (as of April 5)
+### 1.4 In Progress (as of April 6)
 
 | Item | Status |
 |------|--------|
 | H-Mamba Small N=1 (job 6951736) | Running, general, epoch 165, ACC 97.2%, WER **3.54%** (ep 120), comp 0.803. Converging slowly. |
-| H-Mamba Small N=2 (job 6951737) | Running, general, epoch 221, ACC 97.2%, WER **3.50%** (ep 220), comp 0.501. Still ahead of S_N1. |
+| H-Mamba Small N=2 | **Done.** 234 epochs (patience). No LM: **2.42/5.98**. With-LM eval submitted. Best ep 230, comp 0.501. |
 | H-Mamba Small N=3 | **Done.** 205 epochs (patience). With LM: **5.31/10.29**. No LM: **10.62/18.66**. Best ep 160. |
 | H-Mamba Small N=4 | **Done.** 193 epochs (patience). With LM: **5.21/11.06**. No LM: **9.24/17.38**. Best ep 163. |
 | H-Mamba Large N=1 (job 6965857) | Running (general), epoch 84, ACC 97.5%, WER **2.76%** (ep 80), comp 0.854. Moved from preempt. |
