@@ -2059,22 +2059,23 @@ Large runs use partition `preempt` (14-day walltime, requeue enabled, 24 GPU cap
 The partition split is intentional: the 4 small runs consume all 8 GPU slots on general
 (4 runs x 2 GPUs), so large runs go to preempt to access the separate 24-GPU pool.
 
-### Current training status (April 6, updated)
-
-#### Small model and L_N3 runs
-
-S_N2, S_N3, S_N4, and L_N3 — in progress. Results will be updated when evals complete.
+### Current training status (April 8, updated)
 
 Final test-set evaluation uses beam=66, CTC weight=0.40, LM weight=0.60.
 No-LM evaluation uses beam=66, no LM rescoring.
 
-#### Verified completed runs (April 7)
+#### Verified completed runs (April 8)
 
 | Run | Epochs | Best Ep | With LM (c/o) | No LM (c/o) | Compression |
 |-----|--------|---------|---------------|-------------|-------------|
+| S_N2 | 234 (patience) | 230 | **2.42 / 5.98** | **3.52 / 8.74** | 0.501 |
+| S_N3 | 205 (patience) | 160 | **5.31 / 10.29** | **10.62 / 18.66** | 0.335 |
+| S_N4 | 193 (patience) | 160 | **5.21 / 11.06** | **9.24 / 17.38** | 0.251 |
 | L_N1 | 142 (patience) | 130 | **2.18 / 5.14** | **2.73 / 6.57** | 0.822 |
 | L_N2 | 141 (patience) | 110 | **2.31 / 5.24** | **2.84 / 6.72** | 0.501 |
 
+- S_N2 with-LM (2.42/5.98) within 0.20% of ConMamba Small baseline (2.22/5.56).
+- S_N3/S_N4: significant WER degradation at high compression on small model.
 - L_N1 beats ConMamba Large with-LM baseline (2.27→2.18 test-clean).
 - L_N2 at 50% compression only +0.13% behind L_N1 on test-clean.
 
@@ -2082,12 +2083,9 @@ No-LM evaluation uses beam=66, no LM rescoring.
 
 | Run | Status |
 |-----|--------|
-| S_N1 | In progress |
-| S_N2 | In progress |
-| S_N3 | In progress |
-| S_N4 | In progress |
-| L_N3 | In progress |
-| L_N4 | In progress |
+| S_N1 | Training done, no-LM eval pending |
+| L_N3 | Training in progress (epoch 198) |
+| L_N4 | Pending SLURM queue |
 
 ### Compression ratio convergence: what the numbers mean
 
@@ -3299,12 +3297,15 @@ When all 8 experiments complete and are evaluated, this stage will answer:
    - The boundary analysis (MFA alignment comparison, phone-class compression heatmap)
      will reveal whether the model learns linguistically meaningful boundaries.
 
-### Results table (updated April 7)
+### Results table (updated April 8)
 
 #### Verified results (WER files on disk, cross-checked)
 
 | Model | target_N | Actual Comp. | With LM (c/o) | No LM (c/o) | Status |
 |-------|----------|-------------|---------------|-------------|--------|
+| hmamba_small_N2 | 2.0 | 0.501 | **2.42 / 5.98** | **3.52 / 8.74** | **Done** (234 ep, patience, best ep 230) |
+| hmamba_small_N3 | 3.0 | 0.335 | **5.31 / 10.29** | **10.62 / 18.66** | **Done** (205 ep, patience, best ep 160) |
+| hmamba_small_N4 | 4.0 | 0.251 | **5.21 / 11.06** | **9.24 / 17.38** | **Done** (193 ep, patience, best ep 160) |
 | hmamba_large_N1 | 1.0 | 0.822 | **2.18 / 5.14** | **2.73 / 6.57** | **Done** (142 ep, patience, best ep 130) |
 | hmamba_large_N2 | 2.0 | 0.501 | **2.31 / 5.24** | **2.84 / 6.72** | **Done** (141 ep, patience, best ep 110) |
 
@@ -3312,12 +3313,9 @@ When all 8 experiments complete and are evaluated, this stage will answer:
 
 | Model | target_N | Status |
 |-------|----------|--------|
-| hmamba_small_N1 | 1.0 | In progress |
-| hmamba_small_N2 | 2.0 | In progress |
-| hmamba_small_N3 | 3.0 | In progress |
-| hmamba_small_N4 | 4.0 | In progress |
-| hmamba_large_N3 | 3.0 | In progress |
-| hmamba_large_N4 | 4.0 | In progress |
+| hmamba_small_N1 | 1.0 | Training done, no-LM eval pending |
+| hmamba_large_N3 | 3.0 | Training in progress (epoch 198) |
+| hmamba_large_N4 | 4.0 | Pending SLURM queue |
 
 ### Baseline reference (from baseline_reproduction.md)
 

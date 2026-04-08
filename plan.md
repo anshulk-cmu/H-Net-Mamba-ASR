@@ -79,14 +79,14 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 
 | Item | Status |
 |------|--------|
-| H-Mamba Small N=1 | In progress |
-| H-Mamba Small N=2 | In progress |
-| H-Mamba Small N=3 | In progress |
-| H-Mamba Small N=4 | In progress |
+| H-Mamba Small N=1 | Training done, no-LM eval pending |
+| H-Mamba Small N=2 | **DONE.** 234 ep (patience), best ep 230. With LM: **2.42/5.98**. No LM: **3.52/8.74**. Verified on disk. |
+| H-Mamba Small N=3 | **DONE.** 205 ep (patience), best ep 160. With LM: **5.31/10.29**. No LM: **10.62/18.66**. Verified on disk. |
+| H-Mamba Small N=4 | **DONE.** 193 ep (patience), best ep 160. With LM: **5.21/11.06**. No LM: **9.24/17.38**. Verified on disk. |
 | H-Mamba Large N=1 | **DONE.** 142 ep (patience), best ep 130. With LM: **2.18/5.14**. No LM: **2.73/6.57**. Verified on disk. |
 | H-Mamba Large N=2 | **DONE.** 141 ep (patience), best ep 110. With LM: **2.31/5.24**. No LM: **2.84/6.72**. Verified on disk. |
-| H-Mamba Large N=3 | In progress |
-| H-Mamba Large N=4 | In progress |
+| H-Mamba Large N=3 | In progress (epoch 198) |
+| H-Mamba Large N=4 | Pending SLURM queue |
 
 **Note:** Small runs hit 2-day wall on April 4, resubmitted same day. S_N1 timed out again on April 6 in epoch 200. L_N1, L_N2, L_N4 crashed on preempt restart due to `huggingface-hub` 1.8.0 incompatibility with `transformers` 4.40.0 — fixed by downgrading to 0.36.2, resubmitted April 5. L_N1 and L_N2 completed on general partition (April 7). SLURM logs were overwritten on restart but all data recovered from log.txt (persistent).
 
@@ -451,7 +451,7 @@ loss = ((1 - true_ratio) * (1 - average_prob) +
 4. ~~Resubmit small N=1,2,3,4~~ Resubmitted April 4. S_N2/S_N3/S_N4 completed. S_N1 timed out again April 6, resubmitted as job 6987430.
 5. ~~L_N1 completed~~ 142 ep, best ep 130. With LM: **2.18/5.14**. No LM: **2.73/6.57**.
 6. ~~L_N2 completed~~ 141 ep, best ep 110. With LM: **2.31/5.24**. No LM: **2.84/6.72**.
-7. **Collect S_N2/S_N3/S_N4 eval results** (resubmitted as batch job 7008334, general)
+7. ~~Collect S_N2/S_N3/S_N4 eval results~~ Done (job 7008334). S_N2: 2.42/5.98 (LM), 3.52/8.74 (no LM). S_N3: 5.31/10.29 (LM), 10.62/18.66 (no LM). S_N4: 5.21/11.06 (LM), 9.24/17.38 (no LM).
 8. **Wait for L_N3/L_N4 training to finish** (auto-evals built into slurm scripts)
 9. Install MFA and start alignment
 10. Create ablation configs (conformer_dc, fixed-2x)
