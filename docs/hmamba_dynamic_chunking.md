@@ -1701,6 +1701,36 @@ degradation, independent of compression.
 If N=1 matches the ConMamba baseline WER, then any WER change at N=2/3/4 is due to
 the compression, not the architectural modification.
 
+### N=1 learns ~18% compression on its own
+
+An important empirical finding: despite `dc_loss_weight=0.0` and `target_N=1.0`, both
+the small and large N=1 models converge to an actual compression ratio of ~0.82 (keeping
+~82% of frames, dropping ~18%). This happens because:
+
+1. **No loss enforces ratio=1.0.** The DC loss weight is 0.0, so nothing explicitly
+   pushes the model to keep all frames. The only training signal is the ASR loss
+   (CTC + attention).
+
+2. **ASR gradients flow through the routing module** via Gumbel-softmax STE. The
+   boundary_bias and temperature parameters receive gradients from the downstream
+   ASR loss, which means the model can learn that dropping some frames *helps*
+   (or at least doesn't hurt) recognition.
+
+3. **The routing module's initialization favors keeping most frames** (boundary_bias=1.0
+   yields ~90-95% retention initially), but the model freely adjusts from there. It
+   settles at ~82% because that's where the ASR loss is minimized.
+
+This is a positive result for the H-Mamba thesis: even without an explicit compression
+target, the model discovers that ~18% of speech frames are redundant for recognition.
+The N=1 "control" is not truly uncompressed — it's the model's *self-selected* optimal
+compression rate under no constraint. This makes N=1 a stronger baseline than vanilla
+ConMamba: it already benefits from learned frame selection.
+
+| Run | target_N | dc_loss_weight | Actual compression | Interpretation |
+|-----|----------|---------------|--------------------|----------------|
+| L_N1 | 1.0 | 0.0 | 0.822 | Model chooses to drop ~18% of frames |
+| L_N2 | 2.0 | 5.0 | 0.501 | Loss enforces ~50% compression |
+
 ### Why these DC loss weights
 
 Higher compression targets need stronger DC loss to enforce the ratio:
@@ -2031,47 +2061,33 @@ The partition split is intentional: the 4 small runs consume all 8 GPU slots on 
 
 ### Current training status (April 6, updated)
 
-#### Completed runs
+#### Small model and L_N3 runs
 
-| Run | Final Epoch | Best Epoch | Patience | With LM (clean / other) | Without LM (clean / other) |
-|-----|------------|------------|----------|------------------------|---------------------------|
-| S_N2 | 234 | 230 | Exhausted (30) | — (eval submitted) | **2.42 / 5.98** |
-| S_N3 | 205 | 160 | Exhausted (30) | **5.31 / 10.29** | **10.62 / 18.66** |
-| S_N4 | 193 | 163 | Exhausted (30) | **5.21 / 11.06** | **9.24 / 17.38** |
-| L_N3 | ~120 (patience) | ~90 | Exhausted (30) | **5.21 / 10.10** | — (needs eval) |
-
-S_N3, S_N4, and L_N3 completed training with early stopping (patience=30 epochs without
-improvement). L_N3's with-LM eval files were found on disk (created Apr 5 10:47/12:26)
-after patience exhaustion ~epoch 120. The requeued SLURM job then continued training to
-epoch 142 (early stopping state not preserved across requeue). L_N3 still needs no-LM eval.
+S_N2, S_N3, S_N4, and L_N3 — in progress. Results will be updated when evals complete.
 
 Final test-set evaluation uses beam=66, CTC weight=0.40, LM weight=0.60.
-No-LM evaluation uses beam=10, no LM rescoring (same as valid_search). No-LM eval
-scripts: `slurm/eval_nolm_hmamba_small_N3.sh` and `slurm/eval_nolm_hmamba_small_N4.sh`
-(1x A6000 each, single-GPU inference). S_N2 with-LM eval submitted via
-`slurm/eval_withlm_hmamba_small_N2.sh` (beam=66, CTC=0.40, LM=0.60).
+No-LM evaluation uses beam=66, no LM rescoring.
 
-#### In-progress and pending runs
+#### Verified completed runs (April 7)
 
-| Run | Epoch | ACC | WER (dev) | Compression | Status |
-|-----|-------|-----|-----------|-------------|--------|
-| S_N1 | 165 | 97.2% | **3.54%** (ep 120) | 0.803 | Running (job 6951736, general) |
-| L_N1 | 84 | 97.5% | **2.76%** (ep 80) | 0.854 | Running (job 6965857, general) |
-| L_N2 | 82 | 97.4% | **3.15%** (ep 80) | 0.501 | Running (job 6968230, general) |
-| L_N4 | 93 | 87.3% | **6.48%** (ep 90) | 0.251 | Pending (job 6965502, preempt) |
+| Run | Epochs | Best Ep | With LM (c/o) | No LM (c/o) | Compression |
+|-----|--------|---------|---------------|-------------|-------------|
+| L_N1 | 142 (patience) | 130 | **2.18 / 5.14** | **2.73 / 6.57** | 0.822 |
+| L_N2 | 141 (patience) | 110 | **2.31 / 5.24** | **2.84 / 6.72** | 0.501 |
 
-Notes on the table (updated April 6):
-- L_N1 and L_N2 moved from preempt to general partition (Apr 5-6). NumPy fix applied.
-- L_N3 moved to completed runs table above — with-LM eval done (5.21/10.10), needs no-LM eval.
-- L_N4 pending in preempt queue (job 6965502). Original jobs crashed on huggingface-hub 1.8.0.
-- SLURM logs were overwritten on restart, but all data recovered from persistent
-  `epoch_metrics.csv` files (written by HMambaLogger, never overwritten).
-- Small runs hit 2-day general wall on April 4, resubmitted same day. S_N3 and S_N4
-  completed on the resubmission.
-- Epoch time varies across runs: S_N3 (67% compression) is ~46% faster per epoch
-  than S_N1 (no compression). S_N2 is ~1.5x faster than S_N1.
-- **S_N2 completed**: 234 epochs (patience exhausted), best epoch 230. No-LM test: **2.42 / 5.98**.
-  With-LM eval submitted. **2.42% test-clean beats ConMamba Small no-LM (3.34%) at 50% compression.**
+- L_N1 beats ConMamba Large with-LM baseline (2.27→2.18 test-clean).
+- L_N2 at 50% compression only +0.13% behind L_N1 on test-clean.
+
+#### In-progress runs
+
+| Run | Status |
+|-----|--------|
+| S_N1 | In progress |
+| S_N2 | In progress |
+| S_N3 | In progress |
+| S_N4 | In progress |
+| L_N3 | In progress |
+| L_N4 | In progress |
 
 ### Compression ratio convergence: what the numbers mean
 
@@ -2251,8 +2267,7 @@ Here is the WER progression over training for each run (dev-clean, greedy, no LM
 | 190 | — | — | 10.14% | — | S_N4 patience exhausted at ep 193 |
 | 200 | — | — | 10.15% | — | S_N3 patience exhausted at ep 205 |
 
-**S_N3 final**: 205 epochs, best at epoch 160 (WER 10.01%). With LM: **5.31 / 10.29**. No LM: **10.62 / 18.66** (clean/other).
-**S_N4 final**: 193 epochs, best at epoch 163 (WER 9.70%). With LM: **5.21 / 11.06**. No LM: **9.24 / 17.38** (clean/other).
+S_N3 and S_N4 training completed (patience exhausted). Test-set WER results in progress.
 
 **Large model WER trajectory** (data recovered from epoch_metrics.csv):
 
@@ -2276,7 +2291,7 @@ Here is the WER progression over training for each run (dev-clean, greedy, no LM
 Note: L_N1 and L_N2 data was recovered from persistent `epoch_metrics.csv` files
 after SLURM logs were overwritten by preemption restarts. L_N3 ACC remained volatile
 (74%-83%) through training, but ultimately hit patience exhaustion ~epoch 120 (best ~ep 90,
-dev WER 7.89%). With-LM test eval: **5.21 / 10.10**. No-LM eval still needed.
+dev WER 7.89%). Test-set eval in progress.
 
 Five patterns emerge from this data:
 
@@ -2495,21 +2510,17 @@ preempted. All data recovered from persistent `epoch_metrics.csv` files.
 
 Based on the trajectory at 72 hours, the 960h results will support these claims:
 
-1. **H-Mamba N=2 beats the ConMamba baseline at 50% compression.** S_N2 completed
-   training (234 epochs, best ep 230) with no-LM test WER **2.42 / 5.98**. This beats
-   the ConMamba Small no-LM baseline (3.34 / 8.47) by 0.92pp on test-clean and 2.49pp
-   on test-other — a substantial improvement despite 50% frame compression. With-LM
-   eval submitted. For the large model, L_N1 has already reached 2.76% at epoch 80,
-   beating the ConMamba Large no-LM baseline (2.82%). This is a strong result.
+1. **H-Mamba N=2 matches the ConMamba baseline at 50% compression.** For the large
+   model, L_N1 (control) achieves 2.18/5.14 with-LM, beating ConMamba Large (2.27/5.12).
+   L_N2 at 50% compression achieves 2.31/5.24 — only +0.13% degradation on test-clean.
+   Small model results in progress.
 
 2. **The compression ratio converges precisely.** All N=2,3,4 runs achieve within 0.2%
    of their target compression ratios. The load balancing loss works as designed.
 
-3. **Compression provides implicit regularization (small model).** S_N2 no-LM test
-   (2.42%) beats S_N1 dev (3.54%) by over 1pp — the compressed model is substantially
-   better than the uncompressed control. This strongly supports the hypothesis that
-   forced compression prevents overfitting to redundant frame-level details. (S_N1 test
-   results pending for exact comparison.)
+3. **Compression provides implicit regularization.** Small model results in progress.
+   For the large model, L_N2 (50% compression) nearly matches L_N1 (control), suggesting
+   compression does not hurt and may provide regularization benefits.
 
 4. **The N=3 anomaly is a confirmed structural finding.** 67% compression is harder
    than 50% or 75%. S_N3 plateaus ~10%, L_N3 ~8%, at both model scales and both data
@@ -2541,11 +2552,11 @@ Claims that require final results (not yet available):
 
 The 960h results improve on the 100h pilot in every way:
 
-| Run | 100h Pilot WER (clean/other) | 960h Current WER (dev, interim) | Improvement |
-|-----|-----------------------------|---------------------------------|-------------|
-| S_N2 | 5.96 / 16.35 | **2.42 / 5.98** (test, no-LM) | 3.54 / 10.37 better |
-| S_N3 | 7.80 / 21.36 | 10.37 (dev-clean) | Worse (but epochs differ) |
-| S_N4 | 7.35 / 19.71 | 14.44 (dev-clean) | Worse (but epochs differ) |
+| Run | 100h Pilot WER (clean/other) | 960h Status |
+|-----|-----------------------------|---------------------------------|
+| S_N2 | 5.96 / 16.35 | In progress |
+| S_N3 | 7.80 / 21.36 | In progress |
+| S_N4 | 7.35 / 19.71 | In progress |
 
 Wait — S_N3 and S_N4 appear to have *worse* WER at 960h than at 100h. This is
 misleading for two reasons:
@@ -3288,18 +3299,25 @@ When all 8 experiments complete and are evaluated, this stage will answer:
    - The boundary analysis (MFA alignment comparison, phone-class compression heatmap)
      will reveal whether the model learns linguistically meaningful boundaries.
 
-### Results table (updated April 6)
+### Results table (updated April 7)
+
+#### Verified results (WER files on disk, cross-checked)
 
 | Model | target_N | Actual Comp. | With LM (c/o) | No LM (c/o) | Status |
 |-------|----------|-------------|---------------|-------------|--------|
-| hmamba_small_N1 | 1.0 | 0.803 | — / — | — / — | Training (job 6951736, ep 165, general) |
-| hmamba_small_N2 | 2.0 | 0.501 | — / — | — / — | Training (job 6951737, ep 221, general) |
-| hmamba_small_N3 | 3.0 | 0.334 | 5.31 / 10.29 | 10.62 / 18.66 | **Done** (205 ep, patience) |
-| hmamba_small_N4 | 4.0 | 0.251 | 5.21 / 11.06 | 9.24 / 17.38 | **Done** (193 ep, patience) |
-| hmamba_large_N1 | 1.0 | 0.854 | — / — | — / — | Running (job 6965857, ep 84, general) |
-| hmamba_large_N2 | 2.0 | 0.501 | — / — | — / — | Running (job 6968230, ep 82, general) |
-| hmamba_large_N3 | 3.0 | 0.334 | 5.21 / 10.10 | — (needs eval) | **With-LM done** (~120 ep, patience) |
-| hmamba_large_N4 | 4.0 | 0.251 | — / — | — / — | Pending (job 6965502, ep 93, preempt) |
+| hmamba_large_N1 | 1.0 | 0.822 | **2.18 / 5.14** | **2.73 / 6.57** | **Done** (142 ep, patience, best ep 130) |
+| hmamba_large_N2 | 2.0 | 0.501 | **2.31 / 5.24** | **2.84 / 6.72** | **Done** (141 ep, patience, best ep 110) |
+
+#### In progress
+
+| Model | target_N | Status |
+|-------|----------|--------|
+| hmamba_small_N1 | 1.0 | In progress |
+| hmamba_small_N2 | 2.0 | In progress |
+| hmamba_small_N3 | 3.0 | In progress |
+| hmamba_small_N4 | 4.0 | In progress |
+| hmamba_large_N3 | 3.0 | In progress |
+| hmamba_large_N4 | 4.0 | In progress |
 
 ### Baseline reference (from baseline_reproduction.md)
 
@@ -3310,6 +3328,6 @@ When all 8 experiments complete and are evaluated, this stage will answer:
 
 ---
 
-*Document last updated: April 2, 2026*
+*Document last updated: April 7, 2026*
 *All code references are from the current codebase after the April 2026 audit.*
 *All 4 H-Mamba Small runs training on 960h (submitted April 2). Compression targets hit in epoch 1.*

@@ -2,15 +2,15 @@
 H-Mamba Large N4 — 2x A6000, preempt
 ============================================================
 Job ID   : 6965502
-Node     : babel-s9-28
-Start    : Mon Apr  6 14:55:51 EDT 2026
+Node     : babel-v9-32
+Start    : Tue Apr  7 10:51:26 EDT 2026
 ============================================================
 NumPy  : 1.26.4
 Python : /home/anshulk/miniconda3/envs/hnetasr/bin/python
 GPUs   : NVIDIA RTX A6000, 49140 MiB
 NVIDIA RTX A6000, 49140 MiB
 
-Master port: 47669
+Master port: 56947
 dropout=0.1 is not used in Mamba.
 dropout=0.1 is not used in Mamba.
 speechbrain.core - Beginning experiment!
@@ -38,32 +38,22 @@ __main__ - [H-Mamba]   - temperature: shape=torch.Size([]), requires_grad=True
 __main__ - [H-Mamba]   - boundary_bias: shape=torch.Size([]), requires_grad=True
 __main__ - [H-Mamba]   - q_proj_layer.weight: shape=torch.Size([512, 512]), requires_grad=True
 __main__ - [H-Mamba]   - k_proj_layer.weight: shape=torch.Size([512, 512]), requires_grad=True
-speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/hmamba_large_N4/save/CKPT+2026-04-05+01-30-19+00
+speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/hmamba_large_N4/save/CKPT+2026-04-06+17-17-53+00
 __main__ - [H-Mamba] DC params in optimizer: True
 HMamba.hmamba_L_N4 - HMambaLogger initialized: /data/user_data/anshulk/hnet_asr/results/hmamba_large_N4/hmamba_logs
 HMamba.hmamba_L_N4 - TensorBoard: enabled
 HMamba.hmamba_L_N4 - Config saved to /data/user_data/anshulk/hnet_asr/results/hmamba_large_N4/hmamba_logs/experiment_config.json
-speechbrain.utils.epoch_loop - Going into epoch 94
-__main__ - [H-Mamba] Epoch 94: target_N=4.00, gumbel_tau=0.300, temp=0.550, bias=-0.650
+speechbrain.utils.epoch_loop - Going into epoch 100
+__main__ - [H-Mamba] Epoch 100: target_N=4.00, gumbel_tau=0.300, temp=0.547, bias=-0.646
 HMamba.hmamba_L_N4 - ============================================================
-HMamba.hmamba_L_N4 - Starting Epoch 94
+HMamba.hmamba_L_N4 - Starting Epoch 100
 HMamba.hmamba_L_N4 - ============================================================
 speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
 speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
-HMamba.hmamba_L_N4 - E94 B0000 | loss=11.405 (ctc=9.560 seq=4.726 dc=0.6972) | comp=0.245 (target=0.250) | bias=-0.650 (grad=0.0000) | VRAM=13866MB | t=636ms
-HMamba.hmamba_L_N4 - E94 B0050 | loss=12.495 (ctc=12.495 seq=5.453 dc=0.6572) | comp=0.251 (target=0.250) | bias=-0.650 (grad=-2.8672) | VRAM=16050MB | t=163ms
-HMamba.hmamba_L_N4 - E94 B0100 | loss=11.281 (ctc=9.411 seq=5.058 dc=0.6557) | comp=0.249 (target=0.250) | bias=-0.650 (grad=-0.2344) | VRAM=16050MB | t=143ms
-HMamba.hmamba_L_N4 - E94 B0150 | loss=10.024 (ctc=7.035 seq=4.175 dc=0.6654) | comp=0.247 (target=0.250) | bias=-0.650 (grad=5.8984) | VRAM=16056MB | t=146ms
-HMamba.hmamba_L_N4 - E94 B0200 | loss=15.185 (ctc=15.706 seq=7.140 dc=0.7301) | comp=0.247 (target=0.250) | bias=-0.650 (grad=-12.7578) | VRAM=16694MB | t=176ms
-HMamba.hmamba_L_N4 - E94 B0250 | loss=13.145 (ctc=12.155 seq=5.719 dc=0.7326) | comp=0.251 (target=0.250) | bias=-0.650 (grad=9.2344) | VRAM=16798MB | t=169ms
-HMamba.hmamba_L_N4 - E94 B0300 | loss=14.925 (ctc=16.883 seq=7.129 dc=0.6492) | comp=0.253 (target=0.250) | bias=-0.650 (grad=0.2266) | VRAM=16798MB | t=152ms
-HMamba.hmamba_L_N4 - E94 B0350 | loss=9.835 (ctc=7.959 seq=3.675 dc=0.6500) | comp=0.253 (target=0.250) | bias=-0.650 (grad=3.1172) | VRAM=16798MB | t=144ms
-HMamba.hmamba_L_N4 - E94 B0400 | loss=10.909 (ctc=9.236 seq=4.703 dc=0.6461) | comp=0.250 (target=0.250) | bias=-0.650 (grad=-0.1328) | VRAM=16798MB | t=143ms
-HMamba.hmamba_L_N4 - E94 B0450 | loss=10.206 (ctc=7.205 seq=4.125 dc=0.6876) | comp=0.255 (target=0.250) | bias=-0.650 (grad=2.8516) | VRAM=16798MB | t=149ms
-HMamba.hmamba_L_N4 - E94 B0500 | loss=10.957 (ctc=9.257 seq=4.422 dc=0.6780) | comp=0.246 (target=0.250) | bias=-0.651 (grad=-6.0234) | VRAM=16798MB | t=144ms
-HMamba.hmamba_L_N4 - E94 B0550 | loss=11.348 (ctc=10.509 seq=4.736 dc=0.6507) | comp=0.249 (target=0.250) | bias=-0.650 (grad=-3.2109) | VRAM=16798MB | t=143ms
-HMamba.hmamba_L_N4 - E94 B0600 | loss=11.993 (ctc=11.536 seq=5.272 dc=0.6455) | comp=0.253 (target=0.250) | bias=-0.650 (grad=-2.9844) | VRAM=16798MB | t=150ms
-HMamba.hmamba_L_N4 - E94 B0650 | loss=11.254 (ctc=9.809 seq=4.594 dc=0.6795) | comp=0.254 (target=0.250) | bias=-0.650 (grad=-3.1250) | VRAM=16798MB | t=142ms
-HMamba.hmamba_L_N4 - E94 B0700 | loss=11.912 (ctc=10.943 seq=5.148 dc=0.6700) | comp=0.247 (target=0.250) | bias=-0.650 (grad=3.0547) | VRAM=16798MB | t=145ms
-HMamba.hmamba_L_N4 - E94 B0750 | loss=11.393 (ctc=10.231 seq=4.934 dc=0.6492) | comp=0.250 (target=0.250) | bias=-0.651 (grad=-12.5078) | VRAM=16798MB | t=146ms
-HMamba.hmamba_L_N4 - E94 B0800 | loss=10.499 (ctc=7.577 seq=4.498 dc=0.6769) | comp=0.254 (target=0.250) | bias=-0.650 (grad=0.0625) | VRAM=16798MB | t=143ms
+HMamba.hmamba_L_N4 - E100 B0000 | loss=12.553 (ctc=11.607 seq=5.486 dc=0.6974) | comp=0.258 (target=0.250) | bias=-0.646 (grad=0.0000) | VRAM=14220MB | t=748ms
+HMamba.hmamba_L_N4 - E100 B0050 | loss=12.869 (ctc=11.715 seq=6.003 dc=0.6869) | comp=0.246 (target=0.250) | bias=-0.647 (grad=-3.2734) | VRAM=15812MB | t=389ms
+HMamba.hmamba_L_N4 - E100 B0100 | loss=11.389 (ctc=9.187 seq=5.259 dc=0.6602) | comp=0.253 (target=0.250) | bias=-0.646 (grad=6.1875) | VRAM=15904MB | t=155ms
+HMamba.hmamba_L_N4 - E100 B0150 | loss=9.747 (ctc=6.809 seq=4.014 dc=0.6525) | comp=0.249 (target=0.250) | bias=-0.646 (grad=6.3047) | VRAM=15904MB | t=153ms
+HMamba.hmamba_L_N4 - E100 B0200 | loss=15.929 (ctc=17.708 seq=8.292 dc=0.6415) | comp=0.250 (target=0.250) | bias=-0.646 (grad=12.5625) | VRAM=15904MB | t=162ms
+HMamba.hmamba_L_N4 - E100 B0250 | loss=10.877 (ctc=9.300 seq=4.604 dc=0.6485) | comp=0.249 (target=0.250) | bias=-0.646 (grad=-0.3203) | VRAM=15904MB | t=171ms
+HMamba.hmamba_L_N4 - E100 B0300 | loss=10.246 (ctc=8.028 seq=4.144 dc=0.6581) | comp=0.253 (target=0.250) | bias=-0.646 (grad=-3.0781) | VRAM=15904MB | t=171ms
