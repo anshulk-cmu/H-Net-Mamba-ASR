@@ -36,3 +36,56 @@ __main__ - [H-Mamba]   - q_proj_layer.weight: shape=torch.Size([144, 144]), requ
 __main__ - [H-Mamba]   - k_proj_layer.weight: shape=torch.Size([144, 144]), requires_grad=True
 speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/CKPT+2026-04-08+07-27-06+00
 Loaded the average
+speechbrain.utils.train_logger - Epoch loaded: 290 - test loss: 1.21, test ACC: 9.75e-01, test WER: 3.24
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x14dead38be80> in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/CKPT+2026-04-08+10-00-21+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/CKPT+2026-04-08+10-00-21+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/CKPT+2026-04-08+07-27-06+00
+speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/CKPT+2026-04-08+10-00-21+00
+Loaded the average
+speechbrain.utils.train_logger - Epoch loaded: 290 - test loss: 2.08, test ACC: 9.39e-01, test WER: 8.17
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x14dead38be80> in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/CKPT+2026-04-08+10-44-57+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/CKPT+2026-04-08+10-44-57+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/CKPT+2026-04-08+10-00-21+00
+[S_N1] no-LM eval done — exit code: 0 — Wed Apr  8 10:44:59 EDT 2026
+[S_N1] with-LM eval starting — Wed Apr  8 10:44:59 EDT 2026
+dropout=0.1 is not used in Mamba.
+speechbrain.core - Beginning experiment!
+speechbrain.core - Experiment folder: /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1
+librispeech_prepare - Skipping preparation, completed in previous run.
+speechbrain.dataio.sampler - Batch quantisation in latent space
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.dataio.sampler - Batch quantisation in latent space
+speechbrain.dataio.sampler - DynamicBatchSampler: Generating dynamic batches
+speechbrain.utils.fetching - Fetch lm.ckpt: Using existing file/symlink in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/lm.ckpt.
+speechbrain.utils.fetching - Fetch tokenizer.ckpt: Using existing file/symlink in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/tokenizer.ckpt.
+speechbrain.utils.parameter_transfer - Loading pretrained files for: lm, tokenizer
+speechbrain.core - Info: precision arg overridden by command line input to: bf16
+speechbrain.core - Info: max_grad_norm arg from hparam file is used
+speechbrain.core - Info: grad_accumulation_factor arg from hparam file is used
+speechbrain.core - Gradscaler enabled: False. Using precision: bf16.
+speechbrain.core - 14.1M trainable parameters in HMambaASR
+[HMambaEncoderWrapper] Created with 6 stage0 layers, 6 stage1 layers
+[HMambaEncoderWrapper] Target compression N=1.0 (r≈1.00)
+__main__ - [H-Mamba] Encoder wrapped with DC (split_idx=6, target_N=1.0)
+__main__ - [H-Mamba] DC RoutingModule has 4 parameters
+__main__ - [H-Mamba]   - temperature: shape=torch.Size([]), requires_grad=True
+__main__ - [H-Mamba]   - boundary_bias: shape=torch.Size([]), requires_grad=True
+__main__ - [H-Mamba]   - q_proj_layer.weight: shape=torch.Size([144, 144]), requires_grad=True
+__main__ - [H-Mamba]   - k_proj_layer.weight: shape=torch.Size([144, 144]), requires_grad=True
+speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/CKPT+2026-04-08+10-44-57+00
+Loaded the average
+speechbrain.utils.train_logger - Epoch loaded: 290 - test loss: 7.23e-01, test ACC: 9.75e-01, test WER: 2.27
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x146b6612bee0> in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/CKPT+2026-04-08+12-27-55+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/CKPT+2026-04-08+12-27-55+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/CKPT+2026-04-08+10-44-57+00
+speechbrain.utils.checkpoints - Loading a checkpoint from /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/CKPT+2026-04-08+12-27-55+00
+Loaded the average
+speechbrain.utils.train_logger - Epoch loaded: 290 - test loss: 1.39, test ACC: 9.39e-01, test WER: 5.65
+speechbrain.utils.checkpoints - Saving an empty state_dict for <torch.cuda.amp.grad_scaler.GradScaler object at 0x146b6612bee0> in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/CKPT+2026-04-08+13-56-42+00/scaler.ckpt.
+speechbrain.utils.checkpoints - Saved an end-of-epoch checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/CKPT+2026-04-08+13-56-42+00
+speechbrain.utils.checkpoints - Deleted checkpoint in /data/user_data/anshulk/hnet_asr/results/hmamba_small_N1/save/CKPT+2026-04-08+12-27-55+00
+[S_N1] with-LM eval done — exit code: 0 — Wed Apr  8 13:56:43 EDT 2026
+
+============================================================
+S_N1 eval finished — Wed Apr  8 13:56:43 EDT 2026
+============================================================

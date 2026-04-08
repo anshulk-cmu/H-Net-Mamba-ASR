@@ -75,11 +75,11 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 | Streaming incompatibility | BiMamba is bidirectional, routing uses look-ahead. Offline-only by design. |
 | N=3 anomaly (WER ~10% vs N=2's ~4%) | Persists at both small and large scales after all bug fixes. Likely intrinsic difficulty of 67% compression, not a code bug. Paper will discuss as a finding. |
 
-### 1.4 In Progress (as of April 6 evening)
+### 1.4 In Progress (as of April 8)
 
 | Item | Status |
 |------|--------|
-| H-Mamba Small N=1 | Training done, no-LM eval pending |
+| H-Mamba Small N=1 | **DONE.** 290 ep (patience), best ep 280. With LM: **2.27/5.65**. No LM: **3.24/8.17**. Verified on disk. |
 | H-Mamba Small N=2 | **DONE.** 234 ep (patience), best ep 230. With LM: **2.42/5.98**. No LM: **3.52/8.74**. Verified on disk. |
 | H-Mamba Small N=3 | **DONE.** 205 ep (patience), best ep 160. With LM: **5.31/10.29**. No LM: **10.62/18.66**. Verified on disk. |
 | H-Mamba Small N=4 | **DONE.** 193 ep (patience), best ep 160. With LM: **5.21/11.06**. No LM: **9.24/17.38**. Verified on disk. |
@@ -452,6 +452,7 @@ loss = ((1 - true_ratio) * (1 - average_prob) +
 5. ~~L_N1 completed~~ 142 ep, best ep 130. With LM: **2.18/5.14**. No LM: **2.73/6.57**.
 6. ~~L_N2 completed~~ 141 ep, best ep 110. With LM: **2.31/5.24**. No LM: **2.84/6.72**.
 7. ~~Collect S_N2/S_N3/S_N4 eval results~~ Done (job 7008334). S_N2: 2.42/5.98 (LM), 3.52/8.74 (no LM). S_N3: 5.31/10.29 (LM), 10.62/18.66 (no LM). S_N4: 5.21/11.06 (LM), 9.24/17.38 (no LM).
-8. **Wait for L_N3/L_N4 training to finish** (auto-evals built into slurm scripts)
+8. ~~S_N1 eval completed~~ Done (job 7015131). With LM: **2.27/5.65**. No LM: **3.24/8.17**. All 4 small models fully done.
+9. **Wait for L_N3/L_N4 training to finish** (L_N3 killed at epoch 215 — time limit, CKPT saved; L_N4 training epoch ~120)
 9. Install MFA and start alignment
 10. Create ablation configs (conformer_dc, fixed-2x)

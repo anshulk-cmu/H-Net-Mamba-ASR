@@ -7,6 +7,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=256G
 #SBATCH --time=2-00:00:00
+#SBATCH --signal=B:USR1@1800
 #SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE
 #SBATCH --mail-user=anshulk@andrew.cmu.edu
 
@@ -42,46 +43,74 @@ echo ""
 
 cd /home/anshulk/h-mamba_asr/Mamba-ASR
 
+DATA_FOLDER=/data/user_data/anshulk/hnet_asr/LibriSpeech
+OUTPUT_FOLDER=/data/user_data/anshulk/hnet_asr/results/hmamba_large_N3
+HPARAMS=hparams/S2S/hmamba_large_N3.yaml
+TRAIN_ARGS="--batch_size 16 --max_batch_length_train 600 --max_batch_length_val 100 --precision bf16"
+EVAL_ARGS="--batch_size 16 --max_batch_length_train 600 --max_batch_length_val 100 --precision bf16 --skip_train True"
+
+# --- Signal trap: if SLURM timeout approaches, kill training so eval can run ---
+TRAIN_PID=""
+handle_timeout() {
+    echo ""
+    echo "============================================================"
+    echo "SLURM timeout approaching — killing training to run evals — $(date)"
+    echo "============================================================"
+    if [ -n "$TRAIN_PID" ]; then
+        kill -TERM "$TRAIN_PID" 2>/dev/null
+        wait "$TRAIN_PID" 2>/dev/null
+    fi
+}
+trap 'handle_timeout' USR1
+
+# --- Phase 1: Training (resumes from checkpoint) ---
 MASTER_PORT=$(python -c "import socket; s=socket.socket(); s.bind(('',0)); print(s.getsockname()[1]); s.close()")
 echo "Master port: $MASTER_PORT"
 
-torchrun --nproc_per_node=2 --master_port=$MASTER_PORT train_s2s_hmamba.py hparams/S2S/hmamba_large_N3.yaml \
-    --data_folder /data/user_data/anshulk/hnet_asr/LibriSpeech \
-    --output_folder /data/user_data/anshulk/hnet_asr/results/hmamba_large_N3 \
-    --batch_size 16 \
-    --max_batch_length_train 600 \
-    --max_batch_length_val 100 \
-    --use_wandb True \
-    --precision bf16
-
+torchrun --nproc_per_node=2 --master_port=$MASTER_PORT train_s2s_hmamba.py $HPARAMS \
+    --data_folder $DATA_FOLDER \
+    --output_folder $OUTPUT_FOLDER \
+    $TRAIN_ARGS \
+    --use_wandb True &
+TRAIN_PID=$!
+wait $TRAIN_PID
 TRAIN_EXIT=$?
+TRAIN_PID=""
 
 echo ""
 echo "============================================================"
-echo "Training + with-LM eval finished — exit code: $TRAIN_EXIT — $(date)"
+echo "Training finished — exit code: $TRAIN_EXIT — $(date)"
 echo "============================================================"
 
-if [ $TRAIN_EXIT -eq 0 ]; then
-    echo ""
-    echo "============================================================"
-    echo "Starting no-LM eval (single GPU) — $(date)"
-    echo "============================================================"
+# --- Phase 2: With-LM eval (always runs) ---
+echo ""
+echo "============================================================"
+echo "Starting with-LM eval (single GPU) — $(date)"
+echo "============================================================"
 
-    python train_s2s_hmamba.py hparams/S2S/hmamba_large_N3.yaml \
-        --data_folder /data/user_data/anshulk/hnet_asr/LibriSpeech \
-        --output_folder /data/user_data/anshulk/hnet_asr/results/hmamba_large_N3 \
-        --batch_size 16 \
-        --max_batch_length_train 600 \
-        --max_batch_length_val 100 \
-        --precision bf16 \
-        --skip_train True \
-        --no_lm True
+python train_s2s_hmamba.py $HPARAMS \
+    --data_folder $DATA_FOLDER \
+    --output_folder $OUTPUT_FOLDER \
+    $EVAL_ARGS
 
-    NOLM_EXIT=$?
-    echo ""
-    echo "============================================================"
-    echo "No-LM eval finished — exit code: $NOLM_EXIT — $(date)"
-    echo "============================================================"
-fi
+LM_EXIT=$?
+echo "With-LM eval finished — exit code: $LM_EXIT — $(date)"
 
-exit $TRAIN_EXIT
+# --- Phase 3: No-LM eval (always runs) ---
+echo ""
+echo "============================================================"
+echo "Starting no-LM eval (single GPU) — $(date)"
+echo "============================================================"
+
+python train_s2s_hmamba.py $HPARAMS \
+    --data_folder $DATA_FOLDER \
+    --output_folder $OUTPUT_FOLDER \
+    $EVAL_ARGS --no_lm True
+
+NOLM_EXIT=$?
+echo "No-LM eval finished — exit code: $NOLM_EXIT — $(date)"
+
+echo ""
+echo "============================================================"
+echo "All done — train=$TRAIN_EXIT, with-LM=$LM_EXIT, no-LM=$NOLM_EXIT — $(date)"
+echo "============================================================"

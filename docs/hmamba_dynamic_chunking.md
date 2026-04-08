@@ -2083,9 +2083,8 @@ No-LM evaluation uses beam=66, no LM rescoring.
 
 | Run | Status |
 |-----|--------|
-| S_N1 | Training done, no-LM eval pending |
-| L_N3 | Training in progress (epoch 198) |
-| L_N4 | Pending SLURM queue |
+| L_N3 | Training killed (time limit, epoch 215 CKPT saved), with-LM eval done (5.21/10.10), no-LM eval pending |
+| L_N4 | Training in progress (epoch ~120) |
 
 ### Compression ratio convergence: what the numbers mean
 
@@ -2540,7 +2539,6 @@ Based on the trajectory at 72 hours, the 960h results will support these claims:
    WER cost. L_N4 improved monotonically to 6.48% at epoch 90.
 
 Claims that require final results (not yet available):
-- S_N2 with-LM eval (submitted, awaiting results)
 - Comparison with the Conformer+DC ablation (not yet trained)
 - Comparison with fixed-2x downsampling baseline (not yet trained)
 - Boundary-F1 analysis against phone boundaries (requires MFA)
@@ -2550,11 +2548,11 @@ Claims that require final results (not yet available):
 
 The 960h results improve on the 100h pilot in every way:
 
-| Run | 100h Pilot WER (clean/other) | 960h Status |
-|-----|-----------------------------|---------------------------------|
-| S_N2 | 5.96 / 16.35 | In progress |
-| S_N3 | 7.80 / 21.36 | In progress |
-| S_N4 | 7.35 / 19.71 | In progress |
+| Run | 100h Pilot WER (clean/other) | 960h With-LM (clean/other) | 960h No-LM (clean/other) |
+|-----|-----------------------------|---------------------------------|---------------------------------|
+| S_N2 | 5.96 / 16.35 | **2.42 / 5.98** | **3.52 / 8.74** |
+| S_N3 | 7.80 / 21.36 | **5.31 / 10.29** | **10.62 / 18.66** |
+| S_N4 | 7.35 / 19.71 | **5.21 / 11.06** | **9.24 / 17.38** |
 
 Wait — S_N3 and S_N4 appear to have *worse* WER at 960h than at 100h. This is
 misleading for two reasons:
@@ -3303,6 +3301,7 @@ When all 8 experiments complete and are evaluated, this stage will answer:
 
 | Model | target_N | Actual Comp. | With LM (c/o) | No LM (c/o) | Status |
 |-------|----------|-------------|---------------|-------------|--------|
+| hmamba_small_N1 | 1.0 | 0.789 | **2.27 / 5.65** | **3.24 / 8.17** | **Done** (290 ep, patience, best ep 280) |
 | hmamba_small_N2 | 2.0 | 0.501 | **2.42 / 5.98** | **3.52 / 8.74** | **Done** (234 ep, patience, best ep 230) |
 | hmamba_small_N3 | 3.0 | 0.335 | **5.31 / 10.29** | **10.62 / 18.66** | **Done** (205 ep, patience, best ep 160) |
 | hmamba_small_N4 | 4.0 | 0.251 | **5.21 / 11.06** | **9.24 / 17.38** | **Done** (193 ep, patience, best ep 160) |
@@ -3313,9 +3312,8 @@ When all 8 experiments complete and are evaluated, this stage will answer:
 
 | Model | target_N | Status |
 |-------|----------|--------|
-| hmamba_small_N1 | 1.0 | Training done, no-LM eval pending |
-| hmamba_large_N3 | 3.0 | Training in progress (epoch 198) |
-| hmamba_large_N4 | 4.0 | Pending SLURM queue |
+| hmamba_large_N3 | 3.0 | Training killed (time limit, epoch 215 CKPT saved), with-LM eval done (5.21/10.10), no-LM eval pending |
+| hmamba_large_N4 | 4.0 | Training in progress (epoch ~120) |
 
 ### Baseline reference (from baseline_reproduction.md)
 
