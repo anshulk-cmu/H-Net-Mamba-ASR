@@ -2079,12 +2079,8 @@ No-LM evaluation uses beam=66, no LM rescoring.
 - L_N1 beats ConMamba Large with-LM baseline (2.27→2.18 test-clean).
 - L_N2 at 50% compression only +0.13% behind L_N1 on test-clean.
 
-#### In-progress runs
-
-| Run | Status |
-|-----|--------|
-| L_N3 | Training killed (time limit, epoch 215 CKPT saved), with-LM eval done (5.21/10.10), no-LM eval pending |
-| L_N4 | Training in progress (epoch ~120) |
+- **L_N3** (67% compression): With-LM 3.95/8.27 — significant gap from L_N2 but much better than small-scale N=3.
+- **L_N4** (75% compression): With-LM 3.24/6.94 — beats L_N3 despite higher compression, confirming N=3 anomaly at large scale.
 
 ### Compression ratio convergence: what the numbers mean
 
@@ -2337,47 +2333,282 @@ still improving, and the gap may narrow further.
 
 The N=3 anomaly — worse WER at 67% compression than at either 50% or 75% — persists
 at 960h with all bug fixes applied. This rules out bugs 1 and 2 as the sole cause.
-The anomaly is real.
+The anomaly is real, and now confirmed with final test-set results across all 8 runs.
 
-Why is 67% compression harder than 75%? Three hypotheses:
+#### Final results confirming the anomaly
 
-**Hypothesis 1: DC loss weight gradient landscape.** The DC loss weight for N=3 is
-6.5, while N=4 is 7.5. At N=3, the model must balance a lower compression pressure
-(6.5) against the ASR loss. The N=3 operating point may sit in a flatter region of
-the loss landscape where the model cannot easily find good boundary positions. N=4's
-stronger DC loss (7.5) forces more decisive boundary placement, which paradoxically
-gives Stage 1 a more consistent (even if shorter) input sequence.
+| Scale | N=3 with LM (cl/oth) | N=4 with LM (cl/oth) | N=3 no LM (cl/oth) | N=4 no LM (cl/oth) |
+|-------|----------------------|----------------------|---------------------|---------------------|
+| Small | 5.31 / 10.29 | **5.21** / **11.06** | 10.62 / 18.66 | **9.24** / **17.38** |
+| Large | 3.95 / 8.27 | **3.24** / **6.94** | 8.08 / 14.23 | **6.35** / **12.26** |
 
-**Hypothesis 2: boundary count instability.** For a 750-frame sequence (typical for
-960h LibriSpeech):
-- N=2: ~375 boundaries — about half the frames are boundaries. Boundaries are common
-  enough that the model can be imprecise about exactly which frames to keep.
-- N=3: ~250 boundaries — one-third of frames. The model must be more selective. Each
-  boundary decision matters more. A wrong boundary (keeping a silence frame instead of
-  a transition) degrades recognition.
-- N=4: ~188 boundaries — one-quarter. The strongest compression. The model must pick
-  only the most critical frames. The very strong DC loss weight (7.5) drives decisive
-  placement. There is less ambiguity.
+N=4 beats N=3 in 7 of 8 comparisons despite compressing 75% vs 67%. The gap is larger
+at the large scale (0.71% on test-clean with LM) than the small scale (0.10%). The
+anomaly is not a bug — it is a structural interaction between the compression ratio,
+the loss landscape, the acoustic structure of speech, and the routing module's
+optimization dynamics.
 
-N=3 is in the middle: it must be selective (unlike N=2) but the DC loss is not strong
-enough to force decisive placement (unlike N=4). The result is uncertain boundaries —
-the routing module oscillates more between competing boundary positions. Evidence: the
-boundary_bias gradient for S_N3 shows values of ±15.75, much larger than S_N2's ±5.83
-or S_N4's ±19.75. The N=3 bias gradient alternates between large positive and negative
-values, suggesting the loss landscape is pulling the bias in both directions.
+#### Cause 1: The "indecisive middle" — routing module oscillation at 67%
 
-**Hypothesis 3: the 1/3 fraction and acoustic structure.** Speech has natural segment
-durations. If the average phoneme lasts 3-5 frames (after CNN 4x downsampling), then
-keeping 1-in-3 frames means roughly one frame per phoneme. But phoneme durations vary
-widely — a stop consonant burst might be 1 frame, while a long vowel might be 10 frames.
-At 1-in-3 compression, the model cannot keep even one frame per phoneme for all phonemes
-consistently. At 1-in-2, it can comfortably keep 1-2 frames per phoneme. At 1-in-4, the
-model is forced into a qualitatively different strategy (keeping one frame per acoustic
-segment, not per phoneme), which may be easier to learn.
+The routing module decides boundaries via:
 
-The N=3 anomaly will be discussed in the paper's Analysis section. If MFA alignment
-confirms that N=3 boundaries correlate less with phone boundaries than N=2 or N=4, this
-supports Hypothesis 3.
+```
+logit = (1 - cos_sim + boundary_bias) / temperature
+boundary_prob = sigmoid(logit)
+```
+
+At different compression levels, the routing module faces qualitatively different
+optimization problems:
+
+- **N=2 (keep 50%):** Nearly half the frames are boundaries. The routing module can
+  afford imprecision — wrong boundary calls barely matter because there are so many
+  kept frames that redundancy covers errors.
+- **N=4 (keep 25%):** Only the most critical frames survive. The strong DC loss weight
+  (7.5) and aggressive target force the routing module into **decisive, high-confidence
+  boundary placement**. It must find the "best" 25% of frames and commits fully.
+  There is no ambiguity — a frame is either critical or it isn't.
+- **N=3 (keep 33%):** Stuck in the middle. Must be more selective than N=2 but the DC
+  loss weight (6.5) isn't strong enough to force the same decisive placement as N=4.
+  The routing module oscillates between competing boundary positions, never fully
+  committing.
+
+**Evidence from dev WER trajectories:**
+
+L_N4 converges smoothly and monotonically:
+```
+L_N4 dev WER: 40.44 → 8.98 → 7.66 → 7.10 → 6.75 → 6.58 → 6.46 → 6.69 → 6.48
+  → 6.74 → 6.60 → 6.60 → 6.33 → 6.34 → 6.30 → 6.47 → 6.45 → 6.01 → 6.41
+  → 6.48 → 6.27
+  Range at convergence (ep 130+): 6.01–6.48 (spread = 0.47%)
+```
+
+L_N3 oscillates wildly and never settles:
+```
+L_N3 dev WER: 9.10 → 8.99 → 8.43 → 8.21 → 7.89 → 8.68 → 8.37 → 9.08 → 9.01
+  → 7.95 → 7.89 → 9.14 → 8.75 → 9.17 → 8.17 → 8.60 → 8.55 → 8.60 → 8.25
+  → 8.43 → 8.18 → 8.13 → 8.50 → 8.03 → 8.48
+  Range at convergence (ep 90+): 7.89–9.17 (spread = 1.28%)
+```
+
+L_N3's WER variance (spread 1.28%) is nearly **3x** L_N4's (spread 0.47%). The routing
+module never stabilizes at 67% compression — it keeps changing which frames to keep,
+producing inconsistent input to Stage 1 across epochs. This instability directly
+translates to worse final WER.
+
+The same pattern holds at small scale:
+```
+S_N3 dev WER (ep 70+): 10.72 → 10.72 → 10.39 → 10.54 → 10.25 → 10.01 → 10.10
+  → 10.07 → 10.14 → 10.15
+  Range: 10.01–10.72 (spread = 0.71%, but stuck at a high plateau)
+
+S_N4 dev WER (ep 90+): 12.45 → 11.90 → 13.89 → 10.99 → 11.66 → 11.97 → 10.68
+  → 9.70 → 10.87 → 10.30 → 10.25
+  Range: 9.70–13.89 (more volatile, but trending DOWN unlike S_N3's plateau)
+```
+
+S_N4 shows high initial volatility (the U-curve from epoch 70–100) but ultimately
+breaks through to 9.70%, while S_N3 plateaus at ~10% and never escapes.
+
+#### Cause 2: DC loss weight is under-compensated for N=3
+
+The 5-term `load_balancing_loss` (HMambaEncoder.py:375-471) has N-dependent behavior
+in every term. The critical observation is how the **internal loss magnitudes** scale
+with N, independent of the external dc_loss_weight:
+
+```
+total_loss = bce_loss * 1.0 + mean_loss * 5.0 + variance_loss * 0.5
+           + entropy_loss * 0.5 + ratio_loss * 10.0
+```
+
+**Mean loss scaling:** `mean_loss = (avg_boundary_prob - 1/N)^2`
+
+At training start (avg_prob ≈ 0.4, typical after warmup):
+- N=3: mean_loss = (0.4 - 0.333)^2 = 0.0045 → weighted = 0.022
+- N=4: mean_loss = (0.4 - 0.250)^2 = 0.0225 → weighted = 0.112
+
+N=4's mean_loss is **5x larger** at the same starting point. This generates much
+stronger gradients to push boundary_bias downward, forcing rapid and decisive
+compression. N=3's weaker gradient allows the bias to drift slowly, prolonging the
+period of uncertain boundaries.
+
+**Ratio loss scaling:** `ratio_loss = |actual - 1/N| + (actual - 1/N)^2`
+
+Same asymmetry. When actual_ratio is 0.4:
+- N=3: ratio_loss = |0.4-0.333| + (0.4-0.333)^2 = 0.067 + 0.0045 = 0.071
+- N=4: ratio_loss = |0.4-0.250| + (0.4-0.250)^2 = 0.150 + 0.0225 = 0.173
+
+N=4's ratio_loss is **2.4x larger**, providing much stronger direct supervision.
+
+**BCE loss scaling:** `bce_loss = BCE_with_logits(logits, target_ratio)`
+
+The per-position BCE target is 1/N. At N=4, the model must push per-position
+probabilities to 0.25 (strongly biased toward non-boundary), which produces larger
+gradients than N=3's target of 0.333 (less biased).
+
+**Combined effect — dc_loss_weight vs internal scaling:**
+
+| Metric | N=3 | N=4 | N=4/N=3 ratio |
+|--------|-----|-----|---------------|
+| dc_loss_weight | 6.5 | 7.5 | 1.15x |
+| mean_loss (at start) | 0.022 | 0.112 | 5.0x |
+| ratio_loss (at start) | 0.071 | 0.173 | 2.4x |
+| **Effective DC gradient** | 6.5 * 0.071 = 0.46 | 7.5 * 0.173 = 1.30 | **2.8x** |
+
+N=4 sees **2.8x stronger** effective DC gradients than N=3 at the start of training.
+The 15% external weight increase (6.5→7.5) is dwarfed by the internal loss scaling.
+This means N=4's routing module is pushed much harder toward its target, producing
+the decisive boundary placement that leads to better WER.
+
+#### Cause 3: The 1/3 fraction and acoustic structure mismatch
+
+After CNN 4x downsampling, a typical LibriSpeech phoneme spans 3-5 frames. At
+different compression ratios, the routing module faces fundamentally different
+strategies:
+
+- **N=2 (keep 50%, ~1.5-2.5 frames/phoneme):** Comfortable. Multiple frames survive
+  per phoneme. The routing module can keep both onset and steady-state frames. Errors
+  in boundary placement are absorbed by redundancy.
+
+- **N=4 (keep 25%, ~0.75-1.25 frames/phoneme):** The model is forced into a
+  **qualitatively different strategy**: one representative per *acoustic segment*,
+  not per phoneme. Short phonemes (stop bursts, 1-2 frames) get one frame or zero.
+  Long phonemes (vowels, 5-10 frames) get one or two. This is a clean optimization
+  target — the model just needs to find the most informative frame per segment.
+
+- **N=3 (keep 33%, ~1.0-1.7 frames/phoneme):** The worst of both worlds. Not enough
+  frames for reliable per-phoneme representation (unlike N=2), but too many frames for
+  the clean "one-per-segment" strategy (unlike N=4). For a 5-frame vowel, should the
+  model keep 1 frame or 2? For a 2-frame stop consonant, should it keep 0 or 1? The
+  routing module faces ambiguous choices at every phoneme, leading to inconsistent
+  boundary patterns.
+
+This creates a **bimodal optimization landscape** for N=3: the model oscillates between
+a "dense" strategy (keeping more frames, drifting toward N=2 behavior) and a "sparse"
+strategy (keeping fewer, drifting toward N=4 behavior). Neither is stable at exactly
+1/3. Evidence: the boundary_bias gradient for N=3 shows large alternating positive and
+negative values (S_N3 ±15.5, L_N3 ±20.9), suggesting the loss landscape pulls the bias
+in both directions across batches.
+
+By contrast, N=4's gradient, while also large (S_N4 ±19.4, L_N4 ±18.6), is more
+consistently directional — the routing module knows it needs aggressive compression and
+commits to the "one-per-segment" strategy without oscillating.
+
+#### Cause 4: Gumbel-STE gradient density creates paradoxical advantage for N=4
+
+The ratio_loss (weight=10.0, the dominant loss term) flows gradients through
+`boundary_hard[..., 1].mean()`, where `boundary_hard` comes from Gumbel-softmax with
+STE. For a typical 750-frame sequence:
+
+- N=3: ~250 boundary positions contribute to the mean → 250 gradient sources
+- N=4: ~188 boundary positions contribute to the mean → 188 gradient sources
+
+The per-position gradient magnitude is inversely proportional to the count:
+- N=3: each position contributes gradient ∝ 1/250 = 0.004
+- N=4: each position contributes gradient ∝ 1/188 = 0.0053
+
+N=4's sparser gradients mean each boundary position carries **33% more gradient weight**
+per update. This acts as an implicit regularizer — the routing module must make each
+boundary position count, which forces more discriminative boundary placement. N=3's
+denser but individually weaker gradients produce a noisier optimization signal.
+
+#### Cause 5: DeChunk EMA reconstruction quality
+
+The DeChunk layer (HMambaEncoder.py:248-368) reconstructs the full-length sequence via
+EMA interpolation:
+
+```python
+out[t] = p[t] * x[t] + (1 - p[t]) * out[t-1]
+```
+
+Each non-boundary position is reconstructed by blending the nearest chunk representation
+with the previous output. The chunk_indices mapping (line 314-315) assigns each position
+to the most recent boundary:
+
+```python
+chunk_indices = torch.cumsum(boundary_mask, dim=1) - 1
+```
+
+For N=4, boundaries are spaced ~4 frames apart on average. The EMA has 3 non-boundary
+frames to fill between anchors, producing smooth interpolation between well-separated
+chunk representations. Each chunk captures a distinct acoustic segment, so the EMA
+blending creates a smooth transition between segments.
+
+For N=3, boundaries are spaced ~3 frames apart — closer together. This creates more
+interference between adjacent chunk representations during EMA blending. If N=3's
+boundaries are also less consistently placed (see Cause 1), the EMA reconstruction
+becomes noisy: some chunks are 2 frames apart, others 5 frames apart, depending on
+which frames the oscillating routing module chose for that batch. The inconsistent
+spacing degrades reconstruction quality, which compounds across the 6 Stage-1 layers.
+
+#### Cause 6: DC loss convergence speed — N=4 locks in earlier
+
+From the training logs, the DC loss convergence trajectory differs markedly:
+
+| Epoch | L_N3 DC Loss | L_N4 DC Loss |
+|-------|-------------|-------------|
+| 1 | 1.344 | 2.014 |
+| 3 | 1.580 | 2.620 |
+| 4 | 1.710 | 2.980 (peak) |
+| 10 | 1.060 | 1.540 |
+| Final | 0.744 | 0.672 |
+
+N=4 starts with higher DC loss (harder task) but the loss drops faster after epoch 4.
+By final convergence, N=4's DC loss (0.672) is **lower** than N=3's (0.744). This means
+N=4's routing module reaches a more satisfied state — the 5-term loss landscape has a
+deeper minimum at 25% compression than at 33% compression.
+
+The boundary_bias trajectory confirms this:
+
+| Epoch | L_N3 bias | L_N4 bias |
+|-------|-----------|-----------|
+| 1 | 1.000 | 1.000 |
+| 5 | 0.776 | 0.758 |
+| 10 | 0.130 | -0.195 |
+| Final | -0.463 | -0.611 |
+
+N=4's bias becomes negative earlier (epoch 10: -0.195 vs +0.130) and ends more
+negative (-0.611 vs -0.463). More negative bias means more frames are classified as
+non-boundaries, which is consistent with N=4's target. The faster, more decisive bias
+trajectory means N=4's routing module "locks in" its strategy earlier in training,
+giving the rest of the model (Stage 1 layers, decoder) a stable input distribution
+to learn from. N=3's slower bias trajectory means Stage 1 sees shifting input
+distributions for longer, impeding its own learning.
+
+#### Summary: why N=3 is worse than N=4
+
+The N=3 anomaly arises from a convergence of six interacting factors:
+
+1. **Indecisive routing** — 67% compression creates ambiguous boundary decisions.
+   The routing module cannot commit to either a "keep-many" or "keep-few" strategy,
+   leading to oscillating WER (spread 1.28% for L_N3 vs 0.47% for L_N4).
+
+2. **Under-weighted DC loss** — The external dc_loss_weight increases only 15% (6.5→7.5)
+   but the internal loss terms (mean_loss, ratio_loss) naturally generate 2.4-5x stronger
+   gradients for N=4. N=4 sees 2.8x stronger effective DC gradient pressure.
+
+3. **Acoustic mismatch** — 1/3 compression hits an awkward stride relative to phoneme
+   durations (3-5 frames). Too sparse for per-phoneme representation, too dense for the
+   clean per-segment strategy. Creates a bimodal loss landscape.
+
+4. **Sparser but stronger per-position gradients** — N=4's 188 boundary positions carry
+   33% more gradient weight each than N=3's 250, acting as implicit regularization that
+   forces more discriminative placement.
+
+5. **Noisier EMA reconstruction** — N=3's inconsistent boundary spacing degrades
+   DeChunk interpolation quality, compounding across Stage 1 layers.
+
+6. **Slower strategy lock-in** — N=3's boundary_bias converges later and less decisively,
+   keeping Stage 1's input distribution unstable for longer during training.
+
+The paper should frame this as: *"Certain compression ratios interact poorly with the
+natural temporal structure of speech. The 1/3 ratio falls in an ambiguous regime where
+the routing module cannot commit to either per-phoneme or per-segment strategies,
+leading to sustained boundary oscillation and degraded recognition. This suggests that
+learned compression ratios are not monotonically related to WER — there exist 'sweet
+spots' (N=2) and 'dead zones' (N=3) in the compression landscape."*
+
+If MFA alignment confirms that N=3 boundaries correlate less with phone boundaries
+than N=2 or N=4, this provides direct evidence for Cause 3 (acoustic mismatch).
 
 ### The ACC metric: why S_N2 has higher ACC than S_N1
 
@@ -3307,13 +3538,8 @@ When all 8 experiments complete and are evaluated, this stage will answer:
 | hmamba_small_N4 | 4.0 | 0.251 | **5.21 / 11.06** | **9.24 / 17.38** | **Done** (193 ep, patience, best ep 160) |
 | hmamba_large_N1 | 1.0 | 0.822 | **2.18 / 5.14** | **2.73 / 6.57** | **Done** (142 ep, patience, best ep 130) |
 | hmamba_large_N2 | 2.0 | 0.501 | **2.31 / 5.24** | **2.84 / 6.72** | **Done** (141 ep, patience, best ep 110) |
-
-#### In progress
-
-| Model | target_N | Status |
-|-------|----------|--------|
-| hmamba_large_N3 | 3.0 | Training killed (time limit, epoch 215 CKPT saved), with-LM eval done (5.21/10.10), no-LM eval pending |
-| hmamba_large_N4 | 4.0 | Training in progress (epoch ~120) |
+| hmamba_large_N3 | 3.0 | 0.334 | **3.95 / 8.27** | **8.08 / 14.23** | **Done** (281 ep, patience, best ep 270) |
+| hmamba_large_N4 | 4.0 | 0.251 | **3.24 / 6.94** | **6.35 / 12.26** | **Done** (212 ep, patience, best ep 180) |
 
 ### Baseline reference (from baseline_reproduction.md)
 

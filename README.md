@@ -21,10 +21,10 @@ Reproduce all 8 experiments from the ConMamba paper
 ([arXiv:2407.09732](https://arxiv.org/abs/2407.09732)) on LibriSpeech 960h.
 This establishes the baselines against which H-Mamba is compared.
 
-### Phase 2: H-Mamba Training (In Progress)
+### Phase 2: H-Mamba Training (Complete)
 Train H-Mamba models (ConMamba + Dynamic Chunking) at 8 configurations:
 - Small model (14.1M params): N=1, N=2, N=3, N=4 — **All 4 fully done**
-- Large model (115.2M params): N=1, N=2, N=3, N=4 — **L_N1/L_N2 fully done; L_N3 training killed (time limit, epoch 215); L_N4 training in progress (epoch ~120)**
+- Large model (115.2M params): N=1, N=2, N=3, N=4 — **All 4 fully done**
 
 Where N is the target compression factor (N=2 keeps 50% of frames, N=4 keeps 25%).
 
@@ -237,7 +237,7 @@ Previous issues resolved:
 - Grad norm showed 0.0 on large models (grad_accum=8 misaligned with log interval). Fixed: persist last real grad_norm across non-step batches.
 - Smoke test v1 (6912668) timed out during beam search eval (2h limit too short).
 
-### 6.5 H-Mamba Results (960h, updated April 8)
+### 6.5 H-Mamba Results (960h, updated April 11)
 
 **Evaluation pipeline:** beam=66, CTC weight=0.40, LM weight=0.60 with
 `speechbrain/asr-transformer-transformerlm-librispeech`. No-LM eval uses beam=66, no LM rescoring.
@@ -252,19 +252,16 @@ Previous issues resolved:
 | hmamba_small_N4 | 4.0 | 0.251 | 193 (patience) | 160 | **5.21 / 11.06** | **9.24 / 17.38** |
 | hmamba_large_N1 | 1.0 | 0.822 | 142 (patience) | 130 | **2.18 / 5.14** | **2.73 / 6.57** |
 | hmamba_large_N2 | 2.0 | 0.501 | 141 (patience) | 110 | **2.31 / 5.24** | **2.84 / 6.72** |
+| hmamba_large_N3 | 3.0 | 0.334 | 281 (patience) | 270 | **3.95 / 8.27** | **8.08 / 14.23** |
+| hmamba_large_N4 | 4.0 | 0.251 | 212 (patience) | 180 | **3.24 / 6.94** | **6.35 / 12.26** |
 
 - **S_N1** (control, no compression): With-LM 2.27/5.65 — matches ConMamba Small baseline (2.22/5.56), confirms DC architecture has negligible overhead.
 - **S_N2** (50% compression): With-LM 2.42/5.98 — within 0.20% of ConMamba Small baseline (2.22/5.56).
 - **S_N3/S_N4** (67%/75% compression): Significant WER degradation at high compression on small model.
 - **L_N1** (control, no compression): Beats ConMamba Large with-LM baseline (2.27/5.12 → 2.18/5.14).
 - **L_N2** (50% compression): Only +0.13% degradation on test-clean vs L_N1, with half the frames.
-
-#### In progress
-
-| Model | target_N | Status |
-|-------|----------|--------|
-| hmamba_large_N3 | 3.0 | Training killed (time limit, epoch 215 CKPT saved), with-LM eval done (5.21/10.10), no-LM eval pending |
-| hmamba_large_N4 | 4.0 | Training in progress (epoch ~120) |
+- **L_N3** (67% compression): With-LM 3.95/8.27 — significant gap from L_N2 but much better than small-scale N=3.
+- **L_N4** (75% compression): With-LM 3.24/6.94 — beats L_N3 despite higher compression, confirming N=3 anomaly at large scale.
 
 ### 6.6 Competitive Landscape (LibriSpeech 960h)
 

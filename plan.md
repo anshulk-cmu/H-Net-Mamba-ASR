@@ -5,7 +5,7 @@
 **Notification:** August 20, 2026  
 **Today:** April 6, 2026 (Week 1, Day 6)  
 **Authors:** Anshul Kumar, Shinji Watanabe (CMU)  
-**Last updated:** April 6, 2026
+**Last updated:** April 11, 2026
 
 **Proposed title:** Learning Acoustic Compression Hierarchies: Dynamic Chunking with Mamba for Variable-Rate Speech Recognition
 
@@ -73,9 +73,9 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 | BCE loss includes hardcoded position 0 | Zero gradient at that position, cosmetic only. |
 | Mamba-2 Triton SSD kernel crash (Ampere) | Triton 2.1.0 JIT assertion on sm_86/sm_89. Fix needs triton ≥ 2.2 (PyTorch ≥ 2.2). PyTorch EMA fallback used for DeChunk. Main encoder Mamba-1 kernels unaffected. |
 | Streaming incompatibility | BiMamba is bidirectional, routing uses look-ahead. Offline-only by design. |
-| N=3 anomaly (WER ~10% vs N=2's ~4%) | Persists at both small and large scales after all bug fixes. Likely intrinsic difficulty of 67% compression, not a code bug. Paper will discuss as a finding. |
+| N=3 anomaly (worse than N=4 at both scales) | Small: S_N3 5.31/10.29 vs S_N4 5.21/11.06. Large: L_N3 3.95/8.27 vs L_N4 3.24/6.94. N=4 consistently beats N=3 despite higher compression. Paper will discuss as a finding. |
 
-### 1.4 In Progress (as of April 8)
+### 1.4 H-Mamba 960h Training (All 8 Complete)
 
 | Item | Status |
 |------|--------|
@@ -85,16 +85,15 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 | H-Mamba Small N=4 | **DONE.** 193 ep (patience), best ep 160. With LM: **5.21/11.06**. No LM: **9.24/17.38**. Verified on disk. |
 | H-Mamba Large N=1 | **DONE.** 142 ep (patience), best ep 130. With LM: **2.18/5.14**. No LM: **2.73/6.57**. Verified on disk. |
 | H-Mamba Large N=2 | **DONE.** 141 ep (patience), best ep 110. With LM: **2.31/5.24**. No LM: **2.84/6.72**. Verified on disk. |
-| H-Mamba Large N=3 | In progress (epoch 198) |
-| H-Mamba Large N=4 | Pending SLURM queue |
+| H-Mamba Large N=3 | **DONE.** 281 ep (patience), best ep 270. With LM: **3.95/8.27**. No LM: **8.08/14.23**. Verified on disk. |
+| H-Mamba Large N=4 | **DONE.** 212 ep (patience), best ep 180. With LM: **3.24/6.94**. No LM: **6.35/12.26**. Verified on disk. |
 
-**Note:** Small runs hit 2-day wall on April 4, resubmitted same day. S_N1 timed out again on April 6 in epoch 200. L_N1, L_N2, L_N4 crashed on preempt restart due to `huggingface-hub` 1.8.0 incompatibility with `transformers` 4.40.0 — fixed by downgrading to 0.36.2, resubmitted April 5. L_N1 and L_N2 completed on general partition (April 7). SLURM logs were overwritten on restart but all data recovered from log.txt (persistent).
+**All 8 H-Mamba runs completed as of April 10.** Small runs hit 2-day wall on April 4, resubmitted same day. S_N1 timed out again on April 6 in epoch 200. L_N1, L_N2, L_N4 crashed on preempt restart due to `huggingface-hub` 1.8.0 incompatibility with `transformers` 4.40.0 — fixed by downgrading to 0.36.2, resubmitted April 5. L_N1 and L_N2 completed on general partition (April 7). L_N3 and L_N4 completed on general partition (April 10). SLURM logs were overwritten on restart but all data recovered from log.txt (persistent).
 
 ### 1.5 Not Started
 
 | Item | Priority | Est. Effort |
 |------|----------|-------------|
-| With-LM / without-LM eval (16 evals) | CRITICAL | ~1 hr each after training |
 | Conformer+DC ablation (Small N=2) | CRITICAL | 3-5 days |
 | Fixed-2x downsampling baseline | HIGH | 3-5 days |
 | MFA boundary analysis | HIGH | 2-3 days setup + compute |
@@ -168,7 +167,7 @@ q_proj: 95.28  |  k_proj: 93.14  |  temperature: 10.49  |  boundary_bias: 2.67  
 - **L_N3 with-LM eval completed on disk: 5.21/10.10** (patience exhausted ~ep 120, requeued job continued to ep 142).
 - Removed all conformer_large_CTC traces (code, logs, configs, docs, results on disk).
 
-**Day 6 (April 6) — IN PROGRESS:**
+**Day 6 (April 6) — DONE:**
 - **S_N1 timed out** in epoch 200 (batch 479/1603, job 6951736). Best dev WER **3.32%** (ep 190). Resubmitted as job 6987430 on general.
 - **S_N2 completed** training (234 epochs). With-LM eval running (job 6986666, ~96%).
 - **L_N1** running on general, epoch 108. WER: 2.76% (ep 80) → 2.77 (ep 90) → 2.85 (ep 100).
@@ -453,6 +452,7 @@ loss = ((1 - true_ratio) * (1 - average_prob) +
 6. ~~L_N2 completed~~ 141 ep, best ep 110. With LM: **2.31/5.24**. No LM: **2.84/6.72**.
 7. ~~Collect S_N2/S_N3/S_N4 eval results~~ Done (job 7008334). S_N2: 2.42/5.98 (LM), 3.52/8.74 (no LM). S_N3: 5.31/10.29 (LM), 10.62/18.66 (no LM). S_N4: 5.21/11.06 (LM), 9.24/17.38 (no LM).
 8. ~~S_N1 eval completed~~ Done (job 7015131). With LM: **2.27/5.65**. No LM: **3.24/8.17**. All 4 small models fully done.
-9. **Wait for L_N3/L_N4 training to finish** (L_N3 killed at epoch 215 — time limit, CKPT saved; L_N4 training epoch ~120)
-9. Install MFA and start alignment
+9. ~~L_N3 completed~~ 281 ep, best ep 270. With LM: **3.95/8.27**. No LM: **8.08/14.23**.
+10. ~~L_N4 completed~~ 212 ep, best ep 180. With LM: **3.24/6.94**. No LM: **6.35/12.26**.
+11. Install MFA and start alignment
 10. Create ablation configs (conformer_dc, fixed-2x)
