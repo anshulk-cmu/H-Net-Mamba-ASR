@@ -1,0 +1,70 @@
+# DC-ASR — First experiment (go/no-go): Type A, Small, N=1 (no-chunk), CTC head.
+# Purpose: validate the full pipeline and set the no-chunk reference WER on LibriSpeech-960h
+# BEFORE enabling dynamic chunking (N>=2). At N=1 the H-Net block is a 100%-keep passthrough,
+# so the encoder reduces to a pure Mamba-2 stack. See docs/DC-ASR_experimental_plan.md (Sec 6).
+
+experiment:
+  name: typeA_small_N1_ctc
+  seed: 1
+
+data:
+  corpus: librispeech-960h          # LOCKED: LibriSpeech-960h only
+  train_splits: [train-clean-100, train-clean-360, train-other-500]
+  dev_splits:   [dev-clean, dev-other]
+  test_splits:  [test-clean, test-other]
+  librispeech_root: null            # <- set to /path/to/LibriSpeech on Babel
+
+features:
+  type: logmel
+  n_mels: 80
+  sample_rate: 16000
+  win_ms: 25
+  hop_ms: 10                        # -> 100 Hz frames
+  cmvn: global
+  spec_augment: true
+
+tokenizer:
+  type: bpe
+  vocab_size: 500
+
+model:
+  arch_type: A                      # A = 1-stage (Mamba -> H-Net -> Mamba)
+  size: small                       # ~25-30M enc params
+  conv_subsample: 4                 # -> 25 Hz frame rate into the stages
+  d_model_outer: 384
+  d_model_main: 512
+  mamba_layers: {enc: 4, main: 12, dec: 4}
+  hnet:
+    compression_N: 1                # N=1 => no compression (keep 100%), no-op control
+    router: cosine
+    ste: true
+
+decode:                             # first run: CTC-greedy only (fast smoke test)
+  read_outs: [ctc]                  # add [aed, joint] once pipeline is validated
+  search: greedy                    # add beam (B=10) next
+  beam_size: 10
+  lm: none                          # none | shallow_fusion
+
+train:
+  loss:
+    ctc_weight: 1.0                 # pure-CTC readout for this go/no-go; hybrid (0.3) once AED added
+    aed_weight: 0.0
+    ratio_weight: 0.0               # N=1 => ratio loss inactive
+  optimizer: adamw
+  lr: 1.0e-3
+  warmup_steps: 10000
+  max_epochs: 120
+  speed_perturb: [0.9, 1.0, 1.1]
+  batch:
+    max_frames: 24000               # bucketed by frame count
+  precision: bf16
+  grad_clip: 5.0
+
+compute:
+  target: babel                     # srun -p debug/general --gres=gpu:1
+  gpus: 1
+
+goal:
+  # Go/no-go: WER lands in a sane single-digit test-clean range for a small Mamba CTC model.
+  # This is the reference the N>=2 chunking runs are measured against (H2 = learned beats fixed).
+  sane_test_clean_wer_below: 12.0
