@@ -43,6 +43,9 @@ env/
 .mypy_cache/
 .ruff_cache/
 
+# ── Runlog (local append-only project history — source of truth, never committed) ──
+/runlog.md
+
 # ── Editors / OS ──
 .vscode/
 .idea/
