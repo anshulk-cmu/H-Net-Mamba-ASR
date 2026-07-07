@@ -12,7 +12,7 @@ data:
   train_splits: [train-clean-100, train-clean-360, train-other-500]
   dev_splits:   [dev-clean, dev-other]
   test_splits:  [test-clean, test-other]
-  librispeech_root: null            # <- set to /path/to/LibriSpeech on Babel
+  librispeech_root: data/LibriSpeech  # repo symlink -> /data/user_data/anshulk/hnet-asr/data/LibriSpeech
 
 features:
   type: logmel

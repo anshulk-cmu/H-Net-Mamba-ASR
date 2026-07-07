@@ -1,21 +1,32 @@
 """Unit tests for the H-Net dynamic-chunking core (src/dcasr/models/hnet_chunk.py).
 
-Runs on CPU/MPS — no CUDA needed. Verifies the *properties* the paper guarantees:
-identity at N=1, ~1/N compression at N>=2, shape round-trip, differentiability,
-ratio-loss behaviour, causality, and the p_1=1 convention.
+Runs on CUDA (Babel GPU nodes): an autouse fixture creates every tensor and
+module on the GPU; the suite is skipped outright if no CUDA device is present.
+Verifies the *properties* the paper guarantees: identity at N=1, ~1/N
+compression at N>=2, shape round-trip, differentiability, ratio-loss behaviour,
+causality, and the p_1=1 convention.
 
 Run:  pytest -q tests/test_hnet_chunk.py
 """
-import math
 import torch
 import pytest
 
-from dcasr.models.hnet_chunk import (
-    RoutingModule, DynamicChunker, ratio_loss, ChunkOutput,
+from dcasr.models.hnet_chunk import RoutingModule, DynamicChunker, ratio_loss
+
+pytestmark = pytest.mark.skipif(
+    not torch.cuda.is_available(), reason="DC-ASR targets CUDA (Babel GPU nodes)"
 )
 
 torch.manual_seed(0)
 B, L, D = 4, 40, 32
+
+
+@pytest.fixture(autouse=True)
+def _cuda_default_device():
+    """Create all tensors/modules on the GPU for every test in this module."""
+    torch.set_default_device("cuda")
+    yield
+    torch.set_default_device("cpu")
 
 
 # ── Router ───────────────────────────────────────────────────────────────────

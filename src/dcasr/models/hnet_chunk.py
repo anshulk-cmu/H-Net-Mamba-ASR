@@ -2,8 +2,8 @@
 
 Faithful to Hwang, Wang & Gu, "Dynamic Chunking for End-to-End Hierarchical
 Sequence Modeling" (arXiv:2507.07955). This module is the *scientific core* of
-DC-ASR and is 100% pure PyTorch — it runs and is unit-tested on CPU/MPS with no
-CUDA (only the Mamba backbone needs CUDA, on Babel).
+DC-ASR and is 100% pure PyTorch — developed and unit-tested on CUDA GPUs on
+Babel (the Mamba backbone additionally needs the mamba-ssm CUDA kernels).
 
 Mechanism (plan Sec. 2.2, 4.3)
 ------------------------------
@@ -43,12 +43,15 @@ uses two chunkers each at per-block factor sqrt(N), so the two blocks multiply t
 """
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+from dcasr.logging_utils import get_logger
+
+logger = get_logger(__name__)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -152,6 +155,8 @@ class DynamicChunker(nn.Module):
         self.identity = (N == 1)
         # router only needed when actually chunking
         self.router = None if self.identity else RoutingModule(d_model)
+        logger.debug("DynamicChunker(d_model=%d, N=%d, ema_smoothing=%s) identity=%s",
+                     d_model, N, ema_smoothing, self.identity)
 
     # ---- chunk (downsample) -------------------------------------------------
     def chunk(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> ChunkOutput:

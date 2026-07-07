@@ -24,18 +24,40 @@ Type A · Small · **N=1** · CTC head on LibriSpeech-960h. Purpose: validate th
 ```
 docs/         design docs (plan, proposal)
 configs/      YAML experiment configs
-src/dcasr/    package: data / models / decoders / training / interp
-scripts/      entry points (train, decode, score, align, probe)
-tests/        unit tests
-experiments/  run outputs (git-ignored)
+src/dcasr/    package: data / models / decoders / training / eval / interp / logging_utils
+scripts/      entry points (train, decode, score_wer, run_mfa) + setup/ (env, git bootstrap)
+tests/        unit tests (CUDA — run on a GPU node)
+data/         symlink -> /data/user_data/anshulk/hnet-asr/data        (corpora)
+experiments/  symlink -> /data/user_data/anshulk/hnet-asr/experiments (run outputs)
+logs/         symlink -> /data/user_data/anshulk/hnet-asr/logs        (process logs)
+checkpoints/, features/, manifests/, alignments/  — same pattern
 ```
 
-## Setup (target: Babel, 1 GPU)
+**Storage rule (Babel):** all heavy data — corpora, features, checkpoints, run
+outputs, logs, conda envs, pip/HF caches — lives on the data partition
+(`/data/user_data/anshulk/`); only code lives in `/home`. The repo reaches the
+data side through the symlinks above, so one VS Code session sees everything.
+
+**Logging rule:** every module gets its logger via
+`dcasr.logging_utils.get_logger(__name__)`; every entry point calls
+`setup_logging(<name>)` once. Logs go to `logs/` (i.e. the data partition),
+rotating 50 MB × 5.
+
+## Setup (Babel, CUDA-only)
+One-shot: `bash scripts/setup/setup_env_babel.sh`. What it does:
 ```bash
-conda create -n dcasr python=3.10 -y && conda activate dcasr
-pip install -r requirements.txt          # torch/mamba-ssm need a matching CUDA toolchain
+# env lives on /data via ~/.condarc envs_dirs, not /home
+conda create -n hnet-asr python=3.10 -y && conda activate hnet-asr
+pip install torch==2.12.1+cu129 torchaudio==2.11.0+cu129 --index-url https://download.pytorch.org/whl/cu129
+pip install --no-build-isolation --no-deps causal-conv1d mamba-ssm   # CUDA kernels; --no-deps so pip can't swap torch for a CUDA-13 build
+pip install -r requirements.txt
 conda install -c conda-forge montreal-forced-aligner   # for interpretability alignments
 ```
+Driver note: Babel L40S nodes run driver 575.x (CUDA ≤ 12.9) — use cu129 wheels,
+never the default PyPI torch (it ships CUDA 13.0 builds).
 
 ## Status
-Scaffold only — planning docs are complete; model/data/training code is stubbed and under active development. See the plan for the full grid and hypotheses (H1–H5).
+H-Net dynamic-chunking core (`src/dcasr/models/hnet_chunk.py`) implemented and
+unit-tested on GPU; central logging in place; data/model/training pipeline still
+stubbed and under active development. See the plan for the full grid and
+hypotheses (H1–H5).

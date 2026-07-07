@@ -1,20 +1,23 @@
 # ── Data & corpora (never commit LibriSpeech / features) ──
 # NOTE: leading slash anchors these to the repo ROOT so they do NOT also match
 # the source package src/dcasr/data/ or any src/**/features/ module dir.
-/data/
-/LibriSpeech/
+# On Babel, data/ features/ manifests/ experiments/ checkpoints/ logs/
+# alignments/ are SYMLINKS into /data/user_data/anshulk/hnet-asr/ (rule: all
+# heavy data on the data partition, code on /home). No trailing slash so the
+# patterns match the symlinks themselves.
+/data
+/LibriSpeech
 *.wav
 *.flac
 *.ark
 *.scp
-/features/
-/manifests/*.json
-!/manifests/.gitkeep
+/features
+/manifests
 
 # ── Checkpoints, logs, experiment outputs ──
-experiments/*/
-!experiments/.gitkeep
-checkpoints/
+/experiments
+/checkpoints
+/logs
 *.ckpt
 *.pt
 *.pth
@@ -25,7 +28,7 @@ lightning_logs/
 *.log
 
 # ── Forced-alignment artifacts (MFA) ──
-alignments/
+/alignments
 *.TextGrid
 
 # ── Python ──
