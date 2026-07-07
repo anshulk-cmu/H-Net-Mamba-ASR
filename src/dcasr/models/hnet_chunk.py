@@ -122,6 +122,7 @@ def ratio_loss(p: torch.Tensor, b: torch.Tensor, N: int,
     """
     if N == 1:
         return p.new_zeros(())
+    p, b = p.float(), b.float()      # bf16 sums drift at speech lengths
     if mask is None:
         F_ = b.mean()
         G_ = p.mean()
@@ -175,22 +176,21 @@ class DynamicChunker(nn.Module):
 
         p, b = self.router(x, mask)                    # [B,L], [B,L]
         rl = ratio_loss(p, b, self.N, mask)
-        # membership: chunk index of each fine frame = cumsum(b)-1  (b_1=1 ⇒ starts at 0)
-        memb = (torch.cumsum(b, dim=1) - 1).clamp_min(0).long()   # [B,L]
-        counts = b.sum(dim=1).long()                   # [B] number of chunks per row
+        # membership: chunk index of each fine frame = cumsum(b)-1  (b_1=1 ⇒ starts at 0);
+        # integer cumsum — float cumsum corrupts ranks past 256 kept frames in bf16
+        keep = b > 0.5
+        memb = (keep.long().cumsum(dim=1) - 1).clamp_min(0)       # [B,L]
+        counts = keep.sum(dim=1)                       # [B] number of chunks per row
         M = int(counts.max().item()) if counts.numel() else 0
         M = max(M, 1)
-        # gather boundary frames into [B, M, D] (right-padded), build z_mask
+        # memb[i,t] is each kept frame's destination slot — one collision-free scatter
+        bi, ti = keep.nonzero(as_tuple=True)           # [K] batch/time idx of kept frames
         z = x.new_zeros(B, M, D)
         z_mask = torch.zeros(B, M, dtype=torch.bool, device=x.device)
-        for i in range(B):
-            idx = torch.nonzero(b[i] > 0.5, as_tuple=False).squeeze(-1)  # positions kept
-            m_i = idx.numel()
-            if m_i > 0:
-                z[i, :m_i] = x[i, idx]
-                z_mask[i, :m_i] = True
-        valid = mask.to(x.dtype).sum() if mask is not None else torch.tensor(float(B * L))
-        kept = b.sum() / valid.clamp_min(1.0)
+        z[bi, memb[bi, ti]] = x[bi, ti]
+        z_mask[bi, memb[bi, ti]] = True
+        valid = mask.sum() if mask is not None else torch.tensor(B * L, device=x.device)
+        kept = keep.sum().float() / valid.float().clamp_min(1.0)
         return ChunkOutput(z=z, z_mask=z_mask, p=p, b=b, membership=memb,
                            ratio_loss=rl, kept_fraction=kept)
 
@@ -220,24 +220,25 @@ class DynamicChunker(nn.Module):
         return x_up
 
     @staticmethod
-    def _ema(x: torch.Tensor, p: torch.Tensor) -> torch.Tensor:
-        """EMA smoother  z̄_t = P_t x_t + (1-P_t) z̄_{t-1}  along time (dim=1).
-
-        P_t = p_t (boundary prob) is the mixing weight: at a confident boundary
-        (p→1) the frame is passed through; between boundaries it blends with the
-        running state, smoothing the piecewise-constant upsample so gradients flow.
-        Sequential in L (L is short for speech after conv-subsampling); vectorise
-        later if needed.
+    def _ema(x: torch.Tensor, p: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
+        """EMA smoother  z̄_t = P_t x_t + (1-P_t) z̄_{t-1}, vectorised as one causal
+        matmul:  z̄_t = Σ_{j≤t} exp(S_t−S_j)·s_j,  S = cumsum(log(1-P)), s_0 = x_0,
+        s_j = P_j x_j. Weights stay in (0,1] (no cumprod underflow); (1-P) is
+        clamped to eps so log is finite at p=1. O(L²) — cheap at 25 Hz lengths.
         """
         B, L, D = x.shape
-        P = p.unsqueeze(-1)                                        # [B,L,1]
-        out = torch.empty_like(x)
-        prev = x[:, 0]
-        out[:, 0] = x[:, 0]
-        for t in range(1, L):
-            prev = P[:, t] * x[:, t] + (1.0 - P[:, t]) * prev
-            out[:, t] = prev
-        return out
+        if L == 1:
+            return x.clone()
+        src = torch.cat([x[:, :1], p[:, 1:, None] * x[:, 1:]], dim=1)   # [B,L,D]
+        wdtype = torch.promote_types(p.dtype, torch.float32)
+        a_raw = 1.0 - p[:, 1:].to(wdtype)
+        # forward clamped, backward identity — keeps dL/dp exact at saturated p=1
+        a = a_raw + (a_raw.clamp_min(eps) - a_raw).detach()
+        S = F.pad(torch.log(a).cumsum(dim=1), (1, 0))                   # [B,L], S_0 = 0
+        logw = S.unsqueeze(-1) - S.unsqueeze(1)                         # [B,L,L]: S_t - S_j
+        future = torch.ones(L, L, dtype=torch.bool, device=x.device).triu(1)
+        W = torch.exp(logw.masked_fill(future, float("-inf"))).to(x.dtype)
+        return torch.bmm(W, src)
 
     def forward(self, x, mask=None):
         """Convenience: returns the ChunkOutput of the downsampling half only."""

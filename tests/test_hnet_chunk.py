@@ -177,3 +177,90 @@ def test_masking_ignores_padding():
     co = ch.chunk(x, mask)
     # no boundaries counted in the padded region
     assert float((co.b * (~mask).float()).sum()) == 0.0
+
+
+# ── Vectorised kernels match the sequential reference implementations ────────
+def _ema_reference(x, p):
+    """The original step-by-step recurrence, kept as ground truth."""
+    P = p.unsqueeze(-1)
+    out = torch.empty_like(x)
+    prev = x[:, 0]
+    out[:, 0] = x[:, 0]
+    for t in range(1, x.shape[1]):
+        prev = P[:, t] * x[:, t] + (1.0 - P[:, t]) * prev
+        out[:, t] = prev
+    return out
+
+
+@pytest.mark.parametrize("N", [2, 3, 4])
+def test_chunk_scatter_matches_per_row_reference(N):
+    ch = DynamicChunker(D, N=N)
+    x = torch.randn(B, L, D)
+    mask = torch.ones(B, L, dtype=torch.bool)
+    mask[:, L - 7:] = False
+    co = ch.chunk(x, mask)
+    p, b = ch.router(x, mask)                      # deterministic: same p, b as chunk()
+    M = co.z.shape[1]
+    z_ref = x.new_zeros(B, M, D)
+    zm_ref = torch.zeros(B, M, dtype=torch.bool)
+    for i in range(B):                             # original per-row gather
+        idx = torch.nonzero(b[i] > 0.5, as_tuple=False).squeeze(-1)
+        m_i = idx.numel()
+        if m_i > 0:
+            z_ref[i, :m_i] = x[i, idx]
+            zm_ref[i, :m_i] = True
+    assert torch.equal(co.z, z_ref)
+    assert torch.equal(co.z_mask, zm_ref)
+
+
+def test_ema_matches_sequential_reference():
+    x = torch.randn(B, 200, D)
+    p = torch.rand(B, 200)
+    out = DynamicChunker._ema(x, p)
+    assert torch.allclose(out, _ema_reference(x, p), atol=1e-4, rtol=1e-4)
+
+
+def test_ema_stable_and_differentiable_at_saturated_router():
+    """p exactly 1.0 (fully confident boundary) must stay finite in fwd and bwd."""
+    x = torch.randn(2, 120, D, requires_grad=True)
+    p = torch.rand(2, 120)
+    p[:, ::10] = 1.0                               # saturated boundaries
+    p.requires_grad_(True)
+    out = DynamicChunker._ema(x, p)
+    assert torch.isfinite(out).all()
+    assert torch.allclose(out.detach(), _ema_reference(x.detach(), p.detach()),
+                          atol=1e-4, rtol=1e-4)
+    out.sum().backward()
+    assert torch.isfinite(x.grad).all() and torch.isfinite(p.grad).all()
+
+
+def test_ema_gradient_correct_at_saturated_p():
+    x0 = torch.randn(1, 6, 3, dtype=torch.float64)
+    p0 = torch.tensor([[1.0, 0.3, 0.7, 1.0, 0.4, 0.6]], dtype=torch.float64)
+
+    def grads(fn):
+        x, p = x0.clone().requires_grad_(True), p0.clone().requires_grad_(True)
+        fn(x, p).sum().backward()
+        return x.grad, p.grad
+
+    gx, gp = grads(DynamicChunker._ema)
+    rx, rp = grads(_ema_reference)
+    assert torch.allclose(gx, rx, atol=1e-5)
+    assert torch.allclose(gp, rp, atol=1e-5)
+
+
+def test_ema_gradcheck_fp64():
+    x = torch.randn(2, 6, 3, dtype=torch.float64, requires_grad=True)
+    p = (torch.rand(2, 6, dtype=torch.float64) * 0.9 + 0.05).requires_grad_(True)
+    assert torch.autograd.gradcheck(DynamicChunker._ema, (x, p), atol=1e-6)
+
+
+def test_chunk_bf16_long_sequence_exact():
+    ch = DynamicChunker(D, N=2).to(torch.bfloat16)
+    x = torch.randn(2, 1200, D, dtype=torch.bfloat16)
+    co = ch.chunk(x)
+    assert int(co.membership.max()) < co.z.shape[1]
+    for i in range(2):
+        idx = torch.nonzero(co.b[i] > 0.5, as_tuple=False).squeeze(-1)
+        assert torch.equal(co.z[i, :idx.numel()], x[i, idx])
+        assert int(co.z_mask[i].sum()) == idx.numel()
