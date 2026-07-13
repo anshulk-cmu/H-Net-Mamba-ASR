@@ -57,7 +57,18 @@ Driver note: Babel L40S nodes run driver 575.x (CUDA ≤ 12.9) — use cu129 whe
 never the default PyPI torch (it ships CUDA 13.0 builds).
 
 ## Status
-H-Net dynamic-chunking core (`src/dcasr/models/hnet_chunk.py`) implemented and
-unit-tested on GPU; central logging in place; data/model/training pipeline still
-stubbed and under active development. See the plan for the full grid and
-hypotheses (H1–H5).
+**Input pipeline complete (code + 67 tests, GPU-validated).** Implemented: acoustic
+frontend (`data/features.py`), H-Net dynamic-chunking core (`models/hnet_chunk.py`),
+BPE tokenizer (`data/tokenizer.py`), LibriSpeech dataset + DDP-aware bucketed loader
+(`data/librispeech.py`), central logging. **Artifacts:** LibriSpeech-960h extracted &
+verified; BPE tokenizers trained (vocab 500 baseline + 750 ablation, data-justified).
+
+**Standing design decisions:** runs on 1×48 GB GPU by default, scales to 2/4/8 GPUs via
+config only (DDP, constant global batch); training is checkpoint-resumable (exact
+continuation after preemption).
+
+**Remaining:** data artifacts (global CMVN stats + persisted manifests) → Mamba-2
+backbone (`models/mamba_block.py`) + encoder sandwich (`models/encoder.py`) → loss +
+DDP/resumable trainer (`training/`) → decoders (CTC/AED/joint, ±LM) → WER eval →
+interpretability. Then the first go/no-go run (Type A · Small · N=1 · CTC). Full grid
+and hypotheses (H1–H5) in the plan.

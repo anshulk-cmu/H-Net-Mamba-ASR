@@ -20,13 +20,13 @@ conda create -y -n hnet-asr python=3.10
 conda activate hnet-asr
 
 pip install "torch==2.12.1+cu129" "torchaudio==2.11.0+cu129" --index-url https://download.pytorch.org/whl/cu129
-pip install packaging ninja wheel setuptools einops
+pip install packaging ninja wheel setuptools "einops==0.8.2"
 
 export CUDA_HOME=/usr/local/cuda-12.9
 export PATH="${CUDA_HOME}/bin:${PATH}"
 export MAX_JOBS=8
-pip install --no-build-isolation --no-deps --no-cache-dir causal-conv1d
-pip install --no-build-isolation --no-deps --no-cache-dir mamba-ssm
+pip install --no-build-isolation --no-deps --no-cache-dir "causal-conv1d==1.6.2.post1"
+pip install --no-build-isolation --no-deps --no-cache-dir "mamba-ssm==2.3.2.post1"
 
 pip install -r "$(cd "$(dirname "$0")/../.." && pwd)/requirements.txt"
 

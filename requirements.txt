@@ -1,31 +1,54 @@
-# DC-ASR core dependencies (Python 3.10+, CUDA GPU).
-# Pins intentionally loose here; freeze exact versions once the env is validated on Babel.
+# ─────────────────────────────────────────────────────────────────────────────
+# DC-ASR dependencies — EXACT pins from the validated Babel env `hnet-asr`
+# (Python 3.10.20, NVIDIA GPU, driver supporting CUDA <= 12.9). Frozen 2026-07-13.
+#
+# FULL REPRODUCTION: run  scripts/setup/setup_env_babel.sh  — it creates the conda
+# env, installs torch/torchaudio from the CUDA-12.9 wheel index, compiles the two
+# CUDA kernels (causal-conv1d, mamba-ssm) from source, then applies this file.
+#
+# `pip install -r requirements.txt` alone reproduces everything EXCEPT those two
+# source-built CUDA kernels (bottom block) — they cannot be pip-resolved here
+# because they must build --no-deps against the pinned torch.
+#
+# CRITICAL: torch/torchaudio come ONLY from the cu129 index below. Default PyPI
+# ships CUDA-13 builds the Babel driver cannot run — never install torch from PyPI.
+# ─────────────────────────────────────────────────────────────────────────────
+--extra-index-url https://download.pytorch.org/whl/cu129
 
-# --- Sequence-model backbone ---
-torch>=2.1
-torchaudio>=2.1
-mamba-ssm>=2.2        # Mamba-2 selective SSM (Gu & Dao); needs matching CUDA
-causal-conv1d>=1.2    # fast causal conv kernel required by mamba-ssm
+# --- Sequence-model backbone (CUDA 12.9 wheels; triton is pulled in by torch) ---
+torch==2.12.1+cu129
+torchaudio==2.11.0+cu129
+einops==0.8.2            # runtime dep of mamba-ssm (installed --no-deps → must be pinned here)
 
 # --- ASR / data ---
-sentencepiece>=0.1.99 # BPE units
-editdistance>=0.6     # WER scoring
-soundfile>=0.12
-librosa>=0.10         # feature extraction / resampling
-numpy>=1.24
-scipy>=1.10
+sentencepiece==0.2.1     # BPE tokenizer
+editdistance==0.8.1      # WER scoring
+soundfile==0.14.0        # FLAC/WAV I/O
+librosa==0.11.0          # resampling / feature utils
+numpy==2.2.6
+scipy==1.15.3
 
 # --- Config, logging, training ---
-pyyaml>=6.0
-omegaconf>=2.3
-tensorboard>=2.14
-tqdm>=4.66
+PyYAML==6.0.3
+omegaconf==2.3.1
+tensorboard==2.21.0
+tqdm==4.68.3
 
 # --- Interpretability / analysis ---
-pandas>=2.0
-matplotlib>=3.7
-scikit-learn>=1.3     # linear probes
+pandas==2.3.3
+matplotlib==3.10.9
+scikit-learn==1.7.2
 
-# NOTE — installed separately, NOT via pip:
-#   * Montreal Forced Aligner (MFA)  -> conda: `conda install -c conda-forge montreal-forced-aligner`
-#   * An external LM (Transformer/n-gram) for the +LM decode columns.
+# ─────────────────────────────────────────────────────────────────────────────
+# CUDA KERNELS — NOT installable from this file. Compile from source AFTER the
+# above (build helpers: packaging ninja wheel setuptools), with CUDA_HOME set:
+#   export CUDA_HOME=/usr/local/cuda-12.9 MAX_JOBS=8
+#   pip install --no-build-isolation --no-deps --no-cache-dir causal-conv1d==1.6.2.post1
+#   pip install --no-build-isolation --no-deps --no-cache-dir mamba-ssm==2.3.2.post1
+# --no-deps is mandatory: it stops pip swapping the pinned torch for a CUDA-13 build.
+# Handled for you by scripts/setup/setup_env_babel.sh.
+#
+# Installed separately, NOT via pip:
+#   * Montreal Forced Aligner (MFA) -> conda install -c conda-forge montreal-forced-aligner
+#   * External LM (Transformer / n-gram) for the +LM decode columns.
+# ─────────────────────────────────────────────────────────────────────────────
