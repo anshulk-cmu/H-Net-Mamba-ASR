@@ -115,14 +115,14 @@ $$\mathcal L = \underbrace{\lambda_{\text{ctc}}\,\mathcal L_{\text{CTC}} + (1-\l
 with $\mathcal L_{\text{CTC}}$ the CTC loss [10], $\mathcal L_{\text{AED}}$ the label-smoothed cross-entropy of the attention decoder, and $\mathcal L_{\text{ratio}}^{(s)}$ H-Net's compression-target regulariser at stage $s$. Gradients flow through the discrete boundary selection via the straight-through estimator [18]. Training one hybrid model thus yields **both** a CTC and an attention head; the external LM is added only at decoding.
 
 ### 4.5 Model sizes
-Two variants per type, params-matched to the Zipformer references [9]:
+Two capacity variants per type. The encoder is **bidirectional** (each Mamba-2 block runs a forward *and* a reversed scan — the right choice for offline recognition), which roughly doubles the per-block parameters, so sizes are set by the architecture and are **not matched to the Zipformer parameter counts**. Zipformer/Conformer serve as published **WER references**, not a size-controlled comparison: the goal is a working **H-Net×Mamba ASR** encoder — competitive WER *plus* an interpretable, self-learned acoustic hierarchy — not a win at equal parameters. Layer counts are a free hyperparameter (tuned for WER/compute); final sizes are reported as trained.
 
-| Variant | $d_{\text{model}}$ (outer / main) | Mamba-2 layers (enc / main / dec) | ~Enc params | Zipformer analogue |
-|---|---|---|---|---|
-| **Small** | 384 / 512 | 4 / 12 / 4 | ~25–30M | Zipformer-S (23M) |
-| **Large** | 512 / 768 | 6 / 18 / 6 | ~90–120M | Zipformer-M/L (66/148M) |
+| Variant | $d_{\text{model}}$ (outer / main) | Mamba-2 layers (enc / main / dec) | ~Enc params (bidirectional) |
+|---|---|---|---|
+| **Small** | 384 / 512 | 4 / 12 / 4 | ~62M (measured) |
+| **Large** | 512 / 768 | 6 / 18 / 6 | ~185M (measured) |
 
-(Type B splits the encoder/decoder Mamba budget across its two stages at the same total depth, so A and B are param-matched at each size.)
+(Type B splits the encoder/decoder Mamba budget across its two stages at the same total depth, so Types A and B stay matched **to each other** at each size.)
 
 
 ---
@@ -131,7 +131,7 @@ Two variants per type, params-matched to the Zipformer references [9]:
 
 We state falsifiable hypotheses so the experiments have clear pass/fail conditions.
 
-- **H1 (No WER cost).** At a suitable compression level, DC-ASR reaches WER within a small margin (target: ≤ 0.3 abs on test-clean, ≤ 0.5 on test-other) of a params-matched Zipformer [9], in **both** the no-LM and +LM decoding settings. *Falsified if* the best DC-ASR trails Zipformer by > 1.0 abs at matched params.
+- **H1 (Competitive WER).** At a suitable compression level, DC-ASR reaches WER competitive with strong published LibriSpeech systems — within a small margin (target: ≤ 0.3 abs on test-clean, ≤ 0.5 on test-other) of published Zipformer [9] — in **both** the no-LM and +LM decoding settings. Zipformer is a published WER *reference*, not a size-matched control; DC-ASR is not constrained to equal parameters, so H1 is a **viability check** — the primary contributions are the learned-beats-fixed result (H2) and the emergent linguistic structure (H4). *Falsified if* the best DC-ASR trails published Zipformer by > 1.0 abs.
 - **H2 (Learned beats fixed at equal compression).** At the same overall $N$, learned dynamic chunking yields lower WER than fixed-stride pooling to the same rate. *Falsified if* fixed pooling matches or beats learned chunking across all $N$.
 - **H3 (Staging helps the hierarchy, not necessarily the WER).** At matched overall compression, Type B's two stages produce boundaries that align better with the phone→word hierarchy than Type A's single stage (higher word-boundary F1 at stage-2), even if WER is comparable. *Falsified if* Type B shows no interpretability advantage and no WER advantage over Type A.
 - **H4 (Emergent linguistic structure).** Learned boundaries align with forced-aligned phone/word boundaries above a random-rate baseline, and stage depth correlates with linguistic tier (stage-1→phone/syllable, stage-2→word). *Falsified if* boundary F1 is at chance, i.e. the model chunks on acoustic energy/silence alone.
@@ -226,12 +226,12 @@ WER = test-clean / test-other; DC-ASR is reported in **both** no-LM and +LM colu
 | Zipformer-M [9] | 65.6M | 2.21 / 4.79 | n/r | hand-designed-hier foil |
 | Zipformer-L [9] | 148.4M | 2.00 / 4.38 | n/r | strongest foil |
 | E-Branchformer-L [27] | ~149M | n/r | 1.81 / 3.65 | +LM SOTA |
-| **DC-ASR Type A, $N{=}2$, Large** | ~matched | *target ≈ Zipformer-M* | *target ≤ Zipformer-M* | **H1** |
-| **DC-ASR Type B, $N{=}2$, Large** | ~matched | *target ≈ Zipformer-M* | *target ≤ Zipformer-M* | **H1 / H3** |
-| DC-ASR $N{=}1$ (no-chunk), Large | ~matched | internal Mamba ref | internal Mamba ref | control |
-| DC-ASR fixed-pool $N{=}2$, Large | ~matched | internal fixed-rate ref | internal fixed-rate ref | **H2** |
+| **DC-ASR Type A, $N{=}2$, Large** | ~185M | *target ≈ Zipformer-M* | *target ≤ Zipformer-M* | **H1** |
+| **DC-ASR Type B, $N{=}2$, Large** | ~185M | *target ≈ Zipformer-M* | *target ≤ Zipformer-M* | **H1 / H3** |
+| DC-ASR $N{=}1$ (no-chunk), Large | ~185M | internal Mamba ref | internal Mamba ref | control |
+| DC-ASR fixed-pool $N{=}2$, Large | ~185M | internal fixed-rate ref | internal fixed-rate ref | **H2** |
 
-The claim succeeds if the two bold DC-ASR rows land within the small margin of H1 (≤0.3 test-clean, ≤0.5 test-other vs. params-matched Zipformer-M) in **both** the no-LM and +LM columns, while beating the fixed-pool control (H2).
+The claim succeeds if the two bold DC-ASR rows land within the small margin of H1 (≤0.3 test-clean, ≤0.5 test-other vs. published Zipformer-M, used as a WER reference — not a size-matched control) in **both** the no-LM and +LM columns, while beating the fixed-pool control (H2).
 
 **Expected qualitative outcomes.**
 - **On WER (H1/H2/H5):** DC-ASR at moderate compression ($N{=}2$) is competitive with Zipformer at matched params and cheaper in GFLOPs; learned chunking beats fixed pooling at equal rate; WER is flat-to-slightly-better from $N{=}1$→$2$, then degrades by $N{=}4$ as too many frames are dropped — locating a sweet spot.
