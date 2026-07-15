@@ -134,13 +134,17 @@ class SpecAugment(nn.Module):
                      freq_masks, freq_width, time_masks, time_width)
 
     @staticmethod
-    def _mask(size: int, widths: torch.Tensor, max_start: torch.Tensor):
-        starts = (torch.rand_like(widths.float()) * (max_start + 1).float()).long()
+    def _mask(size: int, widths: torch.Tensor, max_start: torch.Tensor, generator=None):
+        r = torch.rand(widths.shape, generator=generator, device=widths.device)
+        starts = (r * (max_start + 1).float()).long()
         pos = torch.arange(size, device=widths.device)
         hit = (pos >= starts[..., None]) & (pos < (starts + widths)[..., None])
         return hit.any(dim=1)                                     # [B, size]
 
-    def forward(self, feats: torch.Tensor, lengths: torch.Tensor | None = None):
+    def forward(self, feats: torch.Tensor, lengths: torch.Tensor | None = None,
+                generator: torch.Generator | None = None):
+        """Pass a `generator` to make masks a deterministic function of its seed (so a
+        per-(seed,epoch,index) generator gives resume-exact augmentation)."""
         if not self.training:
             return feats
         B, T, F = feats.shape
@@ -148,12 +152,14 @@ class SpecAugment(nn.Module):
         if lengths is None:
             lengths = torch.full((B,), T, dtype=torch.long, device=dev)
         if self.freq_masks > 0:
-            w = torch.randint(0, self.freq_width + 1, (B, self.freq_masks), device=dev)
-            fmask = self._mask(F, w, (F - w).clamp_min(0))
+            w = torch.randint(0, self.freq_width + 1, (B, self.freq_masks), device=dev,
+                              generator=generator)
+            fmask = self._mask(F, w, (F - w).clamp_min(0), generator)
             feats = feats.masked_fill(fmask[:, None, :], 0.0)
         if self.time_masks > 0:
-            w = torch.randint(0, self.time_width + 1, (B, self.time_masks), device=dev)
+            w = torch.randint(0, self.time_width + 1, (B, self.time_masks), device=dev,
+                              generator=generator)
             w = torch.minimum(w, lengths[:, None])
-            tmask = self._mask(T, w, (lengths[:, None] - w).clamp_min(0))
+            tmask = self._mask(T, w, (lengths[:, None] - w).clamp_min(0), generator)
             feats = feats.masked_fill(tmask[:, :, None], 0.0)
         return feats

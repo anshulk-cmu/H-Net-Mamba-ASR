@@ -237,3 +237,17 @@ def test_specaugment_gradients_flow():
     x = torch.randn(2, 100, N_MELS, requires_grad=True)
     sa(x).sum().backward()
     assert torch.isfinite(x.grad).all() and x.grad.max() == 1.0
+
+def test_specaugment_generator_determinism():
+    """SpecAugment masks are a deterministic function of the generator seed (resume-exact)."""
+    sa = SpecAugment()
+    sa.train()
+    x = torch.randn(1, 200, 80, device="cpu")            # CPU: mirrors the DataLoader-worker path
+    y1 = sa(x.clone(), generator=torch.Generator().manual_seed(123))
+    y2 = sa(x.clone(), generator=torch.Generator().manual_seed(123))
+    y3 = sa(x.clone(), generator=torch.Generator().manual_seed(999))
+    assert torch.equal(y1, y2)                            # same seed -> identical masks
+    assert not torch.equal(y1, y3)                        # different seed -> different masks
+    assert (y1 == 0).any()                                # something was actually masked
+    sa.eval()
+    assert torch.equal(sa(x.clone()), x)                 # eval mode: no-op

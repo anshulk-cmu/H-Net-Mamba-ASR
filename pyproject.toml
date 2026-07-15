@@ -16,3 +16,7 @@ where = ["src"]
 pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = "-p no:cacheprovider"
+filterwarnings = [
+    # external: sentencepiece's SWIG bindings on py3.10+ (SwigPyObject/SwigPyPacked/swigvarlink); not our code
+    "ignore:builtin type .* has no __module__ attribute:DeprecationWarning",
+]

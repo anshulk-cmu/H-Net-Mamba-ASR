@@ -1,70 +1,120 @@
-# DC-ASR — First experiment (go/no-go): Type A, Small, N=1 (no-chunk), CTC head.
-# Purpose: validate the full pipeline and set the no-chunk reference WER on LibriSpeech-960h
-# BEFORE enabling dynamic chunking (N>=2). At N=1 the H-Net block is a 100%-keep passthrough,
-# so the encoder reduces to a pure Mamba-2 stack. See docs/DC-ASR_experimental_plan.md (Sec 6).
+# DC-ASR first experiment (go/no-go): Type A · Small · N=1 (no-chunk) · CTC head.
+# ESPnet-style declarative config: every knob (optimizer, scheduler, batching, tokenizer,
+# early-stop, metrics) lives here — no code change to swap. name+_conf blocks are resolved
+# through in-repo registries (dcasr.optim / dcasr.tasks.asr_task). DC-ASR extensions
+# (arch_type, compression_N, hnet_*) are grouped under model/hnet. See docs/plan §6.
 
 experiment:
   name: typeA_small_N1_ctc
   seed: 1
 
+# ── data ─────────────────────────────────────────────────────────────────────
 data:
-  corpus: librispeech-960h          # LOCKED: LibriSpeech-960h only
+  corpus: librispeech-960h                 # LOCKED
+  librispeech_root: data/LibriSpeech       # repo symlink -> data partition
   train_splits: [train-clean-100, train-clean-360, train-other-500]
   dev_splits:   [dev-clean, dev-other]
   test_splits:  [test-clean, test-other]
-  librispeech_root: data/LibriSpeech  # repo symlink -> /data/user_data/anshulk/hnet-asr/data/LibriSpeech
+  manifests_dir: manifests
 
-features:
-  type: logmel
-  n_mels: 80
+# ── tokenizer (config-driven: swap 500<->750 here) ───────────────────────────
+token_type: bpe
+bpemodel: data/tokenizer/spm_bpe_500.model
+vocab_size: 500                            # blank appended at id V => CTC head has V+1 outputs
+
+# ── frontend + augmentation (ESPnet frontend_conf / specaug_conf) ────────────
+frontend_conf:
   sample_rate: 16000
-  win_ms: 25
-  hop_ms: 10                        # -> 100 Hz frames
-  cmvn: global
-  spec_augment: true
+  n_mels: 80
+  n_fft: 400
+  win_length: 400
+  hop_length: 160                          # -> 100 Hz frames
+  cmvn: features/cmvn_train960.pt          # global CMVN stats
+specaug_conf:
+  freq_mask_width_range: [0, 27]
+  num_freq_mask: 2
+  time_mask_width_ratio_range: [0.0, 0.05] # adaptive (e-branchformer style)
+  num_time_mask: 10
 
-tokenizer:
-  type: bpe
-  vocab_size: 500
-
-model:
-  arch_type: A                      # A = 1-stage (Mamba -> H-Net -> Mamba)
-  size: small                       # ~25-30M enc params
-  conv_subsample: 4                 # -> 25 Hz frame rate into the stages
-  d_model_outer: 384
-  d_model_main: 512
-  mamba_layers: {enc: 4, main: 12, dec: 4}
+# ── model: Mamba-H-Net encoder + CTC head ────────────────────────────────────
+encoder: dcasr                             # registry key -> DCASREncoder
+encoder_conf:
+  arch_type: A                             # A = 1-stage (Mamba -> H-Net -> Mamba)
+  d_outer: 384                             # Small
+  d_main: 512
+  n_enc: 4
+  n_main: 12
+  n_dec: 4
+  bidirectional: true
   hnet:
-    compression_N: 1                # N=1 => no compression (keep 100%), no-op control
+    compression_N: 1                       # N=1 => no compression (identity control)
     router: cosine
-    ste: true
+    ema_smoothing: true
+head: ctc                                  # registry key -> CTCHead
+ctc_conf:
+  zero_infinity: true
 
-decode:                             # first run: CTC-greedy only (fast smoke test)
-  read_outs: [ctc]                  # add [aed, joint] once pipeline is validated
-  search: greedy                    # add beam (B=10) next
-  beam_size: 10
-  lm: none                          # none | shallow_fusion
+model_conf:                                # loss weights + reporting (ESPnet parity)
+  ctc_weight: 1.0                          # CTC-only readout; -> 0.3 when AED head lands
+  aed_weight: 0.0
+  lsm_weight: 0.1                          # label smoothing (AED criterion, later)
+  hnet_ratio_beta: 0.0                     # beta·Σ ratio; N=1 => inactive
+  report_cer: true
+  report_wer: true
+  report_ter: true
 
-train:
-  loss:
-    ctc_weight: 1.0                 # pure-CTC readout for this go/no-go; hybrid (0.3) once AED added
-    aed_weight: 0.0
-    ratio_weight: 0.0               # N=1 => ratio loss inactive
-  optimizer: adamw
+# ── batching / accumulation (ESPnet batch_type/batch_bins/accum_grad) ─────────
+batch_type: length                         # our sampler == ESPnet 'length' (B·T padded budget)
+batch_bins: 24000                          # == max_frames; PER-GPU frame budget
+accum_grad: 1                              # global-batch knob; hold constant across GPUs
+num_workers: 4
+sort_in_batch: descending
+
+# ── optimizer + scheduler (config-driven registries) ─────────────────────────
+optim: adamw
+optim_conf:
   lr: 1.0e-3
-  warmup_steps: 10000
-  max_epochs: 120
-  speed_perturb: [0.9, 1.0, 1.1]
-  batch:
-    max_frames: 24000               # bucketed by frame count
-  precision: bf16
+  weight_decay: 1.0e-6
+  betas: [0.9, 0.98]
+scheduler: warmuplr
+scheduler_conf:
+  warmup_steps: 10000                      # LR = lr·√warmup·min(step^-0.5, step·warmup^-1.5)
+
+# ── training ─────────────────────────────────────────────────────────────────
+train:
+  max_epoch: 120
   grad_clip: 5.0
+  grad_clip_type: 2.0
+  precision: bf16                          # bf16 autocast; GradScaler disabled (fp16 only)
+  use_amp: true
+  log_interval: 50                         # optimizer steps between train-metric logs
+  speed_perturb: [0.9, 1.0, 1.1]           # data-pipeline aug (to be wired in librispeech.py)
+
+# ── evaluation + checkpoint selection ────────────────────────────────────────
+eval:
+  valid_interval_epoch: 10                 # eval (dev WER/CER + loss) AND epoch-boundary checkpoint every 10 epochs
+best_model_criterion:                      # keep N-best per criterion (union), fp32-averaged
+  - [valid, wer, min]
+  - [valid, loss, min]
+keep_nbest_models: 5
+
+# ── early stopping (custom AND: stop only if ALL criteria stalled) ───────────
+early_stopping:
+  enable: false                            # off by default (ESPnet recipe convention)
+  require_all: true                        # AND: dev WER stalled AND train loss plateaued
+  criteria:
+    - {phase: valid, metric: wer,  mode: min, patience: 10}
+    - {phase: train, metric: loss, mode: min, patience: 10}
+
+# ── decoding (first run: CTC greedy; beam/±LM come with the decode stage) ─────
+decode:
+  read_outs: [ctc]                         # add [aed, joint] later
+  search: greedy                           # add beam (B=10) next
+  beam_size: 10
+  lm: none                                 # none | shallow_fusion
 
 compute:
-  target: babel                     # srun -p debug/general --gres=gpu:1
-  gpus: 1
+  gpus: 1                                  # scale to 2/4/8 via YAML only (DDP)
 
 goal:
-  # Go/no-go: WER lands in a sane single-digit test-clean range for a small Mamba CTC model.
-  # This is the reference the N>=2 chunking runs are measured against (H2 = learned beats fixed).
-  sane_test_clean_wer_below: 12.0
+  sane_test_clean_wer_below: 12.0          # go/no-go bar the N>=2 runs are measured against

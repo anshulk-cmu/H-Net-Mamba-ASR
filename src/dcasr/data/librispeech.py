@@ -67,7 +67,7 @@ class LibriSpeechDataset(Dataset):
     specaugment optional (specaugment applied only when augment=True)."""
 
     def __init__(self, manifest, frontend, tokenizer, cmvn=None,
-                 specaugment=None, augment=False):
+                 specaugment=None, augment=False, seed=0):
         self.entries = (load_manifest(manifest)
                         if isinstance(manifest, (str, Path)) else list(manifest))
         self.frontend = frontend
@@ -75,6 +75,8 @@ class LibriSpeechDataset(Dataset):
         self.cmvn = cmvn
         self.specaugment = specaugment
         self.augment = augment
+        self.seed = seed
+        self._epoch = 0
         self.pad_id = tokenizer.pad_id
         self.lengths = [feat_frames(e["frames"]) for e in self.entries]
         logger.debug("LibriSpeechDataset: %d utts, T in [%d,%d]",
@@ -84,6 +86,11 @@ class LibriSpeechDataset(Dataset):
     def __len__(self):
         return len(self.entries)
 
+    def set_epoch(self, epoch: int) -> None:
+        """Set epoch so SpecAugment masks are a deterministic function of (seed, epoch,
+        index) — independent of DataLoader/worker RNG, so mid-epoch resume is exact."""
+        self._epoch = epoch
+
     def __getitem__(self, i):
         e = self.entries[i]
         wave, _ = sf.read(e["audio"])                        # float64 numpy, [N]
@@ -92,7 +99,9 @@ class LibriSpeechDataset(Dataset):
             feats = self.cmvn(feats)
         if self.augment and self.specaugment is not None:
             self.specaugment.train()
-            feats = self.specaugment(feats)
+            g = torch.Generator().manual_seed(
+                ((self.seed * 2654435761 + self._epoch) * 2654435761 + i) & 0x7FFFFFFFFFFFFFFF)
+            feats = self.specaugment(feats, generator=g)
         tokens = torch.tensor(self.tokenizer.encode(e["text"]), dtype=torch.long)
         return {"feats": feats[0], "tokens": tokens, "id": e["id"]}
 
