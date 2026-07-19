@@ -1,0 +1,168 @@
+# DC-ASR grid cell 1/22 (run plan §6.1): Type A · Small · N=1 · HYBRID CTC/AED.
+# THE GATE RUN: go/no-go for the grid is this model's ctc_greedy readout on
+# test-clean (< goal.sane_test_clean_wer_below). Full production config — full
+# 960h training, every-epoch retention, the complete 7-cell decode matrix ±LM
+# on all four eval splits, and the full uncapped interp suite.
+# ESPnet-style declarative config: every knob lives here — no code change to
+# swap. name+_conf blocks resolve through in-repo registries (dcasr.optim /
+# dcasr.tasks.asr_task). DC-ASR extensions grouped under encoder_conf.hnet.
+
+experiment:
+  name: typeA_small_N1
+  seed: 1
+
+# ── data ─────────────────────────────────────────────────────────────────────
+data:
+  corpus: librispeech-960h                 # LOCKED
+  librispeech_root: data/LibriSpeech       # repo symlink -> data partition
+  train_splits: [train-clean-100, train-clean-360, train-other-500]
+  dev_splits:   [dev-clean, dev-other]
+  test_splits:  [test-clean, test-other]
+  manifests_dir: manifests
+
+# ── tokenizer ────────────────────────────────────────────────────────────────
+bpemodel: data/tokenizer/spm_bpe_500.model # THE vocab knob (swap 500<->750 here); V is read
+                                           # from the model file; CTC blank at id V => V+1 outputs
+
+# ── frontend + augmentation ──────────────────────────────────────────────────
+frontend_conf:
+  sample_rate: 16000
+  n_mels: 80
+  win_length: 400                          # (n_fft = win_length, hardwired)
+  hop_length: 160                          # -> 100 Hz frames
+  cmvn: features/cmvn_train960.pt          # global CMVN stats
+specaug_conf:                              # only range UPPER bounds are used (low end fixed at 0)
+  freq_mask_width_range: [0, 27]
+  num_freq_mask: 2
+  time_mask_width_ratio_range: [0.0, 0.05] # adaptive (e-branchformer style)
+  num_time_mask: 10
+
+# ── model: Mamba-H-Net encoder + hybrid CTC/AED heads ────────────────────────
+encoder: dcasr                             # registry key -> DCASREncoder
+encoder_conf:
+  arch_type: A                             # A = 1-stage (Mamba -> H-Net -> Mamba)
+  d_outer: 384                             # Small
+  d_main: 512
+  n_enc: 4
+  n_main: 12
+  n_dec: 4
+  bidirectional: true
+  hnet:
+    compression_N: 1                       # N=1 => no compression (the internal Mamba reference)
+    chunker: dynamic                       # N=1: dynamic == fixed (identity); no separate control cell
+    ema_smoothing: true
+head: ctc                                  # registry key -> CTCHead (built when ctc_weight>0)
+aed_conf:                                  # attention decoder (built when aed_weight>0)
+  n_layers: 6
+  n_heads: 4                               # must divide d_outer (384/4=96)
+  d_ff: 2048
+  dropout: 0.1
+  max_decode_len: 512                      # > longest reference (230 tok); 200 truncated 3 utts
+
+model_conf:                                # hybrid loss (plan §6.3): 0.3·CTC + 0.7·AED
+  ctc_weight: 0.3
+  aed_weight: 0.7
+  lsm_weight: 0.1                          # AED label smoothing
+  hnet_ratio_beta: 0.03                    # H-Net's coefficient (grid-uniform); the ratio loss
+                                           # is structurally 0 at N=1, so inactive here
+
+# ── batching / accumulation ──────────────────────────────────────────────────
+batch_type: length                         # our sampler == ESPnet 'length' (B·T padded budget)
+batch_bins: 24000                          # PER-GPU frame budget (the VRAM knob). This run: 4 GPUs
+                                           # at full per-GPU budget => global batch 96000 frames/step
+accum_grad: 1                              # second global-batch knob
+num_workers: 4
+
+# ── optimizer + scheduler ────────────────────────────────────────────────────
+optim: adamw
+optim_conf:
+  lr: 1.0e-3
+  weight_decay: 1.0e-6
+  betas: [0.9, 0.98]
+scheduler: warmuplr
+scheduler_conf:
+  warmup_steps: 10000                      # LR = lr·√warmup·min(step^-0.5, step·warmup^-1.5)
+
+# ── training ─────────────────────────────────────────────────────────────────
+train:
+  max_epoch: 200
+  grad_clip: 5.0
+  grad_clip_type: 2.0
+  precision: bf16                          # drives autocast; GradScaler enabled for fp16 only
+  log_interval: 50                         # optimizer steps between train-metric logs
+  speed_perturb: [0.9, 1.0, 1.1]           # x3-data aug, train-only
+
+# ── evaluation + checkpoint selection ────────────────────────────────────────
+eval:
+  valid_interval_epoch: 5                  # eval + checkpoint every 5 epochs: bounds the
+                                           # requeue replay and doubles emergence resolution
+best_model_criterion:                      # keep N-best per criterion (union), fp32-averaged
+  - [valid, wer, min]
+  - [valid, loss, min]
+keep_nbest_models: 5
+keep_all_checkpoints: true                 # retain EVERY saved epoch ckpt: emergence curves (H4)
+                                           # + full mid-training observability on the gate run
+
+# ── early stopping (AND: stop only when EVERY criterion has stalled) ─────────
+# patience is in EPOCHS; checked at validation epochs; the stall test is strict
+# (epoch - best > patience), so interval 5 + patience 20 stops 25 epochs after
+# the last improvement (the 5th consecutive stalled validation).
+early_stopping:
+  enable: true
+  require_all: true                        # valid metrics only: a train-loss criterion
+  criteria:                                # ~always improves under decaying LR and
+    - {phase: valid, metric: wer,  mode: min, patience: 20}   # would AND-block the stop
+    - {phase: valid, metric: cer,  mode: min, patience: 20}
+    - {phase: valid, metric: loss, mode: min, patience: 20}
+
+# ── decoding: the FULL 7-cell matrix on all four splits ──────────────────────
+# cells = read_outs x search x ±LM (greedy is CTC-only; LM on beam cells only):
+# ctc_greedy | ctc_beam | ctc_beam_lm | aed_beam | aed_beam_lm | joint_beam | joint_beam_lm
+decode:
+  splits: [dev-clean, dev-other, test-clean, test-other]
+  read_outs: [ctc, aed, joint]
+  search: [greedy, beam]
+  beam_size: 10                            # knee confirmed via {4,8,10,16} sweep on dev
+  pre_beam: 30                             # joint-beam CTC-prefix pre-pruning width
+  ctc_weight: 0.3                          # decode-time joint score weight (Watanabe hybrid)
+  length_bonus: 0.0
+  lm: shallow_fusion                       # enables the _lm cells alongside every no-LM cell
+  lm_config: configs/lm_transformer_500.yaml
+  lm_checkpoint: checkpoints/lm_transformer_500/valid.loss.ave.pt
+  lm_weight: 0.3                           # sweep 0.2-0.6 on dev before the test decode (plan §6.3)
+
+# ── interpretability (plan #12 driver; full production — no subsetting) ──────
+interp:
+  eval_split: dev-clean                    # full 2,703 aligned utts (dev-other via override)
+  alignments_dir: alignments
+  probe_train_manifest: alignments/train_subset_manifest.jsonl
+  probe_train_alignments: alignments/train-subset.jsonl
+  batch_bins: 24000
+  tol_s: 0.02                              # plan §6.4: ±20 ms
+  baseline_trials: 20                      # random-baseline floor (reported beside every metric)
+  probe:
+    levels: [frames, chunks]
+    top_k_words: 500                       # word-id probe convention; kept fractions reported
+    train_cap: 1000000                     # >= all labeled frames of the 10h subset: uncapped
+    test_cap: 1000000                      # >= all labeled eval frames: uncapped
+    max_iter: 1000                         # lbfgs proven converged by 572 iters on real data
+    C: 1.0
+    seed: 1
+  emergence:                               # per retained epoch ckpt (keep_all_checkpoints above)
+    probe_levels: [chunks]
+    train_cap: 50000                       # curve resolution only — the headline probes above
+    test_cap: 20000                        #   run uncapped on the selected checkpoint
+    baseline_trials: 10
+  robustness:
+    noise_snr_db: [20, 10, 5, 0]
+    speed_factors: [0.9, 1.1]
+    silence: {duration_s: 0.5, at_frac: 0.5}
+    seed: 1
+    baseline_trials: 10
+
+score:
+  gate_cell: ctc_greedy                    # plan §6.1: the gate reads the CTC-greedy cell —
+                                           # never the min-WER auto-pick (that would ease the bar)
+
+goal:
+  sane_test_clean_wer_below: 12.0          # THE go/no-go bar, read from this run's ctc_greedy cell
