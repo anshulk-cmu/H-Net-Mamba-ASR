@@ -68,8 +68,9 @@ model_conf:                                # hybrid loss (plan §6.3): 0.3·CTC 
 
 # ── batching / accumulation ──────────────────────────────────────────────────
 batch_type: length                         # our sampler == ESPnet 'length' (B·T padded budget)
-batch_bins: 24000                          # PER-GPU frame budget (the VRAM knob). This run: 4 GPUs
-                                           # at full per-GPU budget => global batch 96000 frames/step
+batch_bins: 64000                          # PER-GPU frame budget (the VRAM knob): measured 15.6GB
+                                           # (34%) on 46GB. 4 GPUs => global 256k frames/step,
+                                           # ~4.2k steps/epoch, warmup 10000 ~ 2.4 epochs
 accum_grad: 1                              # second global-batch knob
 num_workers: 4
 
