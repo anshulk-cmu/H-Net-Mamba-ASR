@@ -70,7 +70,7 @@ model_conf:                                # hybrid loss (plan §6.3): 0.3·CTC 
 batch_type: length                         # our sampler == ESPnet 'length' (B·T padded budget)
 batch_bins: 64000                          # PER-GPU frame budget (the VRAM knob): measured 15.6GB
                                            # (34%) on 46GB. 4 GPUs => global 256k frames/step,
-                                           # ~4.2k steps/epoch, warmup 10000 ~ 2.4 epochs
+                                           # ~4.2k steps/epoch (~840k steps over 200 epochs)
 accum_grad: 1                              # second global-batch knob
 num_workers: 4
 
@@ -125,7 +125,7 @@ decode:
   splits: [dev-clean, dev-other, test-clean, test-other]
   read_outs: [ctc, aed, joint]
   search: [greedy, beam]
-  beam_size: 10                            # knee confirmed via {4,8,10,16} sweep on dev
+  beam_size: 10                            # plan default; knee sweep {4,8,10,16} on dev pending
   pre_beam: 30                             # joint-beam CTC-prefix pre-pruning width
   ctc_weight: 0.3                          # decode-time joint score weight (Watanabe hybrid)
   length_bonus: 0.0
@@ -148,7 +148,8 @@ interp:
     top_k_words: 500                       # word-id probe convention; kept fractions reported
     train_cap: 1000000                     # >= all labeled frames of the 10h subset: uncapped
     test_cap: 1000000                      # >= all labeled eval frames: uncapped
-    max_iter: 1000                         # lbfgs proven converged by 572 iters on real data
+    max_iter: 1000                         # converged by 572 iters at 50k samples; n_iter is
+                                           # persisted per probe — check saturation at full scale
     C: 1.0
     seed: 1
   emergence:                               # per retained epoch ckpt (keep_all_checkpoints above)
