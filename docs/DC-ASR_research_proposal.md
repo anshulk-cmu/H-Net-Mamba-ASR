@@ -4,6 +4,13 @@
 
 **Author:** (you) · **Drafted:** 2026-07-01 · **Status:** research proposal / idea-shaping document
 
+> **Superseded where it conflicts with the plan.** The design authority is
+> [`DC-ASR_experimental_plan.md`](DC-ASR_experimental_plan.md). In particular, four requirements
+> below were later revised there: baselines are **cited, not re-trained** (§6.2); model sizes are
+> **not params-matched** to Zipformer (bidirectional encoder, measured 62M/185M — plan §4.5); the
+> **cross-lingual/morphology study is out of scope** (plan §10); and the first experiment is the
+> **N=1 · 960h go/no-go**, not N=2 · 100h (§9 here).
+
 ---
 
 ## 0. One-paragraph pitch

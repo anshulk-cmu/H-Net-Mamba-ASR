@@ -17,20 +17,18 @@ data:
   test_splits:  [test-clean, test-other]
   manifests_dir: manifests
 
-# ── tokenizer (config-driven: swap 500<->750 here) ───────────────────────────
-token_type: bpe
-bpemodel: data/tokenizer/spm_bpe_500.model
-vocab_size: 500                            # blank appended at id V => CTC head has V+1 outputs
+# ── tokenizer ────────────────────────────────────────────────────────────────
+bpemodel: data/tokenizer/spm_bpe_500.model # THE vocab knob (swap 500<->750 here); V is read
+                                           # from the model file; CTC blank at id V => V+1 outputs
 
 # ── frontend + augmentation (ESPnet frontend_conf / specaug_conf) ────────────
 frontend_conf:
   sample_rate: 16000
   n_mels: 80
-  n_fft: 400
-  win_length: 400
+  win_length: 400                          # (n_fft = win_length, hardwired)
   hop_length: 160                          # -> 100 Hz frames
   cmvn: features/cmvn_train960.pt          # global CMVN stats
-specaug_conf:
+specaug_conf:                              # only range UPPER bounds are used (low end fixed at 0)
   freq_mask_width_range: [0, 27]
   num_freq_mask: 2
   time_mask_width_ratio_range: [0.0, 0.05] # adaptive (e-branchformer style)
@@ -49,32 +47,25 @@ encoder_conf:
   hnet:
     compression_N: 1                       # N=1 => no compression (identity control)
     chunker: dynamic                       # dynamic (H-Net learned) | fixed (fixed-stride pooling, H2 control)
-    router: cosine
     ema_smoothing: true
-head: ctc                                  # registry key -> CTCHead (built when ctc_weight>0)
-ctc_conf:
-  zero_infinity: true
+head: ctc                                  # registry key -> CTCHead (built when ctc_weight>0; zero_infinity hardwired)
 aed_conf:                                  # attention decoder — built ONLY when aed_weight>0
   n_layers: 6
   n_heads: 4                               # must divide d_outer (384/4=96)
   d_ff: 2048
   dropout: 0.1
 
-model_conf:                                # loss weights + reporting (ESPnet parity)
+model_conf:                                # loss weights (WER/CER always reported at eval)
   ctc_weight: 1.0                          # CTC-only for this go/no-go; hybrid grid uses 0.3/0.7
   aed_weight: 0.0                          # set >0 to build + train the AED head (hybrid)
   lsm_weight: 0.1                          # AED label smoothing (used when aed_weight>0)
-  hnet_ratio_beta: 0.0                     # beta·Σ ratio; N=1 => inactive
-  report_cer: true
-  report_wer: true
-  report_ter: true
+  hnet_ratio_beta: 0.0                     # beta·Σ ratio; N=1 inactive — N>=2 grid uses 0.03 (plan §6.3)
 
 # ── batching / accumulation (ESPnet batch_type/batch_bins/accum_grad) ─────────
 batch_type: length                         # our sampler == ESPnet 'length' (B·T padded budget)
-batch_bins: 24000                          # == max_frames; PER-GPU frame budget
-accum_grad: 1                              # global-batch knob; hold constant across GPUs
+batch_bins: 24000                          # PER-GPU frame budget; on k GPUs divide by k to hold the global batch constant
+accum_grad: 1                              # second global-batch knob
 num_workers: 4
-sort_in_batch: descending
 
 # ── optimizer + scheduler (config-driven registries) ─────────────────────────
 optim: adamw
@@ -91,10 +82,9 @@ train:
   max_epoch: 120
   grad_clip: 5.0
   grad_clip_type: 2.0
-  precision: bf16                          # bf16 autocast; GradScaler disabled (fp16 only)
-  use_amp: true
+  precision: bf16                          # drives autocast; GradScaler enabled for fp16 only
   log_interval: 50                         # optimizer steps between train-metric logs
-  speed_perturb: [0.9, 1.0, 1.1]           # data-pipeline aug (to be wired in librispeech.py)
+  speed_perturb: [0.9, 1.0, 1.1]           # x3-data aug, train-only (librispeech.py)
 
 # ── evaluation + checkpoint selection ────────────────────────────────────────
 eval:
@@ -103,6 +93,7 @@ best_model_criterion:                      # keep N-best per criterion (union), 
   - [valid, wer, min]
   - [valid, loss, min]
 keep_nbest_models: 5
+keep_all_checkpoints: false                # true => retain EVERY epoch ckpt (H4 emergence runs)
 
 # ── early stopping (custom AND: stop only if ALL criteria stalled) ───────────
 early_stopping:
@@ -118,9 +109,6 @@ decode:
   search: greedy                           # add beam (B=10) next
   beam_size: 10
   lm: none                                 # none | shallow_fusion
-
-compute:
-  gpus: 1                                  # scale to 2/4/8 via YAML only (DDP)
 
 goal:
   sane_test_clean_wer_below: 12.0          # go/no-go bar the N>=2 runs are measured against

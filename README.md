@@ -57,21 +57,29 @@ Driver note: Babel L40S nodes run driver 575.x (CUDA ≤ 12.9) — use cu129 whe
 never the default PyPI torch (it ships CUDA 13.0 builds).
 
 ## Status
-**Input pipeline + encoder complete (code + 85 tests, GPU-validated).** Implemented:
-acoustic frontend (`data/features.py`), H-Net dynamic-chunking core
-(`models/hnet_chunk.py`), BPE tokenizer (`data/tokenizer.py`), LibriSpeech dataset +
-DDP-aware bucketed loader (`data/librispeech.py`), Mamba-2 backbone
-(`models/mamba_block.py`), and the full **Mamba–H-Net encoder** (`models/encoder.py`,
-Type A/B, conv-subsample ×4 → Mamba → chunk → main → dechunk → Mamba). **Artifacts:**
-LibriSpeech-960h extracted & verified; BPE tokenizers (500 + 750, data-justified);
-persisted manifests + global CMVN stats (345M frames).
+**Training + decoding stack complete (code + 277 tests, GPU-validated; multi-GPU proven on 2×GPU).**
+Implemented end-to-end: acoustic frontend + CMVN + adaptive SpecAugment (`data/features.py`),
+H-Net dynamic-chunking core (`models/hnet_chunk.py`) and the **fixed-stride pooling control**
+(`models/fixed_pool.py`, H2), BPE tokenizer (`data/tokenizer.py`), LibriSpeech dataset with
+speed-perturb ×3 + DDP-aware bucketed loader (`data/librispeech.py`), Mamba-2 backbone
+(`models/mamba_block.py`), the **Mamba–H-Net encoder** (`models/encoder.py`, Type A/B,
+config-selectable chunker), **all decoders** — CTC greedy/prefix-beam, AED, joint CTC+AED
+one-pass beam, external-LM shallow fusion (`decoders/`) — hybrid CTC/AED loss, the
+config-driven resumable Trainer with keep-N-best + checkpoint retention (`training/`),
+WER/CER/TER scoring (`eval/metrics.py`), run provenance (`provenance.py`), structured
+metrics (TB + JSONL, `metrics_logger.py`), and the thin train entry (`scripts/train.py`,
+single-GPU default, `torchrun` for 2/4/8). **Artifacts:** LibriSpeech-960h extracted &
+verified; BPE tokenizers (500 + 750); manifests + global CMVN (345M frames).
+Every module carries unit tests + a real-audio GPU smoke + an independent adversarial
+verification pass.
 
 **Standing design decisions:** bidirectional encoder, **not params-matched to Zipformer**
-(the goal is a working H-Net ASR system with interpretable learned units, not an
-equal-size bake-off — Zipformer/Conformer are WER references); runs on 1×48 GB GPU by
-default, scales to 2/4/8 GPUs via config only (DDP, constant global batch); training is
-checkpoint-resumable (exact continuation after preemption).
+(Zipformer/Conformer are WER references); runs on 1×48 GB GPU by default, scales via config
+only (DDP, constant global batch — divide `batch_bins` by the GPU count); epoch-boundary
+exact-resume checkpoints; hybrid λ_ctc=0.3/aed=0.7 for grid runs; ratio-loss β=0.03 at N≥2.
 
-**Remaining:** decoders (CTC head first, then AED/joint, ±LM) → hybrid loss + DDP/resumable
-trainer (`training/`) → WER eval → interpretability. Then the first go/no-go run
-(Type A · Small · N=1 · CTC). Full grid and hypotheses (H1–H5) in the plan.
+**Remaining:** external LM (810M-word corpus) → `decode.py`/`score_wer.py` (decode matrix ±LM)
+→ efficiency (RTF/GFLOPs) → MFA + interpretability suite (boundary F1, probes, emergence)
+→ grid configs + figures. Then the run phase: go/no-go (Type A · Small · N=1, test-clean
+WER < 12) → Small screening → Large promotion → full decode matrix → interp. Hypotheses
+(H1–H5) and protocol in the plan.

@@ -34,7 +34,7 @@ S4 [7] made this efficient for long sequences via a structured (diagonal-plus-lo
 H-Net [1] makes discrete segmentation differentiable and trainable end-to-end. Per chunking stage:
 - a **routing module** predicts a boundary probability from the cosine dissimilarity of adjacent hidden states,
 $$p_t = \tfrac12\Big(1 - \tfrac{q_t^\top k_{t-1}}{\lVert q_t\rVert\,\lVert k_{t-1}\rVert}\Big) \in [0,1];$$
-- a **downsampler** keeps positions where $p_t > 0.5$, compressing $L$ vectors to $L' < L$ chunk vectors;
+- a **downsampler** keeps positions where $p_t \ge 0.5$, compressing $L$ vectors to $L' < L$ chunk vectors;
 - a **smoothing module** — an exponential moving average $\bar z_t = P_t \hat z_t + (1-P_t)\bar z_{t-1}$ — together with a **straight-through estimator** [18] makes the hard selection differentiable;
 - a **ratio loss** $\mathcal L_{\text{ratio}}$ pushes the average boundary rate toward a target compression, preventing the trivial keep-all / drop-all solutions;
 - an **upsampler / dechunker** restores the original length for the residual and output paths.
@@ -53,9 +53,9 @@ End-to-end ASR heads come in three standard forms: **CTC** [10] (conditionally-i
 - **Input features.** 80-dim log-Mel filterbanks @ 100 Hz, global CMVN, SpecAugment [14].
 - **Output units.** A 500-token BPE vocabulary for the attention head and a shared BPE/char set for CTC (unit choice itself is an ablation, since one motivation is reduced tokenizer dependence).
 - **LM data.** The official LibriSpeech LM corpus (810M-word text) for an external Transformer/n-gram LM used only at decode time.
-- **Forced alignment.** Montreal Forced Aligner [15] produces phone- and word-level time boundaries on the training/dev audio, providing the ground truth for the interpretability analyses (Section 7).
+- **Forced alignment.** Montreal Forced Aligner [15] produces phone- and word-level time boundaries on the training/dev audio, providing the ground truth for the interpretability analyses (§6.4).
 
-*Scope note.* The earlier draft proposed a cross-lingual morphology study (Turkish/Mandarin). Under the 960h-only constraint that is explicitly **out of scope** and moved to Limitations/Future Work (Section 11); it does not affect the core claims, which are all monolingual-English on LibriSpeech.
+*Scope note.* The earlier draft proposed a cross-lingual morphology study (Turkish/Mandarin). Under the 960h-only constraint that is explicitly **out of scope** and moved to Limitations/Future Work (§10); it does not affect the core claims, which are all monolingual-English on LibriSpeech.
 
 ---
 
@@ -72,7 +72,7 @@ End-to-end ASR heads come in three standard forms: **CTC** [10] (conditionally-i
    │    k_enc × Mamba-2 blocks                  │
    │        │                                   │
    │   [ Router ]  p_t = ½(1 − cos(q_t,k_{t−1}))│
-   │   [ Downsample ] keep p_t>0.5 → L_{s+1}    │
+   │   [ Downsample ] keep p_t>=0.5 → L_{s+1}    │
    └──────────┬────────────────────────────────┘
               │   (Type B: repeat this stage once more; Type A: skip)
    ┌──────────▼───────────┐
@@ -131,7 +131,7 @@ Two capacity variants per type. The encoder is **bidirectional** (each Mamba-2 b
 
 We state falsifiable hypotheses so the experiments have clear pass/fail conditions.
 
-- **H1 (Competitive WER).** At a suitable compression level, DC-ASR reaches WER competitive with strong published LibriSpeech systems — within a small margin (target: ≤ 0.3 abs on test-clean, ≤ 0.5 on test-other) of published Zipformer [9] — in **both** the no-LM and +LM decoding settings. Zipformer is a published WER *reference*, not a size-matched control; DC-ASR is not constrained to equal parameters, so H1 is a **viability check** — the primary contributions are the learned-beats-fixed result (H2) and the emergent linguistic structure (H4). *Falsified if* the best DC-ASR trails published Zipformer by > 1.0 abs.
+- **H1 (Competitive WER).** At a suitable compression level, DC-ASR reaches WER competitive with strong published LibriSpeech systems — within a small margin (target: ≤ 0.3 abs on test-clean, ≤ 0.5 on test-other) of published Zipformer-M [9] — in **both** the no-LM and +LM decoding settings. Zipformer is a published WER *reference*, not a size-matched control; DC-ASR is not constrained to equal parameters, so H1 is a **viability check** — the primary contributions are the learned-beats-fixed result (H2) and the emergent linguistic structure (H4). *Falsified if* the best DC-ASR trails published Zipformer-M by > 1.0 abs.
 - **H2 (Learned beats fixed at equal compression).** At the same overall $N$, learned dynamic chunking yields lower WER than fixed-stride pooling to the same rate. *Falsified if* fixed pooling matches or beats learned chunking across all $N$.
 - **H3 (Staging helps the hierarchy, not necessarily the WER).** At matched overall compression, Type B's two stages produce boundaries that align better with the phone→word hierarchy than Type A's single stage (higher word-boundary F1 at stage-2), even if WER is comparable. *Falsified if* Type B shows no interpretability advantage and no WER advantage over Type A.
 - **H4 (Emergent linguistic structure).** Learned boundaries align with forced-aligned phone/word boundaries above a random-rate baseline, and stage depth correlates with linguistic tier (stage-1→phone/syllable, stage-2→word). *Falsified if* boundary F1 is at chance, i.e. the model chunks on acoustic energy/silence alone.
@@ -159,7 +159,7 @@ Per the locked protocol we do **not** re-train any external system; DC-ASR is co
 | ContextNet-L | [24] | 1D-conv + SE | RNN-T | ~112M | 2.1 / 4.6 | 1.9 / 4.1 |
 | **Conformer-L** (orig.) | [8] | conv+attn (flat) | RNN-T | 118.8M | **2.1 / 4.3** | **1.9 / 3.9** |
 | Conformer-L (reproduced) | [9] | conv+attn (flat) | — | ~122M | 2.46 / 5.55 | n/r |
-| Conformer-M | [8] | conv+attn (flat) | RNN-T | 30.7M | 2.3 / 5.0 | n/r |
+| Conformer-M | [8] | conv+attn (flat) | RNN-T | 30.7M | 2.3 / 5.0 | 2.0 / 4.3 |
 | Branchformer | [26] | parallel MLP/attn | AED | 116.2M | 2.4 / 5.5 | n/r |
 | Squeezeformer-M | [25] | conv+attn (U-Net) | CTC | 55.6M | 2.56 / 6.50 | n/r |
 | Squeezeformer-L | [25] | conv+attn (U-Net) | CTC | — | 2.47 / 5.97 | n/r |
@@ -186,7 +186,7 @@ Per the locked protocol we do **not** re-train any external system; DC-ASR is co
 **Internal controls (configurations of DC-ASR itself, not external baselines — no re-implementation).** These are the *same* DC-ASR model with one knob changed, so they are part of our own grid rather than re-trained third-party systems: the **$N{=}1$ no-chunk** config (= pure-Mamba encoder, isolates the chunking contribution) and a **fixed-stride-pooling** variant at each rate. They stay in the grid because **H2** ("learned beats fixed at equal compression") is defined against them; a Mamba+UMA [3] control is included if budget allows.
 
 ### 6.3 Training and decoding protocol
-**Training.** LibriSpeech-960h [13]; 80-d logmel @ 100 Hz; SpecAugment [14]; hybrid CTC/attention loss ($\lambda_{\text{ctc}}=0.3$) [12]; AdamW with warmup-decay; ~100–120 epochs; speed perturbation ×3. One hybrid model is trained per $(type, N, size)$ cell — **we do not train pure-CTC or pure-AED models separately** (the hybrid loss converges better and keeps attention aligned [12]). Compute on Babel (interactive `srun --gres=gpu:1`). Because baselines are **cited, not re-trained**, the entire compute budget is DC-ASR's own grid; the Large-960h DC-ASR runs are the budget driver (a few GPU-days each), which is why the Small variant screens the grid first.
+**Training.** LibriSpeech-960h [13]; 80-d logmel @ 100 Hz; SpecAugment [14]; hybrid CTC/attention loss ($\lambda_{\text{ctc}}=0.3$) [12]; ratio-loss weight $\beta=0.03$ (H-Net's coefficient; inactive at $N{=}1$); AdamW with warmup-decay; ~100–120 epochs; speed perturbation ×3. One hybrid model is trained per $(type, N, size)$ cell — **we do not train pure-CTC or pure-AED models separately** (the hybrid loss converges better and keeps attention aligned [12]). Compute on Babel (interactive `srun --gres=gpu:1`). Because baselines are **cited, not re-trained**, the entire compute budget is DC-ASR's own grid; the Large-960h DC-ASR runs are the budget driver (a few GPU-days each), which is why the Small variant screens the grid first.
 
 **Decoding — three read-outs of the one trained model.** At test time the same hybrid model is decoded three ways, under both search strategies and both LM settings. WER = test-clean / test-other is reported for every meaningful cell.
 
@@ -199,9 +199,9 @@ Per the locked protocol we do **not** re-train any external system; DC-ASR is co
 Conventions (settled): **greedy = beam width 1**, kept as the fast reference and a *peakiness diagnostic* (the greedy→beam gap measures how confident/peaky the model is); greedy is only meaningful for the **CTC** head, so AED and joint are **beam-only**. **Beam width $B{=}10$** by default (a small $B\in\{4,8,10,16\}$ sweep on dev to confirm the knee, then fixed). The external Transformer-LM enters via **shallow fusion** during beam search, so **+LM lives on the beam side only** — "greedy +LM" is not a standard cell; the no-LM column already covers greedy and beam. Report GFLOPs and RTF alongside WER (CTC-greedy gives the fastest RTF; joint-beam+LM the best WER — the accuracy/latency trade-off is itself a result).
 
 ### 6.4 Interpretability program (the scientific core — "analyse these learned things")
-For each stage $s$ and compression $N$, the learned boundaries $\{t: p_t>0.5\}$ and chunk embeddings are the data:
+For each stage $s$ and compression $N$, the learned boundaries $\{t: p_t\ge0.5\}$ and chunk embeddings are the data:
 
-1. **Boundary alignment.** Against MFA [15] phone/syllable/word boundaries, compute precision/recall/**F1** and **R-value** (tolerance ±20 ms). *Which tier does each stage snap to, and how sharply?* Baseline: random boundaries at the same rate.
+1. **Boundary alignment.** Against MFA [15] phone/word boundaries (MFA outputs these two tiers; no syllable tier), compute precision/recall/**F1** and **R-value** (tolerance ±20 ms). *Which tier does each stage snap to, and how sharply?* Baseline: random boundaries at the same rate.
 2. **Chunk-identity probing.** Linear probes [16,17] on chunk embeddings predicting phone identity, phone class (voicing/place/manner), and word identity. *What information concentrates at each level?*
 3. **Staging at fixed compression (H3).** Because Type A and Type B are held at the same overall $N$, directly compare their boundaries: *does splitting one $N\times$ step into two $\sqrt N\times$ steps yield cleaner phone-then-word tiers?*
 4. **Emergence curve (H4).** Track boundary-F1 and probe accuracy over training epochs vs. the WER curve. *Does linguistic structure appear before, with, or after WER convergence — i.e. is it truly self-learned from the recognition signal?*
