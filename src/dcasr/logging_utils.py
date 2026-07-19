@@ -32,10 +32,16 @@ def default_log_dir() -> Path:
 
 def setup_logging(run_name: str = "dcasr", level: int = logging.INFO,
                   log_dir: str | Path | None = None) -> Path:
-    """Configure the root logger once per process. Returns the log-file path."""
+    """Configure the root logger once per process. Returns the log-file path.
+
+    Under torchrun each rank gets its own file (RotatingFileHandler rotation is
+    not multi-process safe): rank>0 logs to <run_name>.rank<N>.log.
+    """
     log_dir = Path(log_dir) if log_dir is not None else default_log_dir()
     log_dir.mkdir(parents=True, exist_ok=True)
-    logfile = log_dir / f"{run_name}.log"
+    rank = int(os.environ.get("RANK", 0))
+    suffix = f".rank{rank}" if rank > 0 else ""
+    logfile = log_dir / f"{run_name}{suffix}.log"
 
     root = logging.getLogger()
     root.setLevel(level)

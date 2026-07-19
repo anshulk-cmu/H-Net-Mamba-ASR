@@ -32,6 +32,11 @@ class Tokenizer:
         self.bos_id = self.sp.bos_id()
         self.eos_id = self.sp.eos_id()
         self.pad_id = self.sp.pad_id()
+        got = (self.unk_id, self.bos_id, self.eos_id, self.pad_id)
+        if got != (_UNK_ID, _BOS_ID, _EOS_ID, _PAD_ID):
+            # AED/beam/LM defaults hardcode this layout — a foreign model must not load silently
+            raise ValueError(f"{self.model_path}: special ids (unk,bos,eos,pad)={got} violate "
+                             f"the fixed contract (0,1,2,3); retrain via Tokenizer.train()")
         self.blank_id = self.vocab_size            # CTC blank, appended beyond the SP vocab
         logger.debug("Tokenizer(%s) vocab=%d blank=%d bos=%d eos=%d pad=%d unk=%d",
                      self.model_path, self.vocab_size, self.blank_id,

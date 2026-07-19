@@ -78,3 +78,16 @@ def test_id_to_piece_blank(tok):
 def test_empty_string(tok):
     assert tok.encode("") == []
     assert tok.decode([]) == ""
+
+
+def test_foreign_special_layout_raises(tmp_path):
+    """A SentencePiece model NOT trained via Tokenizer.train (SP default: pad disabled = -1)
+    must fail loudly — AED/beam/LM defaults hardcode the (0,1,2,3) layout."""
+    import sentencepiece as spm
+    corpus_file = tmp_path / "c.txt"
+    corpus_file.write_text("\n".join(_corpus(100)) + "\n", encoding="utf-8")
+    spm.SentencePieceTrainer.train(input=str(corpus_file), model_prefix=str(tmp_path / "foreign"),
+                                   vocab_size=80, model_type="bpe", hard_vocab_limit=False,
+                                   minloglevel=1)
+    with pytest.raises(ValueError):
+        Tokenizer(tmp_path / "foreign.model")

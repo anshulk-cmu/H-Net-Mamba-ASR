@@ -114,13 +114,20 @@ def _score(pairs: Iterable[tuple[Sequence, Sequence]]) -> ErrorStats:
     return st
 
 
+def _check_lengths(refs, hyps) -> None:
+    if len(refs) != len(hyps):                     # zip would silently truncate the surplus side
+        raise ValueError(f"refs/hyps length mismatch: {len(refs)} vs {len(hyps)}")
+
+
 def word_error_rate(refs: Sequence[str], hyps: Sequence[str], normalize: bool = True) -> ErrorStats:
+    _check_lengths(refs, hyps)
     norm = normalize_text if normalize else (lambda s: s)
     return _score((norm(r).split(), norm(h).split()) for r, h in zip(refs, hyps))
 
 
 def char_error_rate(refs: Sequence[str], hyps: Sequence[str], normalize: bool = True,
                     remove_space: bool = True) -> ErrorStats:
+    _check_lengths(refs, hyps)
     norm = normalize_text if normalize else (lambda s: s)
     def chars(s):
         s = norm(s)
@@ -131,6 +138,7 @@ def char_error_rate(refs: Sequence[str], hyps: Sequence[str], normalize: bool = 
 def token_error_rate(ref_tokens: Sequence[Sequence[int]],
                      hyp_tokens: Sequence[Sequence[int]]) -> ErrorStats:
     """Error rate over model output tokens (ids); no text normalization."""
+    _check_lengths(ref_tokens, hyp_tokens)
     return _score((list(r), list(h)) for r, h in zip(ref_tokens, hyp_tokens))
 
 

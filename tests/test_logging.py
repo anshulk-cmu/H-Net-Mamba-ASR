@@ -25,3 +25,12 @@ def test_default_log_dir_lives_on_data_partition(monkeypatch):
 def test_env_var_overrides_log_dir(monkeypatch, tmp_path):
     monkeypatch.setenv("DCASR_LOG_DIR", str(tmp_path / "custom"))
     assert default_log_dir() == tmp_path / "custom"
+
+
+def test_rank_suffix_under_ddp(monkeypatch, tmp_path):
+    monkeypatch.setenv("RANK", "1")                  # rotation is not multi-process safe
+    assert setup_logging("unittest_rank", log_dir=tmp_path).name == "unittest_rank.rank1.log"
+    logging.getLogger().handlers.clear()
+    monkeypatch.delenv("RANK")
+    assert setup_logging("unittest_rank", log_dir=tmp_path).name == "unittest_rank.log"
+    logging.getLogger().handlers.clear()

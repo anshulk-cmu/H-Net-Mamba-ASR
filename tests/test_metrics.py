@@ -83,3 +83,14 @@ def test_char_error_rate_matches_editdistance_total():
     total = sum(editdistance.eval(M.normalize_text(r).replace(" ", ""),
                                   M.normalize_text(h).replace(" ", "")) for r, h in zip(refs, hyps))
     assert st.errors == total
+
+
+def test_length_mismatch_raises():
+    import pytest
+    from dcasr.eval.metrics import char_error_rate, token_error_rate, word_error_rate
+    with pytest.raises(ValueError):
+        word_error_rate(["A B"], ["A B", "C"])       # zip would silently drop the surplus
+    with pytest.raises(ValueError):
+        char_error_rate(["AB", "CD"], ["AB"])
+    with pytest.raises(ValueError):
+        token_error_rate([[1, 2]], [])
