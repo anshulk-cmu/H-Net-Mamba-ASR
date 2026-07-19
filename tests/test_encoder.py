@@ -5,7 +5,10 @@ CUDA-only (Mamba-2 kernels). Small dims for speed; n_mels=80 to match the real c
 import pytest
 import torch
 
-from dcasr.models.encoder import ConvSubsampling4, DCASREncoder, _subsampled_length
+from dcasr.models.encoder import (
+    ConvSubsampling4, DCASREncoder, _subsampled_length, build_chunker)
+from dcasr.models.fixed_pool import FixedPoolChunker
+from dcasr.models.hnet_chunk import DynamicChunker
 
 pytestmark = pytest.mark.skipif(
     not torch.cuda.is_available(), reason="Mamba-2 kernels are CUDA-only")
@@ -20,9 +23,9 @@ def _cuda_default_device():
     torch.set_default_device("cpu")
 
 
-def _enc(arch="A", N=1):
+def _enc(arch="A", N=1, chunker="dynamic"):
     return DCASREncoder(n_mels=80, d_outer=64, d_main=128, n_enc=2, n_main=2,
-                        n_dec=2, n_mid=2, arch_type=arch, N=N)
+                        n_dec=2, n_mid=2, arch_type=arch, N=N, chunker=chunker)
 
 
 def _batch(T=(100, 80)):
@@ -100,3 +103,65 @@ def test_typeB_N1_reduces_to_passthrough():
 def test_invalid_arch_raises():
     with pytest.raises(ValueError):
         DCASREncoder(arch_type="C")
+
+
+# ── fixed-stride pooling chunker (H2 control) ────────────────────────────────
+def test_build_chunker_registry():
+    assert isinstance(build_chunker("dynamic", 64, 2), DynamicChunker)
+    assert isinstance(build_chunker("fixed", 64, 2), FixedPoolChunker)
+    with pytest.raises(ValueError):
+        build_chunker("nope", 64, 2)
+
+
+def test_default_chunker_is_dynamic():
+    assert isinstance(_enc("A", N=2).chunk, DynamicChunker)
+
+
+def test_fixed_typeA_selected_and_compresses():
+    enc = _enc("A", N=2, chunker="fixed")
+    assert isinstance(enc.chunk, FixedPoolChunker)
+    feats, lengths = _batch((120, 96))
+    out = enc(feats, lengths)
+    exp = _subsampled_length(lengths)
+    assert out.features.shape[1] == int(exp.max())              # dechunked back to fine rate
+    assert out.ratio_loss.item() == 0.0                          # fixed pooling has no ratio loss
+    assert abs(out.kept_fractions[0].item() - 0.5) < 0.05        # rate ≈ 1/N
+
+
+def test_fixed_N1_is_passthrough():
+    out = _enc("A", N=1, chunker="fixed")(*_batch())
+    assert out.ratio_loss.item() == 0.0
+    assert abs(out.kept_fractions[0].item() - 1.0) < 1e-6
+
+
+def test_fixed_interpretability_hooks():
+    out = _enc("A", N=2, chunker="fixed")(*_batch())
+    assert len(out.boundaries) == 1 and len(out.chunk_embeddings) == 1
+    p, b = out.boundaries[0]
+    assert p.shape[0] == 2 and p.dim() == 2
+    assert out.chunk_embeddings[0].dim() == 3
+
+
+def test_fixed_gradients_flow():
+    enc = _enc("A", N=2, chunker="fixed")
+    out = enc(*_batch())
+    out.features.sum().backward()
+    g = [p.grad for p in enc.parameters() if p.grad is not None]
+    assert g and all(torch.isfinite(x).all() for x in g)
+    assert sum(x.abs().sum() for x in g) > 0
+
+
+def test_fixed_typeB_square_N_ok():
+    enc = _enc("B", N=4, chunker="fixed")                        # √4 = 2 (integer stride)
+    assert isinstance(enc.chunk1, FixedPoolChunker) and enc.chunk1.stride == 2
+    feats, lengths = _batch((140, 110))
+    out = enc(feats, lengths)
+    exp = _subsampled_length(lengths)
+    assert out.features.shape == (2, int(exp.max()), 64)
+    assert len(out.boundaries) == 2 and out.ratio_loss.item() == 0.0
+
+
+def test_fixed_typeB_nonsquare_N_raises():
+    with pytest.raises(ValueError):                              # √2 not an integer stride
+        DCASREncoder(n_mels=80, d_outer=64, d_main=128, n_enc=2, n_main=2, n_dec=2,
+                     n_mid=2, arch_type="B", N=2, chunker="fixed")

@@ -19,10 +19,22 @@ import torch
 import torch.nn as nn
 
 from dcasr.logging_utils import get_logger
+from dcasr.models.fixed_pool import FixedPoolChunker
 from dcasr.models.hnet_chunk import DynamicChunker
 from dcasr.models.mamba_block import MambaStack
 
 logger = get_logger(__name__)
+
+
+# chunker registry: config picks learned dynamic chunking or the fixed-pool H2 control.
+_CHUNKERS = {"dynamic": DynamicChunker, "fixed": FixedPoolChunker}
+
+
+def build_chunker(kind: str, d_model: int, N, ema_smoothing: bool = True) -> nn.Module:
+    kind = str(kind).lower()
+    if kind not in _CHUNKERS:
+        raise ValueError(f"unknown chunker {kind!r}; choices: {sorted(_CHUNKERS)}")
+    return _CHUNKERS[kind](d_model, N, ema_smoothing=ema_smoothing)
 
 
 @dataclass
@@ -73,32 +85,33 @@ class DCASREncoder(nn.Module):
     def __init__(self, n_mels: int = 80, d_outer: int = 384, d_main: int = 512,
                  n_enc: int = 4, n_main: int = 12, n_dec: int = 4, n_mid: int = 4,
                  arch_type: str = "A", N: int = 1, bidirectional: bool = True,
-                 hnet_ema: bool = True):
+                 hnet_ema: bool = True, chunker: str = "dynamic"):
         super().__init__()
         if arch_type not in ("A", "B"):
             raise ValueError(f"arch_type must be 'A' or 'B', got {arch_type!r}")
         self.arch_type = arch_type
         self.N = N
+        self.chunker = chunker
         self.subsample = ConvSubsampling4(n_mels, d_outer)
         self.enc = MambaStack(n_enc, d_outer, bidirectional)
         self.dec = MambaStack(n_dec, d_outer, bidirectional)
 
         if arch_type == "A":
-            self.chunk = DynamicChunker(d_outer, N, ema_smoothing=hnet_ema)
+            self.chunk = build_chunker(chunker, d_outer, N, hnet_ema)
             self.proj_in = nn.Linear(d_outer, d_main)
             self.main = MambaStack(n_main, d_main, bidirectional)
             self.proj_out = nn.Linear(d_main, d_outer)
         else:                                                   # Type B: two √N stages
             nb = math.sqrt(N)
-            self.chunk1 = DynamicChunker(d_outer, nb, ema_smoothing=hnet_ema)
+            self.chunk1 = build_chunker(chunker, d_outer, nb, hnet_ema)
             self.proj1_in = nn.Linear(d_outer, d_main)
             self.mid = MambaStack(n_mid, d_main, bidirectional)
-            self.chunk2 = DynamicChunker(d_main, nb, ema_smoothing=hnet_ema)
+            self.chunk2 = build_chunker(chunker, d_main, nb, hnet_ema)
             self.main = MambaStack(n_main, d_main, bidirectional)
             self.mid_dec = MambaStack(n_mid, d_main, bidirectional)
             self.proj1_out = nn.Linear(d_main, d_outer)
-        logger.debug("DCASREncoder(type=%s, N=%s, d_outer=%d, d_main=%d)",
-                     arch_type, N, d_outer, d_main)
+        logger.debug("DCASREncoder(type=%s, N=%s, d_outer=%d, d_main=%d, chunker=%s)",
+                     arch_type, N, d_outer, d_main, chunker)
 
     def forward(self, feats: torch.Tensor, feat_lengths: torch.Tensor) -> EncoderOutput:
         x, lengths = self.subsample(feats, feat_lengths)        # [B, L0, d_outer]
