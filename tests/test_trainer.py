@@ -230,3 +230,15 @@ def test_best_symlink_targets_existing_file(tmp_path):
     tr.train()
     link = tr.ckpt_dir / "valid.loss.best.pt"
     assert link.is_symlink() and link.resolve().exists()       # created after the save
+
+
+def test_resume_after_completed_max_steps_does_not_overshoot(tmp_path):
+    """Relaunching a finished max_steps run must not train an extra step (F19 finding)."""
+    tr = _trainer(tmp_path, _cfg(max_epoch=5, valid_interval_epoch=10, max_steps=2))
+    tr.train()
+    assert tr.global_step == 2
+    tr2 = _trainer(tmp_path, _cfg(max_epoch=5, valid_interval_epoch=10, max_steps=2))
+    tr2.train(resume="auto")
+    assert tr2.global_step == 2                          # untouched: budget already reached
+    ck = torch.load(tr2.ckpt_dir / "latest.pt", map_location="cpu", weights_only=False)
+    assert ck["global_step"] == 2                        # latest.pt not overwritten past budget

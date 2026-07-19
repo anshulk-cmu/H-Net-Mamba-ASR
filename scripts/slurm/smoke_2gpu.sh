@@ -68,8 +68,9 @@ check("dev metrics per split present", {"dev_dev-clean/wer", "dev_dev-other/wer"
 summ = json.loads((run / "summary.json").read_text())
 prov = summ.get("provenance", [])
 check("provenance appended across resume (2 entries)", len(prov) == 2)
-check("provenance world_size == 2", all(p.get("process", {}).get("env", {}).get("WORLD_SIZE") == "2"
-                                        or p.get("extra", {}).get("run_name") for p in prov)
+check("provenance world_size == 2",
+      all(p.get("process", {}).get("env_vars", {}).get("WORLD_SIZE") == "2"
+          and p.get("batch", {}).get("world_size") == 2 for p in prov)
       and summ.get("world_size") == 2)
 egb = prov[0].get("batch", {}).get("effective_global_batch_frames")
 check("effective global batch == 6000*1*2", egb == 12000)

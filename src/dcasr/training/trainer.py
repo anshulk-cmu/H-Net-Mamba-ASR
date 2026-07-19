@@ -3,7 +3,9 @@
 Model-agnostic: takes any `model(feats, feat_lens, targets, target_lens) -> (loss, stats)`
 (built by tasks.asr_task.build_model) and never imports a concrete encoder/head — so CTC-now
 and AED-later share it. Optimizer/scheduler come from the config via build_optimizer/
-build_scheduler. Metrics are weighted-mean aggregated (weight = batch size), DDP all-reduced.
+build_scheduler. Loss aggregation is weighted-mean (weight = batch rows, or the model's
+stats["batch_weight"] when provided — the LM emits its token count so exp(valid/loss) is a
+true token-weighted perplexity), DDP all-reduced.
 
 Validation runs every `valid_interval_epoch` on ALL dev splits (dev-clean, dev-other): per-split
 WER/CER/loss are logged separately and an aggregate mean feeds the monitor. Checkpoint selection
@@ -18,6 +20,7 @@ all state exactly; run-to-run bit-reproducibility is bounded by non-deterministi
 from __future__ import annotations
 
 import contextlib
+import gc
 import os
 import random
 import time
@@ -129,6 +132,7 @@ class Trainer:
         self.scheduler = build_scheduler(self.optimizer, g("scheduler"), dict(g("scheduler_conf", {}) or {}))
 
         self.epoch, self.global_step = 0, 0
+        self.oom_skips = 0                           # batches skipped by the OOM guard
         self.metric_history: dict[tuple[str, str], dict[int, float]] = {}
         logger.info("Trainer: world=%d precision=%s accum_grad=%d optim=%s sched=%s dev_splits=%s",
                     world_size, self.precision, self.accum_grad, g("optim", "adamw"),
@@ -173,22 +177,38 @@ class Trainer:
         if ds is not None and hasattr(ds, "set_epoch"):
             ds.set_epoch(self.epoch)
         self.optimizer.zero_grad(set_to_none=True)
+        gc.collect()                                     # per-epoch housekeeping (cheap here,
+        if self.device_type == "cuda":                   # never per-step — throughput)
+            torch.cuda.empty_cache()
         loss_sum = torch.zeros((), device=self.device, dtype=torch.float64)   # on-device: sync once/epoch
         weight_sum, seen, t0, micro = 0, 0, time.time(), 0
         win, win_n = {}, 0                               # stats summed over the accumulation window
         for batch in self.train_loader:
-            batch = self._to_device(batch)
-            b = int(batch["feats"].shape[0])
-            with self._autocast():
-                loss, stats = self.model(batch["feats"], batch["feat_lens"],
-                                         batch["tokens"], batch["token_lens"])
-                scaled = loss / self.accum_grad
-            self.scaler.scale(scaled).backward()
-            loss_sum += stats["loss/total"].detach().double() * b   # stays on device
+            try:
+                batch = self._to_device(batch)
+                b = int(batch["feats"].shape[0])
+                with self._autocast():
+                    loss, stats = self.model(batch["feats"], batch["feat_lens"],
+                                             batch["tokens"], batch["token_lens"])
+                    scaled = loss / self.accum_grad
+                self.scaler.scale(scaled).backward()
+            except torch.cuda.OutOfMemoryError:
+                self.oom_skips += 1                      # skip the batch, drop the half-window
+                logger.warning("OOM: skipping batch at step %d (%d skips so far)",
+                               self.global_step, self.oom_skips)
+                self.optimizer.zero_grad(set_to_none=True)
+                del batch
+                win, win_n = {}, 0
+                micro = (micro // self.accum_grad) * self.accum_grad
+                if self.device_type == "cuda":
+                    torch.cuda.empty_cache()
+                continue
+            w = float(stats.get("batch_weight", b))  # model-provided weight (e.g. LM tokens) or rows
+            loss_sum += stats["loss/total"].detach().double() * w   # stays on device
             for k, v in stats.items():
                 win[k] = win.get(k, 0.0) + v
             win_n += 1
-            weight_sum += b
+            weight_sum += w
             seen += b
             micro += 1
             if micro % self.accum_grad != 0:
@@ -223,6 +243,7 @@ class Trainer:
         payload["train/lr"] = float(lr)                      # LR applied to this step (not lookahead)
         payload["train/grad_norm"] = float(gnorm)
         payload["train/samples_per_s"] = seen / dt if dt > 0 else 0.0
+        payload["sys/oom_skips"] = self.oom_skips
         if self.device_type == "cuda" and torch.cuda.is_available():
             payload["sys/gpu_mem_gb"] = torch.cuda.max_memory_allocated() / 1e9
         self.metrics.log_scalars(payload, self.global_step, split="train", epoch=self.epoch)
@@ -239,10 +260,11 @@ class Trainer:
                 batch = self._to_device(batch)
                 b = int(batch["feats"].shape[0])
                 with self._autocast():
-                    loss, _ = self.model(batch["feats"], batch["feat_lens"],
-                                         batch["tokens"], batch["token_lens"])
-                ls += loss.detach().double() * b
-                ws_ += b
+                    loss, vstats = self.model(batch["feats"], batch["feat_lens"],
+                                              batch["tokens"], batch["token_lens"])
+                w = float(vstats.get("batch_weight", b))
+                ls += loss.detach().double() * w
+                ws_ += w
                 if self.tokenizer is not None:
                     hyps = self.raw_model.greedy_decode(batch["feats"], batch["feat_lens"])
                     for j, hyp_ids in enumerate(hyps):
@@ -394,6 +416,8 @@ class Trainer:
         if ck is not None and ck.exists():
             self.load_checkpoint(ck)
         for epoch in range(self.epoch, self.max_epoch):
+            if self.max_steps and self.global_step >= self.max_steps:
+                break                                    # resumed run already at budget: no extra step
             self.epoch = epoch
             self._train_epoch()
             final = (epoch + 1) == self.max_epoch
