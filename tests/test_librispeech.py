@@ -11,9 +11,9 @@ import pytest
 import soundfile as sf
 import torch
 
-from dcasr.data.features import LogMelFrontend
+from dcasr.data.features import LogMelFrontend, SpecAugment
 from dcasr.data.librispeech import (
-    DistributedBucketBatchSampler, LibriSpeechDataset, build_manifest,
+    DistributedBucketBatchSampler, LibriSpeechDataset, apply_speed_perturb, build_manifest,
     collate_batch, feat_frames, load_manifest,
 )
 from dcasr.data.tokenizer import Tokenizer
@@ -85,6 +85,60 @@ def test_collate_pads(dataset, tok):
     for row, ln in zip(batch["tokens"], batch["token_lens"]):
         assert torch.all(row[ln:] == tok.pad_id)
     assert batch["ids"] == ["u0", "u1", "u2"]
+
+
+# ── speed perturbation (train-only 3x data) ─────────────────────────────────
+@pytest.fixture
+def sp_entries(tmp_path):
+    texts = ["THE QUICK BROWN FOX", "A LAZY DOG RUNS HOME", "MUSIC SILENCE RIVER"]
+    ns = [24000, 40000, 32000]                             # long enough to survive /1.1
+    entries = []
+    for i, (n, txt) in enumerate(zip(ns, texts)):
+        p = tmp_path / f"s{i}.flac"
+        sf.write(str(p), _noise(n), 16000)
+        entries.append({"id": f"s{i}", "audio": str(p), "text": txt, "frames": n})
+    return entries
+
+
+def test_apply_speed_perturb_identity_and_length():
+    w = torch.randn(1, 16000)
+    assert torch.equal(apply_speed_perturb(w, 16000, 1.0), w)     # factor 1.0 = bit-exact identity
+    fast = apply_speed_perturb(w, 16000, 1.1)
+    slow = apply_speed_perturb(w, 16000, 0.9)
+    assert fast.shape[-1] < 16000 < slow.shape[-1]               # faster = shorter, slower = longer
+    assert torch.isfinite(fast).all() and torch.isfinite(slow).all()
+
+
+def test_dataset_speed_perturb_expands_x3(sp_entries, tok):
+    sp = LibriSpeechDataset(sp_entries, LogMelFrontend(), tok, augment=True,
+                            speed_perturb=[0.9, 1.0, 1.1])
+    assert len(sp) == 9 and sp.factors == [0.9, 1.0, 1.1]        # 3 utts x 3 factors
+    base = LibriSpeechDataset(sp_entries, LogMelFrontend(), tok, augment=True)
+    assert len(base) == 3 and base.factors == [1.0]             # no speed_perturb -> identity only
+    dev = LibriSpeechDataset(sp_entries, LogMelFrontend(), tok, augment=False,
+                             speed_perturb=[0.9, 1.0, 1.1])
+    assert len(dev) == 3 and dev.factors == [1.0]              # augment=False ignores speed_perturb
+
+
+def test_dataset_speed_perturb_lengths_and_ids(sp_entries, tok):
+    sp = LibriSpeechDataset(sp_entries, LogMelFrontend(), tok, augment=True,
+                            speed_perturb=[0.9, 1.0, 1.1])
+    n0 = sp_entries[0]["frames"]
+    assert sp.lengths[1] == feat_frames(n0)                     # item 1 = (utt0, factor 1.0)
+    assert sp.lengths[0] > sp.lengths[1] > sp.lengths[2]        # 0.9 longer, 1.0, 1.1 shorter
+    slow, ident, fast = sp[0], sp[1], sp[2]
+    assert ident["id"] == "s0" and slow["id"] == "s0#sp0.9" and fast["id"] == "s0#sp1.1"
+    assert ident["feats"].shape[0] == feat_frames(n0)          # identity item: exact base frames
+    for k in (0, 2):                                            # perturbed items ~match the length estimate
+        assert abs(sp[k]["feats"].shape[0] - sp.lengths[k]) <= 2
+    assert torch.equal(ident["tokens"], slow["tokens"])        # transcript unchanged by speed
+
+
+def test_dataset_speed_perturb_deterministic(sp_entries, tok):
+    sp = LibriSpeechDataset(sp_entries, LogMelFrontend(), tok, augment=True,
+                            specaugment=SpecAugment(), speed_perturb=[0.9, 1.0, 1.1], seed=3)
+    sp.set_epoch(2)
+    assert torch.equal(sp[4]["feats"], sp[4]["feats"])         # (seed,epoch,index)-deterministic
 
 
 # ── DDP bucketed batch sampler ──────────────────────────────────────────────

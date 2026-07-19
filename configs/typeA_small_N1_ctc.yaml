@@ -48,16 +48,22 @@ encoder_conf:
   bidirectional: true
   hnet:
     compression_N: 1                       # N=1 => no compression (identity control)
+    chunker: dynamic                       # dynamic (H-Net learned) | fixed (fixed-stride pooling, H2 control)
     router: cosine
     ema_smoothing: true
-head: ctc                                  # registry key -> CTCHead
+head: ctc                                  # registry key -> CTCHead (built when ctc_weight>0)
 ctc_conf:
   zero_infinity: true
+aed_conf:                                  # attention decoder — built ONLY when aed_weight>0
+  n_layers: 6
+  n_heads: 4                               # must divide d_outer (384/4=96)
+  d_ff: 2048
+  dropout: 0.1
 
 model_conf:                                # loss weights + reporting (ESPnet parity)
-  ctc_weight: 1.0                          # CTC-only readout; -> 0.3 when AED head lands
-  aed_weight: 0.0
-  lsm_weight: 0.1                          # label smoothing (AED criterion, later)
+  ctc_weight: 1.0                          # CTC-only for this go/no-go; hybrid grid uses 0.3/0.7
+  aed_weight: 0.0                          # set >0 to build + train the AED head (hybrid)
+  lsm_weight: 0.1                          # AED label smoothing (used when aed_weight>0)
   hnet_ratio_beta: 0.0                     # beta·Σ ratio; N=1 => inactive
   report_cer: true
   report_wer: true

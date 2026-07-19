@@ -87,7 +87,7 @@ class Trainer:
 
     def __init__(self, model, train_loader, cfg, *, dev_loaders=None, train_sampler=None,
                  tokenizer=None, metrics=None, device="cuda", ckpt_dir="checkpoints",
-                 world_size=1, rank=0):
+                 world_size=1, rank=0, provenance=None):
         self.raw_model = model.to(device)
         self.world_size, self.rank, self.is_main = world_size, rank, rank == 0
         self.model = (DDP(self.raw_model, device_ids=[torch.cuda.current_device()],
@@ -100,6 +100,7 @@ class Trainer:
         self.device = device
         self.cfg = dict(cfg)
         self.metrics = metrics
+        self.provenance = provenance
         self.ckpt_dir = Path(ckpt_dir)
         if self.is_main:
             self.ckpt_dir.mkdir(parents=True, exist_ok=True)
@@ -112,6 +113,7 @@ class Trainer:
         self.log_interval = int(g("log_interval", 50))
         self.valid_interval = int(g("valid_interval_epoch", 10))   # eval + checkpoint cadence (epochs)
         self.keep_nbest = int(g("keep_nbest_models", 5))
+        self.keep_all_checkpoints = bool(g("keep_all_checkpoints", False))  # H4 emergence curves
         self.max_steps = g("max_steps")
         self.best_model_criterion = [tuple(c) for c in g("best_model_criterion",
                                                          [["valid", "loss", "min"]])]
@@ -119,7 +121,8 @@ class Trainer:
 
         self.precision = g("precision", "bf16")
         self.amp_dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": None}[self.precision]
-        self.scaler = torch.amp.GradScaler(device if device == "cuda" else "cpu",
+        self.device_type = str(device).split(":")[0]     # "cuda:N" (torchrun) -> "cuda"
+        self.scaler = torch.amp.GradScaler(self.device_type if self.device_type == "cuda" else "cpu",
                                            enabled=self.precision == "fp16")
         self.optimizer = build_optimizer(self.raw_model.parameters(), g("optim", "adamw"),
                                          dict(g("optim_conf", {}) or {}))
@@ -138,7 +141,7 @@ class Trainer:
     def _autocast(self):
         if self.amp_dtype is None:
             return contextlib.nullcontext()
-        return torch.autocast(self.device, dtype=self.amp_dtype)
+        return torch.autocast(self.device_type, dtype=self.amp_dtype)
 
     def _reduce(self, values: list[float]) -> list[float]:
         """Sum a list of scalars across DDP ranks (identity on 1 GPU)."""
@@ -150,6 +153,9 @@ class Trainer:
 
     def _record(self, phase: str, metric: str, value: float) -> None:
         self.metric_history.setdefault((phase, metric), {})[self.epoch] = float(value)
+        if self.is_main and self.metrics is not None:    # monitor values also persist to TB/JSONL
+            self.metrics.log_scalar(f"{phase}/{metric}", float(value), self.global_step,
+                                    split=phase, epoch=self.epoch)
 
     def _best_epoch(self, phase: str, metric: str, mode: str) -> int | None:
         hist = self.metric_history.get((phase, metric))
@@ -169,6 +175,7 @@ class Trainer:
         self.optimizer.zero_grad(set_to_none=True)
         loss_sum = torch.zeros((), device=self.device, dtype=torch.float64)   # on-device: sync once/epoch
         weight_sum, seen, t0, micro = 0, 0, time.time(), 0
+        win, win_n = {}, 0                               # stats summed over the accumulation window
         for batch in self.train_loader:
             batch = self._to_device(batch)
             b = int(batch["feats"].shape[0])
@@ -178,6 +185,9 @@ class Trainer:
                 scaled = loss / self.accum_grad
             self.scaler.scale(scaled).backward()
             loss_sum += stats["loss/total"].detach().double() * b   # stays on device
+            for k, v in stats.items():
+                win[k] = win.get(k, 0.0) + v
+            win_n += 1
             weight_sum += b
             seen += b
             micro += 1
@@ -196,8 +206,10 @@ class Trainer:
             self.optimizer.zero_grad(set_to_none=True)
             self.global_step += 1
             if self.is_main and self.global_step % self.log_interval == 0:
-                self._log_train(stats, gnorm, seen, time.time() - t0, applied_lr)
+                step_stats = {k: v / win_n for k, v in win.items()}   # window mean == this step
+                self._log_train(step_stats, gnorm, seen, time.time() - t0, applied_lr)
                 seen, t0 = 0, time.time()
+            win, win_n = {}, 0
             if self.max_steps and self.global_step >= self.max_steps:
                 break
         # epoch-mean train loss (DDP-reduced), recorded for best-model/early-stop
@@ -211,7 +223,7 @@ class Trainer:
         payload["train/lr"] = float(lr)                      # LR applied to this step (not lookahead)
         payload["train/grad_norm"] = float(gnorm)
         payload["train/samples_per_s"] = seen / dt if dt > 0 else 0.0
-        if self.device == "cuda" and torch.cuda.is_available():
+        if self.device_type == "cuda" and torch.cuda.is_available():
             payload["sys/gpu_mem_gb"] = torch.cuda.max_memory_allocated() / 1e9
         self.metrics.log_scalars(payload, self.global_step, split="train", epoch=self.epoch)
 
@@ -273,7 +285,7 @@ class Trainer:
                 link.symlink_to(f"epoch{self.epoch:04d}.pt")
 
     def _prune_checkpoints(self) -> None:
-        if not self.is_main or self.keep_nbest <= 0:
+        if not self.is_main or self.keep_nbest <= 0 or self.keep_all_checkpoints:
             return
         keep = {self.epoch}                              # always keep latest epoch (resume)
         for phase, metric, mode in self.best_model_criterion:
@@ -312,6 +324,7 @@ class Trainer:
             paths = [p for p in paths if p.exists()]
             if not paths:
                 continue
+            averaged = [e for e in top if (self.ckpt_dir / f"epoch{e:04d}.pt").exists()]
             avg = None
             for p in paths:
                 sd = torch.load(p, map_location="cpu", weights_only=False)["model"]
@@ -322,7 +335,7 @@ class Trainer:
                         avg[k] += sd[k].float()
             for k in avg:
                 avg[k] /= len(paths)
-            self._atomic_save({"model": avg, "averaged_epochs": top},
+            self._atomic_save({"model": avg, "averaged_epochs": averaged},
                               self.ckpt_dir / f"{phase}.{metric}.ave.pt")
             logger.info("averaged %d ckpts -> %s.%s.ave.pt", len(paths), phase, metric)
 
@@ -354,7 +367,10 @@ class Trainer:
                 return latest
             eps = sorted(self.ckpt_dir.glob("epoch*.pt"))
             return eps[-1] if eps else None
-        return Path(resume)
+        p = Path(resume)
+        if not p.exists():                               # never silently restart from scratch
+            raise FileNotFoundError(f"--resume checkpoint not found: {p}")
+        return p
 
     def load_checkpoint(self, path) -> None:
         state = torch.load(path, map_location=self.device, weights_only=False)
@@ -372,6 +388,8 @@ class Trainer:
 
     # ---- driver -------------------------------------------------------------
     def train(self, resume=None) -> None:
+        if self.is_main and self.metrics is not None and self.provenance is not None:
+            self.metrics.append_summary("provenance", self.provenance)   # at start: survives early crash
         ck = self._resolve_resume(resume)
         if ck is not None and ck.exists():
             self.load_checkpoint(ck)
@@ -386,13 +404,16 @@ class Trainer:
                     logger.info("epoch %d valid: %s", epoch,
                                 {k: {m: round(x, 3) for m, x in v.items()}
                                  for k, v in per_split.items()})
-                self._update_best_symlinks()
             if save_now:
                 self.save_checkpoint()
+                if self.dev_loaders:
+                    self._update_best_symlinks()         # after save: target exists, no dangling link
                 self._prune_checkpoints()
                 if self.dev_loaders and self._should_early_stop():
                     break
             if self.max_steps and self.global_step >= self.max_steps:
+                if not save_now:                         # a max_steps exit still leaves a checkpoint
+                    self.save_checkpoint()
                 break
         self._average_nbest()
         if self.is_main and self.metrics is not None:

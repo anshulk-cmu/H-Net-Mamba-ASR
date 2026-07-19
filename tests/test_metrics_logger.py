@@ -116,3 +116,21 @@ def test_non_finite_value_roundtrips(tmp_path):
     ml.close()
     recs = _read_jsonl(ml.jsonl_path)
     assert math.isnan(recs[0]["value"]) and math.isinf(recs[1]["value"])
+
+
+def test_histogram_empty_tensor_is_noop(tmp_path):
+    ml = MetricsLogger("run", root=tmp_path)
+    ml.log_histogram("h", torch.empty(0), 0)         # TB make_histogram crashes on empty input
+    ml.close()
+    assert _read_jsonl(ml.jsonl_path) == []
+
+
+def test_fresh_run_clears_stale_tb_events(tmp_path):
+    ml = MetricsLogger("run", root=tmp_path)
+    ml.log_scalar("a", 1.0, 0)
+    ml.close()
+    old = list((ml.run_dir / "tb").glob("events.out.tfevents.*"))
+    assert old
+    ml2 = MetricsLogger("run", root=tmp_path)        # fresh run: JSONL truncated AND tb cleared
+    ml2.close()
+    assert all(not f.exists() for f in old)          # no overlapping curves from the stale run

@@ -146,3 +146,87 @@ def test_best_epoch_min_max(tmp_path):
     assert tr._best_epoch("valid", "wer", "min") == 1
     assert tr._best_epoch("valid", "wer", "max") == 0
     assert tr._best_epoch("valid", "nope", "min") is None
+
+
+# ── Phase-0 fix regressions (2026-07-18 sweep) ───────────────────────────────
+def test_device_type_normalized_cpu(tmp_path):
+    tr = _trainer(tmp_path, _cfg())
+    assert tr.device_type == "cpu"
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="cuda:N device strings need CUDA")
+def test_indexed_cuda_device_runs_and_logs_gpu_mem(tmp_path):
+    """torchrun passes device='cuda:N'; scaler/autocast/gpu-mem must key on the TYPE."""
+    ml = MetricsLogger("run", root=tmp_path)
+    tr = Trainer(_Model(), _loader(), _cfg(max_epoch=1, precision="bf16"), metrics=ml,
+                 device="cuda:0", ckpt_dir=tmp_path / "c")
+    assert tr.device_type == "cuda"
+    tr.train()                                       # bf16 autocast under an indexed device
+    ml.close()
+    assert "sys/gpu_mem_gb" in _read_keys(tr, tmp_path)
+
+
+def test_keep_all_checkpoints_survive_prune(tmp_path):
+    ml = MetricsLogger("run", root=tmp_path)
+    tr = _trainer(tmp_path, _cfg(max_epoch=3, keep_nbest_models=1, keep_all_checkpoints=True),
+                  dev={"dev-clean": _loader(2)}, metrics=ml)
+    tr.train()
+    assert len(list(tr.ckpt_dir.glob("epoch*.pt"))) == 3       # nothing pruned (H4 retention)
+
+
+def test_resume_missing_explicit_path_raises(tmp_path):
+    tr = _trainer(tmp_path, _cfg())
+    with pytest.raises(FileNotFoundError):
+        tr._resolve_resume(str(tmp_path / "nope.pt"))
+    assert tr._resolve_resume("auto") is None                  # auto+empty = legit fresh start
+
+
+def test_max_steps_exit_saves_checkpoint(tmp_path):
+    tr = _trainer(tmp_path, _cfg(max_epoch=5, valid_interval_epoch=10, max_steps=2))
+    tr.train()
+    ck = torch.load(tr.ckpt_dir / "latest.pt", map_location="cpu", weights_only=False)
+    assert ck["global_step"] == 2                              # non-boundary exit still saved
+
+
+def test_monitor_values_reach_metrics(tmp_path):
+    ml = MetricsLogger("run", root=tmp_path)
+    tr = _trainer(tmp_path, _cfg(max_epoch=1), dev={"dev-clean": _loader(2)}, metrics=ml)
+    tr.train()
+    ml.close()
+    keys = _read_keys(tr, tmp_path)
+    assert "train/loss" in keys and "valid/loss" in keys       # selection-driving monitors
+
+
+def test_accum_window_mean_logged(tmp_path):
+    import json
+    torch.manual_seed(0)
+    loader = [_batch() for _ in range(2)]
+    ml = MetricsLogger("run", root=tmp_path)
+    tr = Trainer(_Model(), loader, _cfg(max_epoch=1, accum_grad=2, log_interval=1),
+                 metrics=ml, device="cpu", ckpt_dir=tmp_path / "ck")
+    with torch.no_grad():                            # both micros see the pre-step weights
+        expect = sum(float(tr.raw_model(b["feats"], b["feat_lens"], b["tokens"],
+                                        b["token_lens"])[0]) for b in loader) / 2
+    tr.train()
+    ml.close()
+    with open(tmp_path / "run" / "metrics.jsonl") as f:
+        logged = [json.loads(l)["value"] for l in f if '"loss/total"' in l]
+    assert logged and abs(logged[0] - expect) < 1e-6           # window MEAN, not last micro
+
+
+def test_ave_metadata_lists_only_existing(tmp_path):
+    tr = _trainer(tmp_path, _cfg(keep_nbest_models=2))
+    tr.metric_history = {("valid", "loss"): {0: 1.0, 1: 0.5}}
+    tr.epoch = 1
+    tr.save_checkpoint()                                       # only epoch0001.pt exists
+    tr._average_nbest()
+    ave = torch.load(tr.ckpt_dir / "valid.loss.ave.pt", map_location="cpu", weights_only=False)
+    assert ave["averaged_epochs"] == [1]                       # epoch 0 was never on disk
+
+
+def test_best_symlink_targets_existing_file(tmp_path):
+    ml = MetricsLogger("run", root=tmp_path)
+    tr = _trainer(tmp_path, _cfg(max_epoch=1), dev={"dev-clean": _loader(2)}, metrics=ml)
+    tr.train()
+    link = tr.ckpt_dir / "valid.loss.best.pt"
+    assert link.is_symlink() and link.resolve().exists()       # created after the save

@@ -76,7 +76,11 @@ class MetricsLogger:
         self.jsonl_path = self.run_dir / "metrics.jsonl"
         self.summary_path = self.run_dir / "summary.json"
         from torch.utils.tensorboard import SummaryWriter          # lazy: heavy import
-        self._writer = SummaryWriter(log_dir=str(self.run_dir / "tb"))
+        tb_dir = self.run_dir / "tb"
+        if not resume and tb_dir.is_dir():             # fresh run truncates JSONL -> also clear
+            for f in tb_dir.glob("events.out.tfevents.*"):   # stale TB (else overlapping curves)
+                f.unlink(missing_ok=True)
+        self._writer = SummaryWriter(log_dir=str(tb_dir))
         self._jsonl = open(self.jsonl_path, "a" if resume else "w", encoding="utf-8")
         if resume and self.summary_path.exists():
             try:
@@ -113,6 +117,8 @@ class MetricsLogger:
         if not self.is_main:
             return
         v = values.detach().float().flatten()
+        if not v.numel():                              # add_histogram crashes on empty input
+            return
         self._writer.add_histogram(key, v, step)
         if v.numel():
             stats = {f"{key}/mean": v.mean(), f"{key}/min": v.min(), f"{key}/max": v.max()}
@@ -126,6 +132,21 @@ class MetricsLogger:
         if not self.is_main:
             return
         self._summary.update(kwargs)
+        self._write_summary()
+
+    def append_summary(self, key: str, value: Any) -> None:
+        """Append `value` to a list under `key` in summary.json (e.g. per-run provenance).
+
+        Accumulates across a resumed run (resume loads the prior summary) so each launch
+        adds its own record instead of clobbering the original.
+        """
+        if not self.is_main:
+            return
+        cur = self._summary.get(key)
+        if not isinstance(cur, list):
+            cur = [] if cur is None else [cur]
+        cur.append(value)
+        self._summary[key] = cur
         self._write_summary()
 
     def _write_summary(self) -> None:

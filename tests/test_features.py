@@ -62,6 +62,7 @@ def test_empty_batch():
 
 def test_fp64_and_half_waveforms_promote_to_fp32():
     fe = LogMelFrontend()
+    torch.manual_seed(0)             # order-independent: fp16 bin tolerance is draw-sensitive
     wave = torch.randn(2, 16000)
     ref, _ = fe(wave)
     feats64, _ = fe(wave.double())
@@ -251,3 +252,25 @@ def test_specaugment_generator_determinism():
     assert (y1 == 0).any()                                # something was actually masked
     sa.eval()
     assert torch.equal(sa(x.clone()), x)                 # eval mode: no-op
+
+
+def test_specaugment_adaptive_time_ratio():
+    """time_width_ratio -> per-utterance adaptive time mask: width <= ratio*length, contained."""
+    sa = SpecAugment(freq_masks=0, time_masks=1, time_width_ratio=0.1).train()
+    x = torch.randn(4, 200, N_MELS, device="cpu") + 5.0          # CPU: the DataLoader-worker path
+    lengths = torch.tensor([200, 150, 100, 50], device="cpu")
+    for s in range(30):
+        out = sa(x, lengths, generator=torch.Generator().manual_seed(s))
+        changed = (out != x).any(dim=2)                  # [B, T] masked frames
+        for i, n in enumerate(lengths.tolist()):
+            assert int(changed[i, :n].sum()) <= int(0.1 * n)   # width capped at ratio*length
+            assert not changed[i, n:].any()                    # never touches padding
+
+
+def test_specaugment_adaptive_ratio_determinism():
+    sa = SpecAugment(freq_masks=1, time_masks=2, time_width_ratio=0.05).train()
+    x = torch.randn(3, 300, N_MELS, device="cpu") + 5.0
+    lengths = torch.tensor([300, 200, 120], device="cpu")
+    a = sa(x.clone(), lengths, generator=torch.Generator().manual_seed(5))
+    b = sa(x.clone(), lengths, generator=torch.Generator().manual_seed(5))
+    assert torch.equal(a, b)                              # deterministic given the generator seed

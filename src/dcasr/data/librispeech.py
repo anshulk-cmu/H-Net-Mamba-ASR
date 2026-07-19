@@ -15,6 +15,7 @@ from pathlib import Path
 import soundfile as sf
 import torch
 import torch.distributed as dist
+import torchaudio
 from torch.utils.data import DataLoader, Dataset, Sampler
 
 from dcasr.logging_utils import get_logger
@@ -22,12 +23,22 @@ from dcasr.logging_utils import get_logger
 logger = get_logger(__name__)
 
 WIN_LENGTH, HOP_LENGTH = 400, 160
+SAMPLE_RATE = 16000
 TRAIN_960 = ["train-clean-100", "train-clean-360", "train-other-500"]
 
 
 def feat_frames(n_samples: int) -> int:
     """Feature-frame count T for an n_samples waveform (features.py contract)."""
     return max(0, 1 + (n_samples - WIN_LENGTH) // HOP_LENGTH)
+
+
+def apply_speed_perturb(wave: torch.Tensor, sample_rate: int, factor: float) -> torch.Tensor:
+    """Kaldi-style speed perturbation via resampling: audio played at `factor`x speed
+    (duration scales 1/factor), transcript unchanged. factor 1.0 = bit-exact identity."""
+    if factor == 1.0:
+        return wave
+    out, _ = torchaudio.functional.speed(wave, orig_freq=sample_rate, factor=float(factor))
+    return out
 
 
 # ── manifests ────────────────────────────────────────────────────────────────
@@ -64,10 +75,13 @@ def load_manifest(path) -> list[dict]:
 # ── dataset ──────────────────────────────────────────────────────────────────
 class LibriSpeechDataset(Dataset):
     """Yields {feats [T,80], tokens [U], id}. frontend/tokenizer injected; cmvn and
-    specaugment optional (specaugment applied only when augment=True)."""
+    specaugment optional (specaugment applied only when augment=True). Speed perturbation
+    (train-only) expands the dataset x len(speed_perturb): each utterance appears once per
+    factor (deterministic 3x-data, Kaldi-style), so #items = #utts * #factors."""
 
     def __init__(self, manifest, frontend, tokenizer, cmvn=None,
-                 specaugment=None, augment=False, seed=0):
+                 specaugment=None, augment=False, seed=0, speed_perturb=None,
+                 sample_rate=SAMPLE_RATE):
         self.entries = (load_manifest(manifest)
                         if isinstance(manifest, (str, Path)) else list(manifest))
         self.frontend = frontend
@@ -76,25 +90,37 @@ class LibriSpeechDataset(Dataset):
         self.specaugment = specaugment
         self.augment = augment
         self.seed = seed
+        self.sample_rate = sample_rate
         self._epoch = 0
         self.pad_id = tokenizer.pad_id
-        self.lengths = [feat_frames(e["frames"]) for e in self.entries]
-        logger.debug("LibriSpeechDataset: %d utts, T in [%d,%d]",
-                     len(self.entries), min(self.lengths, default=0),
+        # speed perturbation only when training; else the single identity factor
+        self.factors = ([float(f) for f in speed_perturb]
+                        if (augment and speed_perturb) else [1.0])
+        self._items = [(idx, f) for idx in range(len(self.entries)) for f in self.factors]
+        self.lengths = [feat_frames(round(self.entries[idx]["frames"] / f))
+                        for idx, f in self._items]
+        logger.debug("LibriSpeechDataset: %d utts x %d speed%s = %d items, T in [%d,%d]",
+                     len(self.entries), len(self.factors),
+                     f" {self.factors}" if len(self.factors) > 1 else "",
+                     len(self._items), min(self.lengths, default=0),
                      max(self.lengths, default=0))
 
     def __len__(self):
-        return len(self.entries)
+        return len(self._items)
 
     def set_epoch(self, epoch: int) -> None:
         """Set epoch so SpecAugment masks are a deterministic function of (seed, epoch,
-        index) — independent of DataLoader/worker RNG, so mid-epoch resume is exact."""
+        index) — independent of DataLoader/worker RNG, so resume is exact."""
         self._epoch = epoch
 
     def __getitem__(self, i):
-        e = self.entries[i]
-        wave, _ = sf.read(e["audio"])                        # float64 numpy, [N]
-        feats, _ = self.frontend(torch.from_numpy(wave).unsqueeze(0))   # [1, T, 80]
+        idx, factor = self._items[i]
+        e = self.entries[idx]
+        wave_np, _ = sf.read(e["audio"])                     # float64 numpy, [N]
+        wave = torch.from_numpy(wave_np).unsqueeze(0).float()   # [1, N]
+        if factor != 1.0:
+            wave = apply_speed_perturb(wave, self.sample_rate, factor)
+        feats, _ = self.frontend(wave)                       # [1, T, 80]
         if self.cmvn is not None:
             feats = self.cmvn(feats)
         if self.augment and self.specaugment is not None:
@@ -102,8 +128,9 @@ class LibriSpeechDataset(Dataset):
             g = torch.Generator().manual_seed(
                 ((self.seed * 2654435761 + self._epoch) * 2654435761 + i) & 0x7FFFFFFFFFFFFFFF)
             feats = self.specaugment(feats, generator=g)
+        uid = e["id"] if factor == 1.0 else f"{e['id']}#sp{factor}"
         tokens = torch.tensor(self.tokenizer.encode(e["text"]), dtype=torch.long)
-        return {"feats": feats[0], "tokens": tokens, "id": e["id"]}
+        return {"feats": feats[0], "tokens": tokens, "id": uid}
 
 
 def collate_batch(samples, pad_id: int = 0) -> dict:

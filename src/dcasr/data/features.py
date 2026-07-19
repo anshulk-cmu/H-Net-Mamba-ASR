@@ -123,15 +123,22 @@ class CMVNAccumulator:
 class SpecAugment(nn.Module):
     """Frequency + time masking (SpecAugment LD policy defaults). Train-mode only;
     masks fill with 0.0 (= the global mean after CMVN) and never start inside padding.
+
+    Time-mask width is either a fixed absolute cap (`time_width`, LD policy) or, when
+    `time_width_ratio` is set, an adaptive per-utterance cap of `ratio * length` frames
+    (e-branchformer/Zipformer style) — the config's `time_mask_width_ratio_range` selects
+    the latter.
     """
 
     def __init__(self, freq_masks: int = 2, freq_width: int = 27,
-                 time_masks: int = 2, time_width: int = 100):
+                 time_masks: int = 2, time_width: int = 100,
+                 time_width_ratio: float | None = None):
         super().__init__()
         self.freq_masks, self.freq_width = freq_masks, freq_width
         self.time_masks, self.time_width = time_masks, time_width
-        logger.debug("SpecAugment(F=%dx%d, T=%dx%d)",
-                     freq_masks, freq_width, time_masks, time_width)
+        self.time_width_ratio = time_width_ratio
+        logger.debug("SpecAugment(F=%dx%d, T=%dx%s)", freq_masks, freq_width, time_masks,
+                     f"{time_width_ratio:.3f}*len" if time_width_ratio is not None else time_width)
 
     @staticmethod
     def _mask(size: int, widths: torch.Tensor, max_start: torch.Tensor, generator=None):
@@ -157,9 +164,14 @@ class SpecAugment(nn.Module):
             fmask = self._mask(F, w, (F - w).clamp_min(0), generator)
             feats = feats.masked_fill(fmask[:, None, :], 0.0)
         if self.time_masks > 0:
-            w = torch.randint(0, self.time_width + 1, (B, self.time_masks), device=dev,
-                              generator=generator)
-            w = torch.minimum(w, lengths[:, None])
+            if self.time_width_ratio is not None:                 # adaptive: cap = ratio * per-utt length
+                cap = (self.time_width_ratio * lengths.float()).long()
+                r = torch.rand((B, self.time_masks), generator=generator, device=dev)
+                w = (r * (cap[:, None] + 1).float()).long()
+            else:                                                 # fixed absolute width (LD policy)
+                w = torch.randint(0, self.time_width + 1, (B, self.time_masks), device=dev,
+                                  generator=generator)
+                w = torch.minimum(w, lengths[:, None])
             tmask = self._mask(T, w, (lengths[:, None] - w).clamp_min(0), generator)
             feats = feats.masked_fill(tmask[:, :, None], 0.0)
         return feats
