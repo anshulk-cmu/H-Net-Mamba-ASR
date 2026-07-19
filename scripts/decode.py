@@ -17,6 +17,7 @@ Usage:
 """
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -95,8 +96,9 @@ def run(cfg, checkpoint, repo_root=REPO, device=None):
                                    out_path=out_root / cell["name"] / f"{split}.jsonl",
                                    lm=lm)
             results[split][cell["name"]] = summary
-    (out_root / "summary.json").write_text(
-        json.dumps({"results": results, "provenance": prov}, indent=1))
+    tmp = out_root / f"summary.json.tmp{os.getpid()}"    # concurrent per-split decodes:
+    tmp.write_text(json.dumps({"results": results, "provenance": prov}, indent=1))
+    os.replace(tmp, out_root / "summary.json")           # atomic, no interleaved JSON
     logger.info("decode done -> %s", out_root)
     return results
 
