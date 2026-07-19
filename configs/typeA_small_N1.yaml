@@ -82,7 +82,9 @@ optim_conf:
   betas: [0.9, 0.98]
 scheduler: warmuplr
 scheduler_conf:
-  warmup_steps: 10000                      # LR = lr·√warmup·min(step^-0.5, step·warmup^-1.5)
+  warmup_steps: 20000                      # LR = lr·√warmup·min(step^-0.5, step·warmup^-1.5)
+                                           # ~4.8 epochs at the 256k global batch — longer ramp
+                                           # for the large-batch recipe (was 10000)
 
 # ── training ─────────────────────────────────────────────────────────────────
 train:
