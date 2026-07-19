@@ -1,0 +1,54 @@
+# External Transformer LM (plan #6): next-token BPE LM on the 803M-word LibriSpeech
+# LM corpus, shared spm_bpe_500 vocabulary with the ASR model (shallow fusion at decode).
+# Trained by scripts/train_lm.py via the same model-agnostic Trainer (loss-only validation
+# on the dev-clean/dev-other transcripts; best/ave selection by valid loss).
+
+experiment:
+  name: lm_transformer_500
+  seed: 1
+
+bpemodel: data/tokenizer/spm_bpe_500.model # SAME vocab as the ASR decoder (fusion contract)
+
+data:
+  lm_corpus: data/lm/librispeech-lm-norm.txt # 40,418,261 lines / 803,288,729 words
+  manifests_dir: manifests
+  dev_splits: [dev-clean, dev-other]         # dev loss on in-domain transcripts
+
+lm_conf:
+  d_model: 512
+  n_layers: 16                               # ESPnet-reference LM depth (51.0M params)
+  n_heads: 8
+  d_ff: 2048
+  dropout: 0.1
+  lsm_weight: 0.0                            # calibrated log-probs for shallow fusion
+  max_line_tokens: 512                       # encode cap (PE limit 5000; p99 line << 512)
+
+batch_tokens: 32000                          # PER-GPU token budget (user-set); EXACT-length packing makes it a hard bound
+                                             # (~25/48 GB on A6000); 2 GPUs (torchrun) => 64k global tokens/step
+num_workers: 4
+
+optim: adamw
+optim_conf:
+  lr: 1.0e-3                                 # scaled for the 64k-token global batch
+  weight_decay: 1.0e-6
+  betas: [0.9, 0.98]
+scheduler: warmuplr
+scheduler_conf:
+  warmup_steps: 8000                         # ~1/3 epoch at ~25k steps/epoch (2 GPUs)
+
+train:
+  max_epoch: 4                               # 6.4B tokens total; extend via --resume auto train.max_epoch=N if dev loss still falls
+  grad_clip: 5.0
+  grad_clip_type: 2.0
+  precision: bf16
+  log_interval: 100
+
+eval:
+  valid_interval_epoch: 1                    # dev loss + checkpoint every epoch
+best_model_criterion:
+  - [valid, loss, min]
+keep_nbest_models: 2
+keep_all_checkpoints: false
+
+early_stopping:
+  enable: false

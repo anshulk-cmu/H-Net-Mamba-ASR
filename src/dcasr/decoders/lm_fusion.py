@@ -73,8 +73,13 @@ class TransformerLM(nn.Module):
         h = self.blocks(x, mask=_causal_mask(ids.size(1), ids.device))
         return self.out(h)
 
-    def loss(self, tokens: torch.Tensor, token_lengths: torch.Tensor) -> torch.Tensor:
-        """Next-token CE. tokens [B,U] BARE ids -> scalar (per-token mean over [w.., eos])."""
+    def loss(self, tokens: torch.Tensor, token_lengths: torch.Tensor,
+             return_acc: bool = False):
+        """Next-token CE. tokens [B,U] BARE ids -> scalar (per-token mean over [w.., eos]).
+
+        return_acc=True additionally returns next-token prediction accuracy (argmax
+        over the same masked positions) — the standard LM training health metric.
+        """
         B, U = tokens.shape
         ar = torch.arange(B, device=tokens.device)
         ys_in = tokens.new_full((B, U + 1), self.pad_id)
@@ -90,7 +95,12 @@ class TransformerLM(nn.Module):
             true.scatter_(2, ys_out.unsqueeze(2), 1.0 - self.lsm_weight)
         mask = torch.arange(U + 1, device=tokens.device)[None, :] < (token_lengths + 1)[:, None]
         nll = -(true * logp).sum(-1)
-        return (nll * mask).sum() / mask.sum().clamp(min=1)
+        loss = (nll * mask).sum() / mask.sum().clamp(min=1)
+        if not return_acc:
+            return loss
+        with torch.no_grad():
+            acc = ((logp.argmax(-1) == ys_out) & mask).sum() / mask.sum().clamp(min=1)
+        return loss, acc
 
 
 class CausalLMScorer:
