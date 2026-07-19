@@ -212,11 +212,12 @@ def test_probe_majority_differs_from_chance_and_drop_pairing():
     """Skewed labels: majority != chance (swapping the fields would fail); the
     unseen-class drop must keep X/y pairing (accuracy stays perfect)."""
     rng = np.random.default_rng(0)
+    slot = {"a": 0, "b": 1, "c": 2, "zz": 3}   # hash() is PYTHONHASHSEED-random
     def sep(labels):
         X = []
         for lab in labels:
             v = np.zeros(6)
-            v[hash(lab) % 6] = 1.0
+            v[slot[lab]] = 1.0
             X.append(v + rng.normal(0, 0.01, 6))
         return X
     ytr = ["a"] * 60 + ["b"] * 30 + ["c"] * 10          # skewed: majority 0.6
