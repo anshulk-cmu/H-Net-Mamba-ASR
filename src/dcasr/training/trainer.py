@@ -93,7 +93,11 @@ class Trainer:
                  world_size=1, rank=0, provenance=None):
         self.raw_model = model.to(device)
         self.world_size, self.rank, self.is_main = world_size, rank, rank == 0
+        # broadcast_buffers=False is LOAD-BEARING: the only buffer is a constant
+        # positional encoding, and a buffer broadcast inside the OOM-recovery
+        # forward would emit an extra collective on the OOM rank only (deadlock).
         self.model = (DDP(self.raw_model, device_ids=[torch.cuda.current_device()],
+                          broadcast_buffers=False,
                           find_unused_parameters=cfg.get("find_unused_parameters", False))
                       if world_size > 1 else self.raw_model)
         self.train_loader = train_loader
@@ -155,6 +159,31 @@ class Trainer:
             return t.tolist()
         return list(values)
 
+    def _any_rank_oom(self, oom_local: bool) -> bool:
+        """Group OOM flag (identity on 1 GPU). Every rank calls this exactly once
+        per micro-batch, so the collective stays matched: a rank-local skip would
+        desync DDP's gradient buckets and corrupt or hang the job."""
+        if self.world_size > 1:
+            t = torch.tensor([1.0 if oom_local else 0.0], device=self.device)
+            dist.all_reduce(t, op=dist.ReduceOp.MAX)
+            return bool(t.item() > 0)
+        return oom_local
+
+    def _oom_recovery_step(self, batch: dict) -> None:
+        """After a local forward OOM under DDP: forward+backward a minimal slice
+        of the batch so this rank still joins the group's gradient collectives
+        (the group skip zeroes every rank's grads right after)."""
+        feats = batch["feats"][:1, :32]
+        mini = self._to_device({
+            "feats": feats,
+            "feat_lens": torch.clamp(batch["feat_lens"][:1], max=feats.shape[1]),
+            "tokens": batch["tokens"][:1, :1],
+            "token_lens": torch.ones_like(batch["token_lens"][:1])})
+        with self._autocast():
+            loss, _ = self.model(mini["feats"], mini["feat_lens"],
+                                 mini["tokens"], mini["token_lens"])
+        self.scaler.scale(loss / self.accum_grad).backward()
+
     def _record(self, phase: str, metric: str, value: float) -> None:
         self.metric_history.setdefault((phase, metric), {})[self.epoch] = float(value)
         if self.is_main and self.metrics is not None:    # monitor values also persist to TB/JSONL
@@ -184,6 +213,7 @@ class Trainer:
         weight_sum, seen, t0, micro = 0, 0, time.time(), 0
         win, win_n = {}, 0                               # stats summed over the accumulation window
         for batch in self.train_loader:
+            oom_local = False
             try:
                 batch = self._to_device(batch)
                 b = int(batch["feats"].shape[0])
@@ -191,10 +221,36 @@ class Trainer:
                     loss, stats = self.model(batch["feats"], batch["feat_lens"],
                                              batch["tokens"], batch["token_lens"])
                     scaled = loss / self.accum_grad
+            except torch.cuda.OutOfMemoryError:
+                oom_local = True
+                self.oom_skips += 1
+                logger.warning("OOM in forward: skipping batch at step %d (%d skips so far)",
+                               self.global_step, self.oom_skips)
+                if self.device_type == "cuda":
+                    torch.cuda.empty_cache()
+            if self._any_rank_oom(oom_local):            # ALL ranks drop this window together
+                if self.world_size > 1:
+                    if oom_local:
+                        self._oom_recovery_step(batch)   # join the group's backward collectives
+                    else:
+                        self.scaler.scale(scaled).backward()   # complete DDP reduction, discard
+                        del loss, stats, scaled
+                self.optimizer.zero_grad(set_to_none=True)
+                del batch
+                win, win_n = {}, 0
+                micro = (micro // self.accum_grad) * self.accum_grad
+                if self.device_type == "cuda":
+                    torch.cuda.empty_cache()
+                continue
+            try:
                 self.scaler.scale(scaled).backward()
             except torch.cuda.OutOfMemoryError:
-                self.oom_skips += 1                      # skip the batch, drop the half-window
-                logger.warning("OOM: skipping batch at step %d (%d skips so far)",
+                if self.world_size > 1:                  # bucket collectives already in flight:
+                    raise RuntimeError(                  # not skippable rank-locally
+                        "OOM during DDP backward — relaunch resumes from the last "
+                        "checkpoint (--resume auto)") from None
+                self.oom_skips += 1
+                logger.warning("OOM in backward: skipping batch at step %d (%d skips so far)",
                                self.global_step, self.oom_skips)
                 self.optimizer.zero_grad(set_to_none=True)
                 del batch
@@ -246,52 +302,76 @@ class Trainer:
         payload["sys/oom_skips"] = self.oom_skips
         if self.device_type == "cuda" and torch.cuda.is_available():
             payload["sys/gpu_mem_gb"] = torch.cuda.max_memory_allocated() / 1e9
+            torch.cuda.reset_peak_memory_stats()         # per-interval peak, not run-lifetime
         self.metrics.log_scalars(payload, self.global_step, split="train", epoch=self.epoch)
 
     # ---- validation over ALL dev splits -------------------------------------
     @torch.no_grad()
     def validate(self) -> dict:
         self.raw_model.eval()
-        per_split, agg_loss, agg_wer, n_split = {}, [], [], 0
+        per_split, agg_loss, agg_wer, agg_cer, n_split = {}, [], [], [], 0
         for name, loader in self.dev_loaders.items():
             ls = torch.zeros((), device=self.device, dtype=torch.float64)   # on-device: sync once/split
-            ws_, werr, wtot, cerr, ctot = 0, 0, 0, 0, 0
+            ws_, werr, wtot, cerr, ctot, skips = 0, 0, 0, 0, 0, 0
             for batch in loader:
-                batch = self._to_device(batch)
-                b = int(batch["feats"].shape[0])
-                with self._autocast():
-                    loss, vstats = self.model(batch["feats"], batch["feat_lens"],
-                                              batch["tokens"], batch["token_lens"])
-                w = float(vstats.get("batch_weight", b))
-                ls += loss.detach().double() * w
-                ws_ += w
-                if self.tokenizer is not None:
-                    hyps = self.raw_model.greedy_decode(batch["feats"], batch["feat_lens"])
-                    for j, hyp_ids in enumerate(hyps):
-                        ref_ids = batch["tokens"][j, :int(batch["token_lens"][j])].tolist()
-                        hyp = self.tokenizer.decode(hyp_ids)
-                        ref = self.tokenizer.decode(ref_ids)
-                        we, wc = word_errors(hyp, ref)
-                        ce, cc = char_errors(hyp, ref)
-                        werr += we; wtot += wc; cerr += ce; ctot += cc
-            ls, ws_, werr, wtot, cerr, ctot = self._reduce(
-                [ls.item(), float(ws_), werr, wtot, cerr, ctot])
-            m = {"loss": ls / max(1.0, ws_)}
-            if self.tokenizer is not None:
-                m["wer"] = 100.0 * werr / max(1.0, wtot)
-                m["cer"] = 100.0 * cerr / max(1.0, ctot)
+                try:
+                    batch = self._to_device(batch)
+                    b = int(batch["feats"].shape[0])
+                    with self._autocast():
+                        loss, vstats = self.model(batch["feats"], batch["feat_lens"],
+                                                  batch["tokens"], batch["token_lens"])
+                    w = float(vstats.get("batch_weight", b))
+                    d_we = d_wc = d_ce = d_cc = 0
+                    if self.tokenizer is not None:
+                        hyps = self.raw_model.greedy_decode(batch["feats"], batch["feat_lens"])
+                        for j, hyp_ids in enumerate(hyps):
+                            ref_ids = batch["tokens"][j, :int(batch["token_lens"][j])].tolist()
+                            hyp = self.tokenizer.decode(hyp_ids)
+                            ref = self.tokenizer.decode(ref_ids)
+                            we, wc = word_errors(hyp, ref)
+                            ce, cc = char_errors(hyp, ref)
+                            d_we += we; d_wc += wc; d_ce += ce; d_cc += cc
+                    # commit only after the WHOLE batch succeeded: a decode OOM
+                    # must not leave the loss counted but WER/CER skipped
+                    ls += loss.detach().double() * w
+                    ws_ += w
+                    werr += d_we; wtot += d_wc; cerr += d_ce; ctot += d_cc
+                except torch.cuda.OutOfMemoryError:      # rank-local skip is safe here:
+                    skips += 1                           # collectives run once per split
+                    logger.warning("OOM in validation (%s): batch skipped (%d this split; "
+                                   "dev metric slightly biased)", name, skips)
+                    if self.device_type == "cuda":
+                        torch.cuda.empty_cache()
+                    continue
+            ls, ws_, werr, wtot, cerr, ctot, skips = self._reduce(
+                [ls.item(), float(ws_), werr, wtot, cerr, ctot, float(skips)])
+            if ws_ <= 0:                                 # an all-OOM split must fail
+                raise RuntimeError(f"validation split {name}: every batch was "
+                                   "OOM-skipped — 0.0 metrics would corrupt "
+                                   "best-model selection")
+            m = {"loss": ls / ws_}
+            if self.tokenizer is not None and wtot > 0:
+                m["wer"] = 100.0 * werr / wtot
+            if self.tokenizer is not None and ctot > 0:
+                m["cer"] = 100.0 * cerr / ctot
+            if skips:
+                m["oom_skips"] = int(skips)              # summed across ranks
             per_split[name] = m
             agg_loss.append(m["loss"])
             if "wer" in m:
                 agg_wer.append(m["wer"])
+            if "cer" in m:
+                agg_cer.append(m["cer"])
             n_split += 1
             if self.is_main and self.metrics is not None:
                 self.metrics.log_scalars({f"dev_{name}/{k}": v for k, v in m.items()},
                                          self.global_step, split=name, epoch=self.epoch)
-        # aggregate (mean over dev splits) drives best-model / early-stop
+        # aggregates (mean over dev splits) drive best-model / early-stop
         self._record("valid", "loss", sum(agg_loss) / max(1, len(agg_loss)))
         if agg_wer:
             self._record("valid", "wer", sum(agg_wer) / len(agg_wer))
+        if agg_cer:
+            self._record("valid", "cer", sum(agg_cer) / len(agg_cer))
         self.raw_model.train()
         return per_split
 

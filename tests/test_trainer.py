@@ -242,3 +242,137 @@ def test_resume_after_completed_max_steps_does_not_overshoot(tmp_path):
     assert tr2.global_step == 2                          # untouched: budget already reached
     ck = torch.load(tr2.ckpt_dir / "latest.pt", map_location="cpu", weights_only=False)
     assert ck["global_step"] == 2                        # latest.pt not overwritten past budget
+
+
+# ── OOM safeguards (DDP-safe group skip; valid-loop skip) + valid/cer ─────────
+class _OOMModel(_Model):
+    """Raises CUDA-OOM on selected forward calls; records every call's shape."""
+
+    def __init__(self, boom_calls=()):
+        super().__init__()
+        self.boom_calls = set(boom_calls)
+        self.calls = []
+
+    def forward(self, feats, feat_lens, targets, target_lens):
+        n = len(self.calls)
+        self.calls.append(tuple(feats.shape))
+        if n in self.boom_calls:
+            raise torch.cuda.OutOfMemoryError("synthetic OOM")
+        return super().forward(feats, feat_lens, targets, target_lens)
+
+
+def _oom_trainer(tmp, cfg, model, dev=None, tokenizer=None):
+    return Trainer(model, _loader(), cfg, dev_loaders=dev, train_sampler=_Sampler(),
+                   tokenizer=tokenizer, device="cpu", ckpt_dir=tmp / "ckpts")
+
+
+def test_oom_forward_skip_single_gpu(tmp_path):
+    tr = _oom_trainer(tmp_path, _cfg(max_epoch=1), _OOMModel(boom_calls={1}))
+    tr.train()
+    assert tr.oom_skips == 1
+    assert tr.global_step == 3                        # 4 batches - 1 skipped
+
+
+def test_oom_backward_skip_single_gpu(tmp_path):
+    tr = _oom_trainer(tmp_path, _cfg(max_epoch=1), _OOMModel())
+
+    class _Bomb:
+        def __init__(self, t, boom):
+            self.t, self.boom = t, boom
+
+        def backward(self):
+            if self.boom:
+                raise torch.cuda.OutOfMemoryError("synthetic backward OOM")
+            self.t.backward()
+
+    n = {"i": 0}
+    real_scale = tr.scaler.scale
+    tr.scaler.scale = lambda t: _Bomb(t, n.__setitem__("i", n["i"] + 1) or n["i"] == 2)
+    tr.train()
+    assert tr.oom_skips == 1 and tr.global_step == 3
+    tr.scaler.scale = real_scale
+
+
+def test_oom_group_skip_ddp_all_ranks_drop_window(tmp_path):
+    """world_size>1 semantics without dist: when ANY rank flags OOM, this rank
+    completes its real backward (collective parity) then drops the window."""
+    model = _OOMModel()
+    tr = _oom_trainer(tmp_path, _cfg(max_epoch=1), model)
+    tr.world_size = 2                                  # after init: model stays raw
+    tr._reduce = lambda vals: [float(v) for v in vals]
+    forced = {"left": 1}
+    tr._any_rank_oom = lambda local: (local or
+                                      bool(forced and forced.pop("left", None)))
+    tr.train()
+    assert tr.global_step == 3                         # peer's OOM dropped one window
+    assert tr.oom_skips == 0                           # this rank itself never OOMed
+
+
+def test_oom_recovery_step_joins_collectives(tmp_path):
+    """world_size>1 + local OOM: the rank re-runs a minimal (B=1, T<=32) slice so
+    DDP backward collectives stay matched, then the group skip discards it."""
+    model = _OOMModel(boom_calls={2})
+    tr = _oom_trainer(tmp_path, _cfg(max_epoch=1), model)
+    tr.world_size = 2
+    tr._reduce = lambda vals: [float(v) for v in vals]
+    tr._any_rank_oom = lambda local: local
+    tr.train()
+    assert tr.oom_skips == 1 and tr.global_step == 3
+    recovery = model.calls[3]                          # call after the boom
+    assert recovery[0] == 1 and recovery[1] <= 32      # minimal slice, not the batch
+
+
+def test_oom_backward_ddp_raises(tmp_path):
+    tr = _oom_trainer(tmp_path, _cfg(max_epoch=1), _OOMModel())
+    tr.world_size = 2
+    tr._any_rank_oom = lambda local: local
+
+    class _Bomb:
+        def __init__(self):
+            pass
+
+        def backward(self):
+            raise torch.cuda.OutOfMemoryError("synthetic backward OOM")
+
+    tr.scaler.scale = lambda t: _Bomb()
+    with pytest.raises(RuntimeError, match="DDP backward"):
+        tr.train()
+
+
+class _Tok:
+    pad_id = 0
+
+    def decode(self, ids):
+        return " ".join(str(i) for i in ids)
+
+
+class _GreedyModel(_OOMModel):
+    def greedy_decode(self, feats, feat_lens):
+        return [[1, 2, 3]] * feats.shape[0]
+
+
+def test_validate_oom_skip_and_cer_aggregate(tmp_path):
+    ml = MetricsLogger("run", root=tmp_path)
+    model = _GreedyModel(boom_calls={1})               # second dev batch OOMs
+    tr = Trainer(model, _loader(), _cfg(max_epoch=1),
+                 dev_loaders={"dev-clean": _loader(2), "dev-other": _loader(2)},
+                 tokenizer=_Tok(), metrics=ml, device="cpu", ckpt_dir=tmp_path / "c")
+    per_split = tr.validate()
+    assert per_split["dev-clean"]["oom_skips"] == 1    # skipped, split still scored
+    assert "oom_skips" not in per_split["dev-other"]
+    assert ("valid", "cer") in tr.metric_history       # cer aggregate now recorded
+    assert ("valid", "wer") in tr.metric_history
+    ml.close()
+    keys = _read_keys(tr, tmp_path)
+    assert {"valid/cer", "dev_dev-clean/cer", "dev_dev-clean/oom_skips"} <= keys
+
+
+def test_validate_all_oom_split_raises(tmp_path):
+    """A split whose every batch OOM-skips must fail loudly — 0.0 metrics would
+    silently become the permanent best epoch."""
+    model = _GreedyModel(boom_calls={0, 1})
+    tr = Trainer(model, _loader(), _cfg(max_epoch=1),
+                 dev_loaders={"dev-clean": _loader(2)}, tokenizer=_Tok(),
+                 device="cpu", ckpt_dir=tmp_path / "c")
+    with pytest.raises(RuntimeError, match="every batch was OOM-skipped"):
+        tr.validate()
