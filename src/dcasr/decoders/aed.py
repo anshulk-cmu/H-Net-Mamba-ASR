@@ -65,7 +65,9 @@ class AEDHead(nn.Module):
     def __init__(self, vocab_size: int, d_model: int, *, n_layers: int = 6, n_heads: int = 4,
                  d_ff: int = 2048, dropout: float = 0.1, lsm_weight: float = 0.1,
                  bos_id: int = 1, eos_id: int = 2, pad_id: int = 3,
-                 d_memory: int | None = None, max_decode_len: int = 200):
+                 d_memory: int | None = None, max_decode_len: int = 512):
+        # 512 > the longest LibriSpeech reference (230 tokens @ spm_bpe_500):
+        # a 200 cap provably truncated 3 real dev/test utterances
         super().__init__()
         self.vocab_size = vocab_size
         self.d_model = d_model

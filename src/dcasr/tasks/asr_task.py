@@ -67,7 +67,8 @@ def build_aed_head(config, vocab_size: int) -> AEDHead:
     return AEDHead(int(vocab_size), int(ec["d_outer"]),
                    n_layers=int(ac.get("n_layers", 6)), n_heads=int(ac.get("n_heads", 4)),
                    d_ff=int(ac.get("d_ff", 2048)), dropout=float(ac.get("dropout", 0.1)),
-                   lsm_weight=float(mc.get("lsm_weight", 0.1)))
+                   lsm_weight=float(mc.get("lsm_weight", 0.1)),
+                   max_decode_len=int(ac.get("max_decode_len", 512)))
 
 
 def build_loss(config) -> HybridLoss:
