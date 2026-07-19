@@ -10,6 +10,7 @@ with the decode stage (decode.py, lm_fusion.py).
 """
 from __future__ import annotations
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -17,6 +18,55 @@ import torch.nn.functional as F
 from dcasr.logging_utils import get_logger
 
 logger = get_logger(__name__)
+
+
+def ctc_prefix_beam_search(log_probs: torch.Tensor, lengths: torch.Tensor, *, blank_id: int,
+                           beam_size: int = 10, pre_beam: int = 30, lm=None, lm_weight: float = 0.0,
+                           device=None) -> list[list[int]]:
+    """CTC prefix beam search (Hannun et al.) over log-probs [B, T, V+1], lengths [B].
+
+    Explores label prefixes frame-by-frame, tracking each prefix's log-prob of ending in
+    blank vs non-blank (summing over alignments — so it finds the most probable LABEL
+    sequence, unlike greedy which takes the best PATH). An optional external LM (a
+    CausalLMScorer with `next_logprobs`) adds `lm_weight·logP_LM(token|prefix)` when a prefix
+    grows by a new token (shallow fusion). Per-utterance; returns one bare-id list per utt.
+    """
+    use_lm = lm is not None and lm_weight != 0.0
+    if use_lm and blank_id != log_probs.shape[-1] - 1:
+        # LM has V=(#classes-1) columns for labels 0..V-1; blank must be the extra last class
+        raise ValueError("ctc_prefix_beam_search with an LM requires blank_id at the last class")
+    out: list[list[int]] = []
+    for b in range(log_probs.shape[0]):
+        T = int(lengths[b])
+        lp = log_probs[b, :T].detach().float().cpu().numpy()          # [T, C]
+        beam: dict[tuple, tuple] = {(): (0.0, -np.inf, 0.0)}          # prefix -> (lp_b, lp_nb, lm)
+        for t in range(T):
+            lpt = lp[t]
+            cand = [int(c) for c in np.argsort(lpt)[::-1] if int(c) != blank_id][:pre_beam]
+            if use_lm:
+                prefixes = list(beam.keys())
+                lm_lp = lm.next_logprobs([list(p) for p in prefixes], device)   # [n, V]
+                lm_idx = {p: i for i, p in enumerate(prefixes)}
+            nxt: dict[tuple, tuple] = {}
+            for prefix, (pb, pnb, lm_s) in beam.items():
+                p_prev = np.logaddexp(pb, pnb)
+                e = nxt.get(prefix, (-np.inf, -np.inf, lm_s))         # blank: same prefix, ends blank
+                nxt[prefix] = (np.logaddexp(e[0], p_prev + lpt[blank_id]), e[1], lm_s)
+                if prefix:                                            # repeat last label: ends non-blank
+                    e = nxt[prefix]
+                    nxt[prefix] = (e[0], np.logaddexp(e[1], pnb + lpt[prefix[-1]]), lm_s)
+                for c in cand:                                        # extend by a new label
+                    npfx = prefix + (c,)
+                    add = (pb if (prefix and c == prefix[-1]) else p_prev) + lpt[c]
+                    lm_new = lm_s + (lm_weight * float(lm_lp[lm_idx[prefix], c]) if use_lm else 0.0)
+                    e = nxt.get(npfx, (-np.inf, -np.inf, lm_new))
+                    nxt[npfx] = (e[0], np.logaddexp(e[1], add), lm_new)
+            beam = dict(sorted(nxt.items(),
+                               key=lambda kv: np.logaddexp(kv[1][0], kv[1][1]) + kv[1][2],
+                               reverse=True)[:beam_size])
+        best = max(beam.items(), key=lambda kv: np.logaddexp(kv[1][0], kv[1][1]) + kv[1][2])[0]
+        out.append(list(best))
+    return out
 
 
 def ctc_greedy_collapse(frame_ids: list[int], blank_id: int) -> list[int]:
