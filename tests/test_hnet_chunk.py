@@ -264,3 +264,28 @@ def test_chunk_bf16_long_sequence_exact():
         idx = torch.nonzero(co.b[i] > 0.5, as_tuple=False).squeeze(-1)
         assert torch.equal(co.z[i, :idx.numel()], x[i, idx])
         assert int(co.z_mask[i].sum()) == idx.numel()
+
+
+def test_dechunk_matches_paper_eq589_oracle():
+    """Independent naive Eq.5->8->9 oracle (audit wf_89827832 fix): EMA over the
+    COMPRESSED sequence with downsampled P, then gather-upsample, then STE
+    (forward == identity scaling)."""
+    torch.manual_seed(0)
+    B, L, D = 2, 12, 5
+    x = torch.randn(B, L, D)
+    ch = DynamicChunker(D, N=2, ema_smoothing=True)
+    co = ch.chunk(x)
+    z_proc = torch.randn_like(co.z)
+    out = ch.dechunk(z_proc, co)
+    for bi in range(B):
+        kept = [t for t in range(L) if co.b[bi, t] > 0.5]
+        zbar = []
+        for j, t in enumerate(kept):
+            if j == 0:
+                zbar.append(z_proc[bi, 0].clone())        # P_0 = p[:,0] = 1 (forced)
+            else:
+                P_j = co.p[bi, t]
+                zbar.append(P_j * z_proc[bi, j] + (1 - P_j) * zbar[j - 1])
+        for t in range(L):
+            expect = zbar[int(co.membership[bi, t])]      # Eq.8 gather; Eq.9 fwd==1
+            assert torch.allclose(out[bi, t], expect, atol=1e-4), (bi, t)

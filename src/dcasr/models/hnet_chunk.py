@@ -12,7 +12,8 @@ A stack of encoder frames  x̂ ∈ R[B,L,D]  is compressed to a shorter sequence
 
     chunk:   x̂ ──router──> p,b ──downsample──> z   (B, M<=L, D)   [M = #boundaries]
     (main network / Mamba runs on z)
-    dechunk: ẑ ──upsample(gather)──> confidence-STE ──EMA smooth──> x̃ (B, L, D)
+    dechunk: ẑ ──EMA smooth (chunk rate, P=downsampled p)──> upsample(gather)
+             ──confidence-STE──> x̃ (B, L, D)          [paper Eq. 5 → 8 → 9]
 
 Router (cosine-dissimilarity boundary predictor), per position t:
     q_t = W_q x̂_t,   k_t = W_k x̂_t
@@ -198,26 +199,29 @@ class DynamicChunker(nn.Module):
     def dechunk(self, z_proc: torch.Tensor, co: ChunkOutput) -> torch.Tensor:
         """Expand processed coarse vectors z_proc [B,M,D] back to fine [B,L,D].
 
-        Each fine frame t receives the coarse vector of its chunk (co.membership),
-        scaled by the confidence-STE weight (exact in forward, grad ∝ c_t), then
-        EMA-smoothed along time. Identity mode (N=1) returns z_proc unchanged.
+        Paper order (Eq. 5 → 8 → 9): EMA-smooth over the COMPRESSED sequence
+        using the downsampled boundary probabilities P (p at kept frames), THEN
+        upsample via the membership gather, THEN scale by the confidence-STE
+        weight (exact in forward, grad ∝ c_t). Identity (N=1) is a passthrough.
         """
         if self.identity:
             return z_proc
         B, L = co.membership.shape
-        D = z_proc.shape[-1]
-        # gather: fine frame t -> coarse vector at membership[t]
-        idx = co.membership.unsqueeze(-1).expand(B, L, D)          # [B,L,D]
-        x_up = torch.gather(z_proc, dim=1, index=idx)              # [B,L,D]
-        # confidence c_t = p_t if kept (b=1) else 1-p_t
-        p, b = co.p, co.b
-        c = torch.where(b > 0.5, p, 1.0 - p)                       # [B,L]
-        # straight-through: forward weight = 1.0, backward gradient = dc/dθ
-        ste = (c + (1.0 - c).detach()).unsqueeze(-1)               # [B,L,1] ==1.0 fwd
-        x_up = x_up * ste
+        M, D = z_proc.shape[1], z_proc.shape[-1]
         if self.ema_smoothing:
-            x_up = self._ema(x_up, co.p)
-        return x_up
+            # P [B,M]: downsample p exactly like z — p at each kept frame,
+            # scattered to its chunk slot (pad slots 0; causal EMA never reads
+            # them into real slots since padding is on the right)
+            keep = co.b > 0.5
+            bi, ti = keep.nonzero(as_tuple=True)
+            P = co.p.new_zeros(B, M)
+            P[bi, co.membership[bi, ti]] = co.p[bi, ti]
+            z_proc = self._ema(z_proc, P)                          # Eq. 5, chunk rate
+        idx = co.membership.unsqueeze(-1).expand(B, L, D)
+        x_up = torch.gather(z_proc, dim=1, index=idx)              # Eq. 8: upsample
+        c = torch.where(co.b > 0.5, co.p, 1.0 - co.p)              # [B,L]
+        ste = (c + (1.0 - c).detach()).unsqueeze(-1)               # [B,L,1] ==1.0 fwd
+        return x_up * ste                                          # Eq. 9: STE last
 
     @staticmethod
     def _ema(x: torch.Tensor, p: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
