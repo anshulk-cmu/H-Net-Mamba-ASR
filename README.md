@@ -1,8 +1,8 @@
-# CARVE: Carving Speech at Its Natural Joints
+# CRAVE: Learning Where Speech Breaks
 
-**CARVE** (**C**ontent-**A**daptive **R**ate-**V**arying **E**ncoder; code name `dcasr`) is a speech recognizer that asks a simple question with consequences for how speech encoders are designed: *can a model learn its own acoustic hierarchy — where phones and words begin and end — purely from the recognition objective, instead of having a frame-rate schedule hand-designed for it?*
+**CRAVE** (**C**ontent-**R**outed **A**daptive **V**ariable-rate **E**ncoder; code name `dcasr`) is a speech recognizer that asks a simple question with consequences for how speech encoders are designed: *can a model learn its own acoustic hierarchy — where phones and words begin and end — purely from the recognition objective, instead of having a frame-rate schedule hand-designed for it?*
 
-Mainstream ASR encoders process audio at fixed frame rates chosen by their designers (Conformer at one rate throughout; Zipformer with a hand-tuned U-Net-style rate schedule). Speech itself, however, is hierarchical and variable-rate: phones last tens of milliseconds, words hundreds, and the information density of the signal fluctuates constantly. CARVE replaces the hand-designed schedule with **H-Net dynamic chunking** (Hwang, Wang & Gu, arXiv:2507.07955) — a differentiable, content-based boundary predictor — inserted between stacks of **Mamba-2** state-space blocks, so the encoder itself decides *where* to compress. If a learned hierarchy matches a hand-designed one on word error rate, self-learned chunking becomes the better default: comparable accuracy, less architecture tuning, and — uniquely — **interpretable learned units** whose boundaries can be scored against linguistic ground truth. The name is Plato's metaphor: a good analysis carves nature at its joints; this encoder is trained to find the joints on its own.
+Mainstream ASR encoders process audio at fixed frame rates chosen by their designers (Conformer at one rate throughout; Zipformer with a hand-tuned U-Net-style rate schedule). Speech itself, however, is hierarchical and variable-rate: phones last tens of milliseconds, words hundreds, and the information density of the signal fluctuates constantly. CRAVE replaces the hand-designed schedule with **H-Net dynamic chunking** (Hwang, Wang & Gu, arXiv:2507.07955) — a differentiable, content-based boundary predictor — inserted between stacks of **Mamba-2** state-space blocks, so the encoder itself decides *where* to compress. If a learned hierarchy matches a hand-designed one on word error rate, self-learned chunking becomes the better default: comparable accuracy, less architecture tuning, and — uniquely — **interpretable learned units** whose boundaries can be scored against linguistic ground truth.
 
 Full experimental design: [`docs/DC-ASR_experimental_plan.md`](docs/DC-ASR_experimental_plan.md). Idea narrative: [`docs/DC-ASR_research_proposal.md`](docs/DC-ASR_research_proposal.md).
 
@@ -49,7 +49,7 @@ A negative result is informative: if learned boundaries track acoustics (silence
 - **Two types at matched compression.** Type A compresses once by N; Type B compresses twice by √N (iso-compression), so any difference between them is attributable to *staging*, not rate. N ∈ {1, 2, 3, 4}; **N = 1 is the no-chunk control** (pure Mamba encoder).
 - **One model, three decoders.** Each cell trains a single hybrid model (loss = 0.3·CTC + 0.7·AED with label smoothing); CTC, AED, and joint CTC+AED decoding are read-outs of that one model, each with and without an external Transformer LM (shallow fusion) — a 7-cell decode matrix per run.
 - **Sizes.** Small = 78.9 M parameters (61.7 M encoder + 16.9 M AED + 0.2 M CTC); Large per the plan. Vocabulary: 500 BPE units (750 as an ablation), CTC blank appended.
-- **Data.** LibriSpeech-960h only, speed-perturbed ×3, SpecAugment. Baselines are **cited from the literature, not re-trained**; the entire compute budget goes to CARVE's own grid.
+- **Data.** LibriSpeech-960h only, speed-perturbed ×3, SpecAugment. Baselines are **cited from the literature, not re-trained**; the entire compute budget goes to CRAVE's own grid.
 
 **The grid: 22 training runs** — {A, B} × N{1–4} × {Small, Large} hybrid cells (16), fixed-stride pooling controls (4), and a 750-vocabulary pair (2). The first cell (A·Small·N=1) doubles as the go/no-go gate: its CTC-greedy test-clean WER must beat 12 %.
 
@@ -100,7 +100,7 @@ python scripts/train_lm.py --config configs/lm_transformer_500.yaml   # external
 **Step 2 — train + evaluate one cell.** A single SLURM submission runs the *entire* experiment — training, the full decode matrix, scoring, efficiency accounting, and the interpretability suite — and survives preemption, node failures, and time limits by design:
 
 ```bash
-sbatch -J carve_asn1 scripts/slurm/run_cell_e2e_4gpu.sh \
+sbatch -J crave_asn1 scripts/slurm/run_cell_e2e_4gpu.sh \
     configs/typeA_small_N1.yaml typeA_small_N1
 ```
 
