@@ -36,6 +36,11 @@ conda activate hnet-asr
 cd /home/anshulk/H-Net_Mamba_ASR
 ENVBIN=/data/user_data/anshulk/envs/hnet-asr/bin
 export PYTHONDONTWRITEBYTECODE=1
+# NCCL over shared memory: job 9370311 deadlocked in DDP's init broadcast with
+# all GPUs spinning at 100%/~1GB (P2P transport wedge on PCIe L40S). SHM costs
+# a few % on a 79M model's allreduces and is robust across node topologies.
+export NCCL_P2P_DISABLE=1
+export NCCL_DEBUG=WARN
 
 CFG=configs/typeA_small_N1.yaml
 RUN=typeA_small_N1
