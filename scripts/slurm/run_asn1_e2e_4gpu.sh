@@ -59,6 +59,18 @@ stage_done() { [ -f "$MARK/$1.done" ]; }
 mark_done()  { touch "$MARK/$1.done"; plog "STAGE $1 DONE"; }
 plog "attempt start: job=${SLURM_JOB_ID:-?} restarts=${SLURM_RESTART_COUNT:-0} host=$(hostname)"
 
+# ── preflight: torch must actually initialize CUDA (nvidia-smi alone can lie —
+# job 9370297 died on babel-w9-32 with 'CUDA unknown error' on a node whose
+# nvidia-smi looked healthy). Bad node => requeue (bounded by MaxBatchRequeue=5).
+if ! $ENVBIN/python -c "import sys, torch; n = torch.cuda.device_count(); print(f'preflight: torch sees {n} GPUs'); sys.exit(0 if n >= 4 else 1)"; then
+  plog "PREFLIGHT FAILED on $(hostname): torch cannot initialize CUDA — requeueing to another node"
+  if [ "${SLURM_RESTART_COUNT:-0}" -lt 4 ]; then
+    scontrol requeue "${SLURM_JOB_ID}" && exit 0
+  fi
+  plog "PREFLIGHT FAILED ${SLURM_RESTART_COUNT}x — giving up"
+  exit 1
+fi
+
 # ── 1) TRAIN: 4-GPU DDP; exit 0 == finished (max_epoch or early stop) ────────
 if ! stage_done train; then
   plog "STAGE train: torchrun x4"
