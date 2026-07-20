@@ -72,11 +72,15 @@ def test_ctc_and_aed_head_params_match_instantiation():
     assert p["ctc_head"] == (96 + 1) * (50 + 1)
     real_aed = AEDHead(50, 96, n_layers=2, n_heads=4, d_ff=128)
     assert p["aed_head"] == sum(q.numel() for q in real_aed.parameters())
-    # independent manual formula for the transformer decoder internals
-    d, ff, n, V = 96, 128, 2, 50
-    attn = (3 * d * d + 3 * d) + (d * d + d)
-    layer = 2 * attn + (ff * d + ff) + (d * ff + d) + 3 * 2 * d
-    assert p["aed_head"] == V * d + n * layer + (V * d + V)
+    # independent manual formula for the QK-norm pre-LN decoder internals
+    d, ff, n, V, h = 96, 128, 2, 50, 4
+    dh = d // h
+    # per attention: q/k/v/out projections (4 Linear d->d) + QK-norm gains (q_g,k_g)
+    attn = 4 * (d * d + d) + 2 * dh
+    # per layer: self+cross attn, 3 LayerNorms, FFN (2 Linear)
+    layer = 2 * attn + 3 * 2 * d + (ff * d + ff) + (d * ff + d)
+    # head: embed + n layers + final stack LayerNorm + output projection
+    assert p["aed_head"] == V * d + n * layer + 2 * d + (V * d + V)
 
 
 def test_head_gating_matches_build_model_rules():

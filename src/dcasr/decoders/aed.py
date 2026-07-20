@@ -54,6 +54,102 @@ class _SinusoidalPositionalEncoding(nn.Module):
         return self.dropout(x + self.pe[:, : x.size(1)])
 
 
+class _MHAQKNorm(nn.Module):
+    """Multi-head attention with per-head RMSNorm on Q and K before the scaled
+    dot product (Henry et al. 2020; Dehghani et al. ViT-22B 2023). RMS-normalizing
+    q,k bounds the pre-softmax logit range independent of q/k magnitude, which
+    removes the attention-entropy-collapse divergence measured in the plain
+    nn.MultiheadAttention decoder (AED cross-attn key-bias grew 14x -> softmax
+    saturation -> grad explosion; runlog 2026-07-20)."""
+
+    def __init__(self, d_model: int, n_heads: int, dropout: float = 0.0,
+                 eps: float = 1e-6):
+        super().__init__()
+        assert d_model % n_heads == 0
+        self.h, self.dh = n_heads, d_model // n_heads
+        self.q_proj = nn.Linear(d_model, d_model)
+        self.k_proj = nn.Linear(d_model, d_model)
+        self.v_proj = nn.Linear(d_model, d_model)
+        self.out_proj = nn.Linear(d_model, d_model)
+        self.q_g = nn.Parameter(torch.ones(self.dh))           # per-head-dim RMSNorm gain
+        self.k_g = nn.Parameter(torch.ones(self.dh))
+        self.eps, self.dropout = eps, dropout
+
+    def _rms(self, x: torch.Tensor, g: torch.Tensor) -> torch.Tensor:
+        # normalize in fp32 for a stable rsqrt, cast back to x's dtype
+        n = x.float() * torch.rsqrt(x.float().pow(2).mean(-1, keepdim=True) + self.eps)
+        return (n * g.float()).to(x.dtype)
+
+    def forward(self, query, key, value, attn_mask=None, key_padding_mask=None):
+        B, Tq, _ = query.shape
+        Tk = key.shape[1]
+        q = self.q_proj(query).view(B, Tq, self.h, self.dh).transpose(1, 2)  # [B,H,Tq,dh]
+        k = self.k_proj(key).view(B, Tk, self.h, self.dh).transpose(1, 2)
+        v = self.v_proj(value).view(B, Tk, self.h, self.dh).transpose(1, 2)
+        q, k = self._rms(q, self.q_g), self._rms(k, self.k_g)
+        mask = None
+        if key_padding_mask is not None:                       # [B,Tk] bool, True=pad
+            mask = torch.zeros(B, 1, 1, Tk, dtype=q.dtype, device=q.device)
+            mask = mask.masked_fill(key_padding_mask[:, None, None, :], float("-inf"))
+        if attn_mask is not None:                              # [Tq,Tk] additive causal
+            am = attn_mask.to(q.dtype)
+            am = am[None, None] if am.dim() == 2 else am
+            mask = am if mask is None else mask + am
+        out = F.scaled_dot_product_attention(
+            q, k, v, attn_mask=mask,
+            dropout_p=self.dropout if self.training else 0.0)
+        out = out.transpose(1, 2).reshape(B, Tq, self.h * self.dh)
+        return self.out_proj(out)
+
+
+class _DecoderLayerQKNorm(nn.Module):
+    """Pre-LN Transformer decoder layer (self-attn -> cross-attn -> FFN) using
+    QK-normalized attention. Mirrors nn.TransformerDecoderLayer(norm_first=True,
+    activation='gelu') exactly except for the QK-norm."""
+
+    def __init__(self, d_model: int, n_heads: int, d_ff: int, dropout: float):
+        super().__init__()
+        self.self_attn = _MHAQKNorm(d_model, n_heads, dropout)
+        self.cross_attn = _MHAQKNorm(d_model, n_heads, dropout)
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.norm3 = nn.LayerNorm(d_model)
+        self.linear1 = nn.Linear(d_model, d_ff)
+        self.linear2 = nn.Linear(d_ff, d_model)
+        self.drop = nn.Dropout(dropout)
+        self.act = nn.GELU()
+
+    def forward(self, x, memory, tgt_mask, memory_key_padding_mask):
+        h = self.norm1(x)
+        x = x + self.drop(self.self_attn(h, h, h, attn_mask=tgt_mask))
+        h = self.norm2(x)
+        x = x + self.drop(self.cross_attn(h, memory, memory,
+                                          key_padding_mask=memory_key_padding_mask))
+        h = self.norm3(x)
+        x = x + self.drop(self.linear2(self.drop(self.act(self.linear1(h)))))
+        return x
+
+
+class _DecoderQKNorm(nn.Module):
+    """Stack of QK-norm pre-LN decoder layers + a final LayerNorm (pre-LN needs
+    the trailing norm before the output projection; nn.TransformerDecoder omits
+    it, which is fine but less stable)."""
+
+    def __init__(self, d_model: int, n_heads: int, d_ff: int, dropout: float,
+                 n_layers: int):
+        super().__init__()
+        self.layers = nn.ModuleList(
+            [_DecoderLayerQKNorm(d_model, n_heads, d_ff, dropout)
+             for _ in range(n_layers)])
+        self.norm = nn.LayerNorm(d_model)
+
+    def forward(self, tgt, memory, tgt_mask=None, memory_key_padding_mask=None):
+        x = tgt
+        for layer in self.layers:
+            x = layer(x, memory, tgt_mask, memory_key_padding_mask)
+        return self.norm(x)
+
+
 class AEDHead(nn.Module):
     """Autoregressive Transformer-decoder head over the tokenizer's V-token vocabulary.
 
@@ -76,10 +172,7 @@ class AEDHead(nn.Module):
         self.max_decode_len = int(max_decode_len)
         self.embed = nn.Embedding(vocab_size, d_model, padding_idx=pad_id)
         self.pos = _SinusoidalPositionalEncoding(d_model, dropout=dropout)
-        layer = nn.TransformerDecoderLayer(d_model, n_heads, dim_feedforward=d_ff,
-                                           dropout=dropout, activation="gelu",
-                                           batch_first=True, norm_first=True)
-        self.decoder = nn.TransformerDecoder(layer, n_layers)
+        self.decoder = _DecoderQKNorm(d_model, n_heads, d_ff, dropout, n_layers)
         self.out = nn.Linear(d_model, vocab_size)
         self.mem_proj = (nn.Linear(d_memory, d_model)
                          if d_memory is not None and d_memory != d_model else nn.Identity())

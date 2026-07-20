@@ -388,6 +388,29 @@ class _RouterModel(_Model):
         self.router.W_k = nn.Linear(4, 4, bias=False)
 
 
+def test_weight_decay_param_groups(tmp_path):
+    """wd>0 splits into decay (>=2-D weights) + no-decay (biases, norms, and any
+    param flagged `_no_weight_decay`, e.g. Mamba A_log/D/dt_bias). Verified fix
+    for the uniform-decay bug (runlog 2026-07-20)."""
+    m = _Model()
+    # tag one param no-decay to emulate an SSM A_log/D/dt_bias
+    flag = nn.Parameter(torch.zeros(4))
+    flag._no_weight_decay = True
+    m.register_parameter("fake_A_log", flag)
+    cfg = _cfg(optim_conf={"lr": 0.05, "weight_decay": 0.01})
+    tr = Trainer(m, _loader(), cfg, train_sampler=_Sampler(), device="cpu",
+                 ckpt_dir=tmp_path / "wd")
+    assert len(tr.optimizer.param_groups) == 2
+    decay, no_decay = tr.optimizer.param_groups
+    assert decay["weight_decay"] == pytest.approx(0.01)
+    assert no_decay["weight_decay"] == 0.0
+    # lin.weight (2-D) decays; lin.bias (1-D) + fake_A_log (flagged) do not
+    decay_ids = {id(p) for p in decay["params"]}
+    nod_ids = {id(p) for p in no_decay["params"]}
+    assert id(m.lin.weight) in decay_ids
+    assert id(m.lin.bias) in nod_ids and id(flag) in nod_ids
+
+
 def test_router_param_group_wiring(tmp_path):
     """optim_conf.router_lr_mult/router_eps split the router into its own damped
     Adam group (the N=2 divergence fix); absent keys keep one group."""

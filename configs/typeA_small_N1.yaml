@@ -77,9 +77,12 @@ num_workers: 4
 # ── optimizer + scheduler ────────────────────────────────────────────────────
 optim: adamw
 optim_conf:
-  lr: 1.0e-3
-  weight_decay: 1.0e-6
-  betas: [0.9, 0.98]
+  lr: 6.0e-4                              # v3 (runlog 2026-07-20): below the empirical
+                                           # ignition threshold ~6.5e-4; was 1e-3
+  weight_decay: 1.0e-2                     # v3: real restoring force; trainer excludes
+                                           # biases/norms + SSM A_log/D/dt_bias from decay
+  betas: [0.9, 0.999]                     # v3: longer 2nd-moment horizon damps the
+                                           # near-zero-v effective-LR spikes (was 0.98)
 scheduler: warmuplr
 scheduler_conf:
   warmup_steps: 20000                      # LR = lr·√warmup·min(step^-0.5, step·warmup^-1.5)
@@ -89,7 +92,7 @@ scheduler_conf:
 # ── training ─────────────────────────────────────────────────────────────────
 train:
   max_epoch: 200
-  grad_clip: 5.0
+  grad_clip: 1.0                           # v3: was 5.0 (inert; never bound pre-divergence)
   grad_clip_type: 2.0
   precision: bf16                          # drives autocast; GradScaler enabled for fp16 only
   log_interval: 50                         # optimizer steps between train-metric logs

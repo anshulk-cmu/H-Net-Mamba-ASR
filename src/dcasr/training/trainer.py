@@ -140,22 +140,37 @@ class Trainer:
             parts = n.split(".")
             return "router" in parts and any(w in parts for w in ("W_q", "W_k"))
 
-        routr = [p for n, p in named if _is_router(n)]
-        if routr and (router_mult != 1.0 or router_eps is not None):
-            # router hygiene (N=2 divergence, runlog 2026-07-20): the boundary
-            # router gets a damped lr and an Adam-eps floor so one amplified
-            # spike cannot re-chunk every utterance at full step size
-            group = {"params": routr, "lr": float(oc.get("lr", 1e-3)) * router_mult}
-            if router_eps is not None:
-                group["eps"] = float(router_eps)
-            self.optimizer = build_optimizer(
-                [{"params": [p for n, p in named if not _is_router(n)]}, group],
-                g("optim", "adamw"), oc)
-            logger.info("router param group: %d tensors lr_mult=%s eps=%s",
-                        len(routr), router_mult, router_eps)
+        # Weight-decay hygiene (runlog 2026-07-20): decay only >=2-D weight
+        # matrices. 1-D params (biases, LayerNorm/RMSNorm/QK-norm gains) and the
+        # Mamba SSM parameters A_log/D/dt_bias (tagged `_no_weight_decay`; decaying
+        # them perturbs the SSM recurrent eigenvalues) get weight_decay=0. Router
+        # W_q/W_k (2-D) get their own damped-lr group.
+        wd = float(oc.get("weight_decay", 0.0))
+        router = [p for n, p in named if _is_router(n)]
+        rest = [(n, p) for n, p in named if not _is_router(n)]
+        router_active = bool(router) and (router_mult != 1.0 or router_eps is not None)
+
+        def _no_decay(p):
+            return p.ndim < 2 or getattr(p, "_no_weight_decay", False)
+
+        groups = []
+        if wd > 0:
+            groups.append({"params": [p for _, p in rest if not _no_decay(p)]})
+            groups.append({"params": [p for _, p in rest if _no_decay(p)],
+                           "weight_decay": 0.0})
         else:
-            self.optimizer = build_optimizer((p for _, p in named),
-                                             g("optim", "adamw"), oc)
+            groups.append({"params": [p for _, p in rest]})
+        if router_active:
+            rg = {"params": router, "lr": float(oc.get("lr", 1e-3)) * router_mult}
+            if router_eps is not None:
+                rg["eps"] = float(router_eps)
+            groups.append(rg)                          # router W_q/W_k: 2-D -> decays
+        elif router:
+            groups[0]["params"] = groups[0]["params"] + router   # 2-D -> decay group
+        n_nd = sum(len(gr["params"]) for gr in groups if gr.get("weight_decay") == 0.0)
+        logger.info("optim groups: %d (wd=%s, no-decay tensors=%d, router group=%s)",
+                    len(groups), wd, n_nd, router_active)
+        self.optimizer = build_optimizer(groups, g("optim", "adamw"), oc)
         self.scheduler = build_scheduler(self.optimizer, g("scheduler"), dict(g("scheduler_conf", {}) or {}))
 
         self.epoch, self.global_step = 0, 0

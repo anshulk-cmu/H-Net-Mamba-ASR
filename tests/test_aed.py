@@ -162,3 +162,45 @@ def test_overfit_single_example():
     assert loss.item() < 0.1                               # memorized the example
     h.eval()
     assert h.greedy_decode(m, ml, max_len=10)[0] == [5, 7, 9, 11]   # greedy recovers it exactly
+
+
+def test_qknorm_bounds_attention_logits():
+    """The root-cause fix: RMSNorm on q,k bounds pre-softmax logits regardless of
+    q/k magnitude. Feed inputs scaled 1x vs 1000x — logit range must stay ~equal
+    (plain dot-product attention would blow up 1e6x and saturate the softmax)."""
+    import torch
+    from dcasr.decoders.aed import _MHAQKNorm
+    mha = _MHAQKNorm(64, 4, dropout=0.0).eval()
+    torch.manual_seed(0)
+    x = torch.randn(2, 10, 64)
+    # reach into the projections to measure the actual logits both ways
+    def logit_range(scale):
+        B, T = 2, 10
+        q = mha.q_proj(x * scale).view(B, T, 4, 16).transpose(1, 2)
+        k = mha.k_proj(x * scale).view(B, T, 4, 16).transpose(1, 2)
+        qn, kn = mha._rms(q, mha.q_g), mha._rms(k, mha.k_g)
+        logits = (qn @ kn.transpose(-2, -1)) / (16 ** 0.5)
+        return float(logits.detach().abs().max())
+    r1, r1000 = logit_range(1.0), logit_range(1000.0)
+    assert abs(r1 - r1000) / r1 < 0.05           # magnitude-invariant (within 5%)
+    assert r1 < 20.0                             # bounded (~sqrt(d_head) scale)
+    # forward still works + is finite under a huge input scale (bf16-representable)
+    out = mha(x * 1000, x * 1000, x * 1000)
+    assert out.shape == (2, 10, 64) and torch.isfinite(out).all()
+
+
+def test_qknorm_decoder_causal_and_finite():
+    """The QK-norm decoder must stay causal (position t independent of t+1 inputs)
+    and finite, matching the contract the beam search relies on."""
+    import torch
+    from dcasr.decoders.aed import _DecoderQKNorm, _causal_mask
+    dec = _DecoderQKNorm(32, 4, 64, 0.0, 2).eval()
+    mem = torch.randn(1, 7, 32)
+    tgt = torch.randn(1, 5, 32)
+    mask = _causal_mask(5, tgt.device)
+    out_full = dec(tgt, mem, tgt_mask=mask)
+    tgt2 = tgt.clone(); tgt2[:, 4] += torch.randn(32) * 3.0     # perturb LAST position (non-constant: a scalar offset is removed by pre-LN)
+    out_pert = dec(tgt2, mem, tgt_mask=mask)
+    assert torch.allclose(out_full[:, :4], out_pert[:, :4], atol=1e-5)  # earlier unchanged
+    assert not torch.allclose(out_full[:, 4], out_pert[:, 4])           # last changed
+    assert torch.isfinite(out_full).all()
