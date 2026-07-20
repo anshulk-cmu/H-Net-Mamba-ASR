@@ -224,20 +224,23 @@ class DynamicChunker(nn.Module):
         return x_up * ste                                          # Eq. 9: STE last
 
     @staticmethod
-    def _ema(x: torch.Tensor, p: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
+    def _ema(x: torch.Tensor, p: torch.Tensor, p_clamp: float = 1e-4) -> torch.Tensor:
         """EMA smoother  z̄_t = P_t x_t + (1-P_t) z̄_{t-1}, vectorised as one causal
         matmul:  z̄_t = Σ_{j≤t} exp(S_t−S_j)·s_j,  S = cumsum(log(1-P)), s_0 = x_0,
-        s_j = P_j x_j. Weights stay in (0,1] (no cumprod underflow); (1-P) is
-        clamped to eps so log is finite at p=1. O(L²) — cheap at 25 Hz lengths.
+        s_j = P_j x_j. O(L²) — cheap at 25 Hz lengths.
+
+        p is HARD-clamped to [p_clamp, 1-p_clamp] with ZERO gradient at
+        saturation (official H-Net DeChunkLayer parity). A backward-identity
+        clamp here passes 1/(1-p) gradients up to 1e6 per saturated boundary —
+        the gradient amplifier in the N=2 divergence (runlog 2026-07-20).
         """
         B, L, D = x.shape
         if L == 1:
             return x.clone()
-        src = torch.cat([x[:, :1], p[:, 1:, None] * x[:, 1:]], dim=1)   # [B,L,D]
+        pc = p.clamp(p_clamp, 1.0 - p_clamp)          # grads die outside the band
+        src = torch.cat([x[:, :1], pc[:, 1:, None] * x[:, 1:]], dim=1)  # [B,L,D]
         wdtype = torch.promote_types(p.dtype, torch.float32)
-        a_raw = 1.0 - p[:, 1:].to(wdtype)
-        # forward clamped, backward identity — keeps dL/dp exact at saturated p=1
-        a = a_raw + (a_raw.clamp_min(eps) - a_raw).detach()
+        a = 1.0 - pc[:, 1:].to(wdtype)
         S = F.pad(torch.log(a).cumsum(dim=1), (1, 0))                   # [B,L], S_0 = 0
         logw = S.unsqueeze(-1) - S.unsqueeze(1)                         # [B,L,L]: S_t - S_j
         future = torch.ones(L, L, dtype=torch.bool, device=x.device).triu(1)

@@ -131,8 +131,31 @@ class Trainer:
         self.device_type = str(device).split(":")[0]     # "cuda:N" (torchrun) -> "cuda"
         self.scaler = torch.amp.GradScaler(self.device_type if self.device_type == "cuda" else "cpu",
                                            enabled=self.precision == "fp16")
-        self.optimizer = build_optimizer(self.raw_model.parameters(), g("optim", "adamw"),
-                                         dict(g("optim_conf", {}) or {}))
+        oc = dict(g("optim_conf", {}) or {})
+        router_mult = float(oc.pop("router_lr_mult", 1.0))
+        router_eps = oc.pop("router_eps", None)
+        named = list(self.raw_model.named_parameters())
+
+        def _is_router(n):
+            parts = n.split(".")
+            return "router" in parts and any(w in parts for w in ("W_q", "W_k"))
+
+        routr = [p for n, p in named if _is_router(n)]
+        if routr and (router_mult != 1.0 or router_eps is not None):
+            # router hygiene (N=2 divergence, runlog 2026-07-20): the boundary
+            # router gets a damped lr and an Adam-eps floor so one amplified
+            # spike cannot re-chunk every utterance at full step size
+            group = {"params": routr, "lr": float(oc.get("lr", 1e-3)) * router_mult}
+            if router_eps is not None:
+                group["eps"] = float(router_eps)
+            self.optimizer = build_optimizer(
+                [{"params": [p for n, p in named if not _is_router(n)]}, group],
+                g("optim", "adamw"), oc)
+            logger.info("router param group: %d tensors lr_mult=%s eps=%s",
+                        len(routr), router_mult, router_eps)
+        else:
+            self.optimizer = build_optimizer((p for _, p in named),
+                                             g("optim", "adamw"), oc)
         self.scheduler = build_scheduler(self.optimizer, g("scheduler"), dict(g("scheduler_conf", {}) or {}))
 
         self.epoch, self.global_step = 0, 0

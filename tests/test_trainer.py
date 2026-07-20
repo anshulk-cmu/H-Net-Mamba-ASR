@@ -376,3 +376,35 @@ def test_validate_all_oom_split_raises(tmp_path):
                  device="cpu", ckpt_dir=tmp_path / "c")
     with pytest.raises(RuntimeError, match="every batch was OOM-skipped"):
         tr.validate()
+
+
+class _RouterModel(_Model):
+    """Fake model exposing a router-named parameter (matches encoder naming)."""
+
+    def __init__(self):
+        super().__init__()
+        self.router = nn.Module()
+        self.router.W_q = nn.Linear(4, 4, bias=False)
+        self.router.W_k = nn.Linear(4, 4, bias=False)
+
+
+def test_router_param_group_wiring(tmp_path):
+    """optim_conf.router_lr_mult/router_eps split the router into its own damped
+    Adam group (the N=2 divergence fix); absent keys keep one group."""
+    cfg = _cfg(optim_conf={"lr": 0.05, "router_lr_mult": 0.5, "router_eps": 1e-5})
+    tr = Trainer(_RouterModel(), _loader(), cfg, train_sampler=_Sampler(),
+                 device="cpu", ckpt_dir=tmp_path / "a")
+    assert len(tr.optimizer.param_groups) == 2
+    assert tr.scheduler.base_lrs == pytest.approx([0.05, 0.025])   # router at 0.5x
+    assert tr.optimizer.param_groups[1]["eps"] == pytest.approx(1e-5)
+    assert tr.optimizer.param_groups[0]["eps"] == pytest.approx(1e-8)
+    assert len(tr.optimizer.param_groups[1]["params"]) == 2   # W_q + W_k only
+    tr.train()                                     # trains + schedules both groups
+    g0, g1 = tr.optimizer.param_groups
+    assert g1["lr"] == pytest.approx(g0["lr"] * 0.5)           # ratio survives schedule
+    tr2 = Trainer(_RouterModel(), _loader(), _cfg(), train_sampler=_Sampler(),
+                  device="cpu", ckpt_dir=tmp_path / "b")
+    assert len(tr2.optimizer.param_groups) == 1    # no keys -> single group
+    tr3 = Trainer(_Model(), _loader(), cfg, train_sampler=_Sampler(),
+                  device="cpu", ckpt_dir=tmp_path / "c")
+    assert len(tr3.optimizer.param_groups) == 1    # keys but no router params

@@ -80,6 +80,9 @@ optim_conf:
   lr: 1.0e-3
   weight_decay: 1.0e-6
   betas: [0.9, 0.98]
+  router_lr_mult: 0.5                      # divergence fix (runlog 2026-07-20): damp the
+  router_eps: 1.0e-5                       # boundary router; eps floor defuses near-zero
+                                           # Adam second moments (spike -> full-lr jump)
 scheduler: warmuplr
 scheduler_conf:
   warmup_steps: 20000                      # LR = lr·√warmup·min(step^-0.5, step·warmup^-1.5)
@@ -89,7 +92,7 @@ scheduler_conf:
 # ── training ─────────────────────────────────────────────────────────────────
 train:
   max_epoch: 200
-  grad_clip: 5.0
+  grad_clip: 1.0                           # tightened after the N=2 divergence (was 5.0)
   grad_clip_type: 2.0
   precision: bf16                          # drives autocast; GradScaler enabled for fp16 only
   log_interval: 50                         # optimizer steps between train-metric logs

@@ -180,9 +180,10 @@ def test_masking_ignores_padding():
 
 
 # ── Vectorised kernels match the sequential reference implementations ────────
-def _ema_reference(x, p):
-    """The original step-by-step recurrence, kept as ground truth."""
-    P = p.unsqueeze(-1)
+def _ema_reference(x, p, p_clamp=1e-4):
+    """The step-by-step recurrence, kept as ground truth — including the hard
+    p clamp (official H-Net parity; zero gradient at saturation)."""
+    P = p.clamp(p_clamp, 1.0 - p_clamp).unsqueeze(-1)
     out = torch.empty_like(x)
     prev = x[:, 0]
     out[:, 0] = x[:, 0]
@@ -221,9 +222,11 @@ def test_ema_matches_sequential_reference():
 
 
 def test_ema_stable_and_differentiable_at_saturated_router():
-    """p exactly 1.0 (fully confident boundary) must stay finite in fwd and bwd."""
+    """p exactly 1.0 (fully confident boundary) must stay finite in fwd and bwd,
+    and — official H-Net parity — its gradient must be exactly ZERO there (a
+    backward-identity clamp passed 1/(1-p) ~ 1e6 gradients: the N=2 amplifier)."""
     x = torch.randn(2, 120, D, requires_grad=True)
-    p = torch.rand(2, 120)
+    p = torch.rand(2, 120) * 0.8 + 0.1
     p[:, ::10] = 1.0                               # saturated boundaries
     p.requires_grad_(True)
     out = DynamicChunker._ema(x, p)
@@ -232,9 +235,13 @@ def test_ema_stable_and_differentiable_at_saturated_router():
                           atol=1e-4, rtol=1e-4)
     out.sum().backward()
     assert torch.isfinite(x.grad).all() and torch.isfinite(p.grad).all()
+    assert (p.grad[:, 10::10] == 0).all()          # saturated (excl. t=0): grads DIE
+    assert p.grad[:, 1:].abs().sum() > 0           # interior grads still flow
 
 
 def test_ema_gradient_correct_at_saturated_p():
+    """Gradients match the clamped sequential reference exactly, including the
+    zero at saturated positions."""
     x0 = torch.randn(1, 6, 3, dtype=torch.float64)
     p0 = torch.tensor([[1.0, 0.3, 0.7, 1.0, 0.4, 0.6]], dtype=torch.float64)
 
@@ -247,6 +254,7 @@ def test_ema_gradient_correct_at_saturated_p():
     rx, rp = grads(_ema_reference)
     assert torch.allclose(gx, rx, atol=1e-5)
     assert torch.allclose(gp, rp, atol=1e-5)
+    assert gp[0, 3] == 0                            # saturated interior position
 
 
 def test_ema_gradcheck_fp64():
