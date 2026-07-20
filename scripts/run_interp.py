@@ -158,7 +158,7 @@ def run(cfg, checkpoint, modes, repo_root=REPO, device=None):
             levels=tuple(pc.get("levels", ("frames", "chunks"))),
             top_k_words=int(pc.get("top_k_words", 500)),
             max_iter=int(pc.get("max_iter", 1000)), C=float(pc.get("C", 1.0)),
-            seed=int(pc.get("seed", 1)))
+            seed=int(pc.get("seed", 1)), backend=str(pc.get("backend", "sklearn")))
 
     if "probes" in modes:
         results["probes"] = probe_report(
@@ -169,7 +169,7 @@ def run(cfg, checkpoint, modes, repo_root=REPO, device=None):
             train_cap=int(pc.get("train_cap", 50000)),
             test_cap=int(pc.get("test_cap", 20000)),
             max_iter=probe_setup["max_iter"], C=probe_setup["C"],
-            seed=probe_setup["seed"])
+            seed=probe_setup["seed"], backend=probe_setup["backend"])
         (out_root / "probes.json").write_text(json.dumps(results["probes"], indent=1))
 
     if "robustness" in modes:
@@ -204,7 +204,7 @@ def run(cfg, checkpoint, modes, repo_root=REPO, device=None):
                 train_cap=int(ec.get("train_cap", 20000)),
                 test_cap=int(ec.get("test_cap", 10000)),
                 max_iter=probe_setup["max_iter"], C=probe_setup["C"],
-                seed=probe_setup["seed"])
+                seed=probe_setup["seed"], backend=probe_setup["backend"])
         mlogger = MetricsLogger(run_name="emergence", root=out_root, rank=0)
         try:
             rows = emergence_report(model, ckpts, loader, alignments, durations,

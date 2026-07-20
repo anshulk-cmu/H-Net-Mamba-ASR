@@ -186,18 +186,59 @@ def top_k_filter(X: Sequence, y: Sequence, k: int):
     return [p[0] for p in pairs], [p[1] for p in pairs], coverage
 
 
+def _torch_lbfgs_fit(X_train, y_train, X_test, *, max_iter: int, C: float,
+                     device: str | None = None):
+    """LBFGS on sklearn's EXACT objective 0.5·||W||² + C·Σ CE_i (bias
+    unpenalized, W init 0, fp64, gtol 1e-4) — the problem is convex with a
+    unique optimum, so this converges to the same solution as sklearn's lbfgs,
+    just on the GPU. Returns (predicted labels, n_iter)."""
+    import numpy as np
+
+    dev = device or ("cuda" if torch.cuda.is_available() else "cpu")
+    classes = sorted(set(y_train))                   # sklearn: np.unique order
+    idx = {c: i for i, c in enumerate(classes)}
+    Xt = torch.as_tensor(np.asarray(X_train), dtype=torch.float64, device=dev)
+    yt = torch.tensor([idx[c] for c in y_train], dtype=torch.long, device=dev)
+    W = torch.zeros(Xt.shape[1], len(classes), dtype=torch.float64, device=dev,
+                    requires_grad=True)
+    bias = torch.zeros(len(classes), dtype=torch.float64, device=dev,
+                       requires_grad=True)
+    opt = torch.optim.LBFGS([W, bias], max_iter=int(max_iter), history_size=10,
+                            line_search_fn="strong_wolfe", tolerance_grad=1e-4)
+
+    def closure():
+        opt.zero_grad(set_to_none=True)
+        loss = (0.5 * W.pow(2).sum()
+                + C * torch.nn.functional.cross_entropy(Xt @ W + bias, yt,
+                                                        reduction="sum"))
+        loss.backward()
+        return loss
+
+    opt.step(closure)
+    n_iter = int(opt.state[W].get("n_iter", 0))
+    Xe = torch.as_tensor(np.asarray(X_test), dtype=torch.float64, device=dev)
+    pred_idx = (Xe @ W + bias).argmax(dim=1).cpu().tolist()
+    return np.asarray([classes[i] for i in pred_idx]), n_iter
+
+
 def train_probe(X_train, y_train, X_test, y_test, *, max_iter: int = 200,
-                C: float = 1.0, seed: int = 1) -> dict:
+                C: float = 1.0, seed: int = 1, backend: str = "sklearn",
+                device: str | None = None) -> dict:
     """Multinomial logistic regression; accuracy + balanced accuracy vs
     majority/chance baselines. Test items whose class was never seen in training
     are excluded and counted in n_test_dropped_unseen — REPORT that (and any
     top-k kept fraction) alongside accuracy; on skewed labels the headline can
     describe under half the frames otherwise. seed only matters for non-lbfgs
-    solvers (lbfgs is deterministic)."""
+    solvers (lbfgs is deterministic).
+
+    backend='sklearn' (the verified reference) or 'torch' (identical convex
+    objective fit with LBFGS on `device`, default GPU — parity-tested; ~2
+    orders faster at frame scale). n_iter==max_iter means an unconverged fit."""
     import numpy as np
-    from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import balanced_accuracy_score
 
+    if backend not in ("sklearn", "torch"):
+        raise ValueError(f"backend must be 'sklearn' or 'torch', got {backend!r}")
     train_classes = set(y_train)
     if len(train_classes) < 2:
         raise ValueError(f"probe needs >= 2 training classes, got {len(train_classes)}")
@@ -207,9 +248,21 @@ def train_probe(X_train, y_train, X_test, y_test, *, max_iter: int = 200,
     y_test = [y_test[i] for i in kept]
     if not y_train or not y_test:
         raise ValueError("empty probe train or test set")
-    clf = LogisticRegression(max_iter=max_iter, C=C, random_state=seed)
-    clf.fit(np.asarray(X_train), y_train)
-    pred = clf.predict(np.asarray(X_test))
+    if backend == "torch" and len(train_classes) == 2:
+        # sklearn parameterizes 2 classes as a BINARY sigmoid (one penalized
+        # weight vector) — a different regularized optimum than a 2-column
+        # softmax (verified |dP| up to 0.04). Binary fits are cheap: stay on
+        # the reference. Production probes always have >= 7 classes.
+        backend = "sklearn"
+    if backend == "sklearn":
+        from sklearn.linear_model import LogisticRegression
+        clf = LogisticRegression(max_iter=max_iter, C=C, random_state=seed)
+        clf.fit(np.asarray(X_train), y_train)
+        pred = clf.predict(np.asarray(X_test))
+        n_iter = int(np.max(clf.n_iter_))
+    else:
+        pred, n_iter = _torch_lbfgs_fit(X_train, y_train, X_test,
+                                        max_iter=max_iter, C=C, device=device)
     acc = float(np.mean(pred == np.asarray(y_test)))
     majority = Counter(y_train).most_common(1)[0][0]
     maj_acc = sum(lab == majority for lab in y_test) / len(y_test)
@@ -219,4 +272,4 @@ def train_probe(X_train, y_train, X_test, y_test, *, max_iter: int = 200,
             "chance": 1.0 / len(train_classes), "n_classes": len(train_classes),
             "n_train": len(y_train), "n_test": len(y_test),
             "n_test_dropped_unseen": dropped_test,
-            "n_iter": int(np.max(clf.n_iter_))}
+            "n_iter": n_iter, "backend": backend}

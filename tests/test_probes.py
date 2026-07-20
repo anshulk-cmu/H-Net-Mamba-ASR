@@ -264,3 +264,61 @@ def test_collect_two_stage_nontrivial_and_mixed_lengths():
     # padded row: u2's stage-2 z rows beyond its 2 chunks never sampled
     labels_u2 = y[2:]
     assert all(l == "C" for l in labels_u2)
+
+
+# ── torch (GPU-capable) probe backend: parity with the sklearn reference ─────
+def test_torch_backend_parity_separable_and_noise():
+    """Convex objective with unique optimum: both backends must reach the same
+    solution — accuracies equal on separable AND noisy data (CPU, fp64)."""
+    Xtr, ytr = _separable(seed=0)
+    Xte, yte = _separable(seed=1)
+    sk = train_probe(Xtr, ytr, Xte, yte)
+    th = train_probe(Xtr, ytr, Xte, yte, backend="torch", device="cpu",
+                     max_iter=500)
+    assert th["backend"] == "torch" and sk["backend"] == "sklearn"
+    assert th["accuracy"] == sk["accuracy"] == pytest.approx(1.0, abs=0.02)
+    rng = np.random.default_rng(3)
+    Xn = [rng.normal(0, 1, 8) for _ in range(300)]
+    yn = [("a", "b", "c")[i % 3] for i in range(300)]
+    skn = train_probe(Xn[:200], yn[:200], Xn[200:], yn[200:])
+    thn = train_probe(Xn[:200], yn[:200], Xn[200:], yn[200:], backend="torch",
+                      device="cpu", max_iter=500)
+    assert abs(thn["accuracy"] - skn["accuracy"]) <= 0.02   # same optimum
+    assert thn["n_iter"] >= 1
+
+
+def test_torch_backend_skewed_and_unseen_drop():
+    """The shared pre-fit path (unseen-class drop, majority/chance) is backend-
+    independent; skewed-label parity pins the fit itself."""
+    rng = np.random.default_rng(0)
+    slot = {"a": 0, "b": 1, "c": 2, "zz": 3}
+    def sep(labels):
+        return [np.eye(6)[slot[l]] + rng.normal(0, 0.01, 6) for l in labels]
+    ytr = ["a"] * 60 + ["b"] * 30 + ["c"] * 10
+    yte = ["a"] * 6 + ["b"] * 3 + ["zz"] * 4 + ["c"] * 1
+    sk = train_probe(sep(ytr), ytr, sep(yte), yte)
+    th = train_probe(sep(ytr), ytr, sep(yte), yte, backend="torch", device="cpu",
+                     max_iter=500)
+    for k in ("accuracy", "majority_baseline", "chance", "n_classes",
+              "n_test", "n_test_dropped_unseen"):
+        assert th[k] == sk[k], k
+    assert th["balanced_accuracy"] == pytest.approx(sk["balanced_accuracy"])
+
+
+def test_torch_backend_deterministic_and_guards():
+    Xtr, ytr = _separable(seed=0)
+    Xte, yte = _separable(seed=1)
+    a = train_probe(Xtr, ytr, Xte, yte, backend="torch", device="cpu")
+    b = train_probe(Xtr, ytr, Xte, yte, backend="torch", device="cpu")
+    assert a == b                                     # zero-init LBFGS: no RNG
+    with pytest.raises(ValueError, match="backend"):
+        train_probe(Xtr, ytr, Xte, yte, backend="cuml")
+
+
+def test_torch_backend_two_class_falls_back_to_sklearn():
+    """2 classes: sklearn's binary-sigmoid optimum != a 2-column softmax's
+    (verified |dP| up to 0.04) — the torch backend must defer to the reference."""
+    Xtr, ytr = _separable(classes=("p", "q"), seed=0)
+    Xte, yte = _separable(classes=("p", "q"), seed=1)
+    out = train_probe(Xtr, ytr, Xte, yte, backend="torch", device="cpu")
+    assert out["backend"] == "sklearn"                # auto-fallback recorded

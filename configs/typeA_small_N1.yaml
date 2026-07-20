@@ -145,6 +145,8 @@ interp:
   baseline_trials: 20                      # random-baseline floor (reported beside every metric)
   probe:
     levels: [frames, chunks]
+    backend: torch                         # GPU LBFGS on sklearn's exact convex objective
+                                           # (parity-tested); sklearn = verified reference
     top_k_words: 500                       # word-id probe convention; kept fractions reported
     train_cap: 1000000                     # >= all labeled frames of the 10h subset: uncapped
     test_cap: 1000000                      # >= all labeled eval frames: uncapped

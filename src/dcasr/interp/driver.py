@@ -295,11 +295,13 @@ def boundary_report(encoder, loader, alignments: Mapping[str, Mapping],
 
 
 # ── probe report (mandates a + c) ────────────────────────────────────────────
-def _fit_probe(Xtr, ytr, Xte, yte, *, train_cap, test_cap, max_iter, C, seed):
+def _fit_probe(Xtr, ytr, Xte, yte, *, train_cap, test_cap, max_iter, C, seed,
+               backend="sklearn"):
     n_tr, n_te = len(ytr), len(yte)
     Xtr, ytr = subsample(Xtr, ytr, train_cap, seed=seed)
     Xte, yte = subsample(Xte, yte, test_cap, seed=seed)
-    out = train_probe(Xtr, ytr, Xte, yte, max_iter=max_iter, C=C, seed=seed)
+    out = train_probe(Xtr, ytr, Xte, yte, max_iter=max_iter, C=C, seed=seed,
+                      backend=backend)
     out.update(n_collected_train=n_tr, n_collected_test=n_te)
     return out
 
@@ -310,7 +312,7 @@ def probe_report(encoder, train_loader, test_loader,
                  levels: Sequence[str] = ("frames", "chunks"),
                  top_k_words: int = 500, train_cap: int = 50000,
                  test_cap: int = 20000, max_iter: int = 1000, C: float = 1.0,
-                 seed: int = 1) -> dict:
+                 seed: int = 1, backend: str = "sklearn") -> dict:
     """phone_id / phone_class / word_id probes per representation level.
     Disjointness of the utterance sets actually consumed from the two loaders
     is asserted after every collection round (mandate a); word probes carry
@@ -339,10 +341,11 @@ def probe_report(encoder, train_loader, test_loader,
         assert_disjoint(train_loader.seen, test_loader.seen)
         entry["phone_id"] = _fit_probe(Xtr, ytr, Xte, yte, train_cap=train_cap,
                                        test_cap=test_cap, max_iter=max_iter,
-                                       C=C, seed=seed)
+                                       C=C, seed=seed, backend=backend)
         entry["phone_class"] = _fit_probe(Xtr, to_classes(ytr), Xte, to_classes(yte),
                                           train_cap=train_cap, test_cap=test_cap,
-                                          max_iter=max_iter, C=C, seed=seed)
+                                          max_iter=max_iter, C=C, seed=seed,
+                                          backend=backend)
         Xtr, ytr = collect_probe_data(encoder, train_loader, train_alignments,
                                       "words", device, level=level, stage=stage)
         Xte, yte = collect_probe_data(encoder, test_loader, test_alignments,
@@ -354,7 +357,7 @@ def probe_report(encoder, train_loader, test_loader,
         test_kept = len(kept) / max(1, len(yte))
         Xte, yte = [Xte[i] for i in kept], [yte[i] for i in kept]
         w = _fit_probe(Xtr, ytr, Xte, yte, train_cap=train_cap, test_cap=test_cap,
-                       max_iter=max_iter, C=C, seed=seed)
+                       max_iter=max_iter, C=C, seed=seed, backend=backend)
         w.update(top_k=top_k_words, train_kept_fraction=train_cov,
                  test_kept_fraction=test_kept)
         entry["word_id"] = w
