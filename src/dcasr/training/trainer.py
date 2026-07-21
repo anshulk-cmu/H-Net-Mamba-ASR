@@ -437,6 +437,32 @@ class Trainer:
             if e not in keep:
                 p.unlink(missing_ok=True)
 
+    def _last_significant_best(self, phase: str, metric: str, mode: str,
+                               min_delta: float) -> int | None:
+        """Epoch of the last SIGNIFICANT best, i.e. one that beat the running
+        best by more than `min_delta` (Keras convention: a sub-threshold move
+        neither resets patience nor moves the reference).
+
+        Separate from `_best_epoch`, which stays a plain argmin/argmax because
+        CHECKPOINT selection must always track the true best. Early stopping
+        needs the thresholded version: without min_delta, noise-sized
+        'improvements' reset patience forever — our valid/wer improved 6.118 ->
+        6.098 across 35 epochs (0.02, a quarter of its ~0.07 noise sd) and kept
+        the run alive indefinitely (runlog 2026-07-21).
+        """
+        hist = self.metric_history.get((phase, metric))
+        if not hist:
+            return None
+        best_ep = best_val = None
+        for e in sorted(hist):
+            v = hist[e]
+            better = (best_val is None
+                      or (v < best_val - min_delta if mode == "min"
+                          else v > best_val + min_delta))
+            if better:
+                best_ep, best_val = e, v
+        return best_ep
+
     def _should_early_stop(self) -> bool:
         es = self.early_stopping
         if not es.get("enable", False):
@@ -444,7 +470,9 @@ class Trainer:
         criteria = es.get("criteria", [])
         results = []
         for c in criteria:
-            be = self._best_epoch(c["phase"], c["metric"], c.get("mode", "min"))
+            be = self._last_significant_best(c["phase"], c["metric"],
+                                             c.get("mode", "min"),
+                                             float(c.get("min_delta", 0.0)))
             results.append(be is not None and (self.epoch - be) > int(c["patience"]))
         if not results:
             return False

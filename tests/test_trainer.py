@@ -431,3 +431,65 @@ def test_router_param_group_wiring(tmp_path):
     tr3 = Trainer(_Model(), _loader(), cfg, train_sampler=_Sampler(),
                   device="cpu", ckpt_dir=tmp_path / "c")
     assert len(tr3.optimizer.param_groups) == 1    # keys but no router params
+
+
+def test_early_stop_min_delta_ignores_noise_bests(tmp_path):
+    """The real failure (runlog 2026-07-21): sub-noise 'improvements' reset
+    patience forever. Series improving by 0.01/validation against a 0.05
+    threshold must stall; with min_delta=0 the same series never stalls."""
+    crit = {"phase": "valid", "metric": "wer", "mode": "min",
+            "patience": 12, "min_delta": 0.05}
+    tr = _trainer(tmp_path, _cfg(early_stopping={"enable": True,
+                                                 "criteria": [dict(crit)]}))
+    # each step is a genuine but noise-sized 0.01 gain
+    tr.metric_history[("valid", "wer")] = {4: 7.0, 9: 6.20, 14: 6.19, 19: 6.18,
+                                           24: 6.17, 29: 6.16, 34: 6.15}
+    tr.epoch = 34
+    assert tr._last_significant_best("valid", "wer", "min", 0.05) == 9
+    assert tr._should_early_stop() is True          # 34-9 = 25 > 12 -> stops
+    assert tr._best_epoch("valid", "wer", "min") == 34   # checkpointing unaffected
+    tr.early_stopping["criteria"][0]["min_delta"] = 0.0
+    assert tr._should_early_stop() is False         # THE BUG: every blip resets
+
+
+def test_early_stop_on_real_n1_series(tmp_path):
+    """Replay N1's actual valid/wer history: with the fixed logic the run stops
+    at epoch 64 instead of running past 104."""
+    tr = _trainer(tmp_path, _cfg(early_stopping={"enable": True, "criteria": [
+        {"phase": "valid", "metric": "wer", "mode": "min",
+         "patience": 12, "min_delta": 0.05}]}))
+    real = {4: 11.99, 9: 8.04, 14: 7.23, 19: 6.87, 24: 6.62, 29: 6.48, 34: 6.36,
+            39: 6.42, 44: 6.25, 49: 6.15, 54: 6.22, 59: 6.15, 64: 6.118,
+            69: 6.145, 74: 6.165, 79: 6.126, 84: 6.175, 89: 6.226}
+    for cut, expect in ((59, False), (64, True), (79, True)):
+        tr.metric_history[("valid", "wer")] = {e: v for e, v in real.items() if e <= cut}
+        tr.epoch = cut
+        assert tr._should_early_stop() is expect, cut
+    # the significant best stays ep49 (6.15): 6.118/6.126 are sub-threshold
+    tr.metric_history[("valid", "wer")] = dict(real)
+    assert tr._last_significant_best("valid", "wer", "min", 0.05) == 49
+
+
+def test_early_stop_significant_improvement_resets_patience(tmp_path):
+    """A genuine (> min_delta) gain must still reset the counter."""
+    tr = _trainer(tmp_path, _cfg(early_stopping={
+        "enable": True, "criteria": [{"phase": "valid", "metric": "wer",
+                                      "mode": "min", "patience": 12,
+                                      "min_delta": 0.05}]}))
+    tr.metric_history[("valid", "wer")] = {4: 9.0, 9: 8.0, 14: 7.0, 19: 6.0}
+    assert tr._last_significant_best("valid", "wer", "min", 0.05) == 19
+    tr.epoch = 29
+    assert tr._should_early_stop() is False                # only 10 epochs past
+    tr.metric_history[("valid", "wer")][24] = 5.90         # real gain (0.10 > 0.05)
+    tr.epoch = 34
+    assert tr._last_significant_best("valid", "wer", "min", 0.05) == 24
+    assert tr._should_early_stop() is False                # counter reset by it
+
+
+def test_early_stop_max_mode_min_delta(tmp_path):
+    """min_delta must work in the maximise direction too (strict >)."""
+    tr = _trainer(tmp_path, _cfg())
+    tr.metric_history[("valid", "acc")] = {4: 0.80, 9: 0.90, 14: 0.902, 19: 0.97}
+    assert tr._last_significant_best("valid", "acc", "max", 0.05) == 19
+    # at 0.10: 0.90 is not > 0.80+0.10 (strict), 0.902 > 0.90 is, 0.97 < 1.002
+    assert tr._last_significant_best("valid", "acc", "max", 0.10) == 14

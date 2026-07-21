@@ -94,7 +94,7 @@ scheduler_conf:
 
 # ── training ─────────────────────────────────────────────────────────────────
 train:
-  max_epoch: 200
+  max_epoch: 120                           # was 200; both cells plateaued by ~ep64-84
   grad_clip: 1.0                           # tightened after the N=2 divergence (was 5.0)
   grad_clip_type: 2.0
   precision: bf16                          # drives autocast; GradScaler enabled for fp16 only
@@ -112,17 +112,22 @@ keep_nbest_models: 5
 keep_all_checkpoints: true                 # retain EVERY saved epoch ckpt: emergence curves (H4)
                                            # + full mid-training observability on the gate run
 
-# ── early stopping (AND: stop only when EVERY criterion has stalled) ─────────
-# patience is in EPOCHS; checked at validation epochs; the stall test is strict
-# (epoch - best > patience), so interval 5 + patience 20 stops 25 epochs after
-# the last improvement (the 5th consecutive stalled validation).
+# ── early stopping (standard single-metric form) ─────────────────────────────
+# Monitor ONE metric (WER, the number we care about), require a MINIMUM
+# improvement, and count patience in epochs at the validation cadence.
+# The previous form (AND over wer+cer+loss, no min_delta) could never fire:
+# valid/loss floors early by design (label smoothing) so it was permanently
+# "stalled" and contributed nothing, while noise-sized WER gains (6.118 ->
+# 6.098 over 35 epochs, a quarter of the ~0.07 noise sd) reset patience
+# forever. See runlog 2026-07-21.
 early_stopping:
   enable: true
-  require_all: true                        # valid metrics only: a train-loss criterion
-  criteria:                                # ~always improves under decaying LR and
-    - {phase: valid, metric: wer,  mode: min, patience: 20}   # would AND-block the stop
-    - {phase: valid, metric: cer,  mode: min, patience: 20}
-    - {phase: valid, metric: loss, mode: min, patience: 20}
+  require_all: true                        # single criterion, so AND/OR is moot
+  criteria:
+    # min_delta 0.05 ~ 0.7x the measured per-validation noise sd (0.07 WER):
+    # ignores lucky blips, still catches real gains.
+    # patience 12 epochs at valid_interval 5 => stop after 3 stalled validations.
+    - {phase: valid, metric: wer, mode: min, patience: 12, min_delta: 0.05}
 
 # ── decoding: the FULL 7-cell matrix on all four splits ──────────────────────
 # cells = read_outs x search x ±LM (greedy is CTC-only; LM on beam cells only):
