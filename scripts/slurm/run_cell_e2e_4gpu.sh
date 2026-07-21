@@ -49,13 +49,30 @@ MARK=experiments/$RUN/pipeline
 mkdir -p "$MARK"
 
 requeue() {
-  echo "[$(date)] time-limit signal — requeueing ${SLURM_JOB_ID} (pipeline resumes at the incomplete stage)"
+  plog "time-limit signal — draining then requeueing ${SLURM_JOB_ID}"
+  # MUST kill the training processes BEFORE requeueing. A requeued job starts a
+  # SECOND writer while the old one is still alive: on 2026-07-21 a preemption
+  # requeue left an orphan that co-wrote metrics.jsonl for ~18 min (231 duplicate
+  # steps, 6 backward jumps) and came within ~5 min of clobbering latest.pt with
+  # stale state. Checkpoints are written at epoch boundaries, so a clean SIGTERM
+  # here loses at most the in-flight epoch, which --resume auto redoes anyway.
+  if [ -n "${TRAIN_PID:-}" ] && kill -0 "$TRAIN_PID" 2>/dev/null; then
+    kill -TERM -- "-$(ps -o pgid= -p "$TRAIN_PID" | tr -d ' ')" 2>/dev/null || kill -TERM "$TRAIN_PID" 2>/dev/null
+    for _i in $(seq 1 20); do
+      kill -0 "$TRAIN_PID" 2>/dev/null || break
+      sleep 3
+    done
+    kill -KILL -- "-$(ps -o pgid= -p "$TRAIN_PID" | tr -d ' ')" 2>/dev/null || kill -KILL "$TRAIN_PID" 2>/dev/null
+  fi
+  pkill -KILL -f "train.py --config $CFG" 2>/dev/null   # backstop for orphaned workers
+  sleep 2
+  plog "training processes drained; requeueing"
   for _try in 1 2 3; do
     scontrol requeue "${SLURM_JOB_ID}" && return
-    echo "[$(date)] scontrol requeue failed (attempt $_try), retrying"
+    plog "scontrol requeue failed (attempt $_try), retrying"
     sleep 20
   done
-  echo "[$(date)] WARNING: requeue failed 3x — chain broken, resubmit manually"
+  plog "WARNING: requeue failed 3x — chain broken, resubmit manually"
 }
 trap requeue USR1
 
@@ -81,7 +98,8 @@ if ! stage_done train; then
   plog "STAGE train: torchrun x4"
   $ENVBIN/torchrun --standalone --nproc_per_node=4 scripts/train.py \
     --config $CFG --resume auto &
-  wait $!
+  TRAIN_PID=$!            # the trap kills this group before requeueing
+  wait $TRAIN_PID
   E=$?
   if [ "$E" -ne 0 ]; then plog "TRAIN_EXIT=$E"; exit "$E"; fi
   mark_done train
