@@ -41,11 +41,17 @@ run() {   # <gpu> <run_name> <tag> <lm_weights> <ilm_weights>
     > "logs/sweep_$2_$3.txt" 2>&1
 }
 
-# lambda=0.3 bracketing the predicted alpha=0.20 | higher lambda on/near its ray
-run 0 typeA_small_N1 a 0.3     0.10,0.20,0.30 &
-run 1 typeA_small_N1 b 0.5,0.7 0.34,0.47      &
-run 2 typeA_small_N2 a 0.3     0.10,0.20,0.30 &
-run 3 typeA_small_N2 b 0.5,0.7 0.34,0.47      &
+# SMALL lambda. The AED's own per-token entropy is only 0.144 nats (87% mean probability
+# on the correct token), so lambda=0.3 injected 0.71 nats/token of LM opinion — five times
+# the entire signal it was advising, which is why no alpha stabilized it. Matching the LM
+# term to the acoustic model's uncertainty gives lambda ~ 0.144/2.381 ~ 0.06. alpha=0 is
+# swept alongside the length-neutral alpha=0.67*lambda: at small lambda the accumulated
+# per-token drag stays under the AED's 8.6-nat eos discrimination, so plain shallow fusion
+# may need no correction at all.
+run 0 typeA_small_N1 a 0.05,0.1  0.0,0.034,0.067 &
+run 1 typeA_small_N1 b 0.15,0.2  0.0,0.10,0.134  &
+run 2 typeA_small_N2 a 0.05,0.1  0.0,0.034,0.067 &
+run 3 typeA_small_N2 b 0.15,0.2  0.0,0.10,0.134  &
 wait
 
 echo "[$(date)] SWEEP COMPLETE"
