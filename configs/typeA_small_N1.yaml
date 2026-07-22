@@ -136,7 +136,12 @@ decode:
   beam_size: 10                            # plan default; knee sweep {4,8,10,16} on dev pending
   pre_beam: 30                             # joint-beam CTC-prefix pre-pruning width
   ctc_weight: 0.3                          # decode-time joint score weight (Watanabe hybrid)
-  length_bonus: 0.0
+  length_bonus: 0.0                        # no-LM beam cells: no insertion bonus
+  lm_length_bonus: 1.0                     # LM cells ONLY: cancels shallow fusion's per-token
+                                           # LM cost. At 0.0 aed_beam_lm collapsed to 70% WER
+                                           # (0.34x ref length, 540/2703 empty); measured on the
+                                           # hardest utts: 0->75%, 1.0->4.1% (len ratio 0.99),
+                                           # 2.0->47% (over-generation). runlog 2026-07-21.
   lm: shallow_fusion                       # enables the _lm cells alongside every no-LM cell
   lm_config: configs/lm_transformer_500.yaml
   lm_checkpoint: checkpoints/lm_transformer_500/valid.loss.ave.pt

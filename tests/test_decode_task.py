@@ -228,3 +228,19 @@ def test_ctc_beam_projection_time_included(tmp_path, tok):
     recs = [json.loads(l) for l in open(out)]
     assert s["decode_s"] > 0 and all(r["decode_s"] > 0 for r in recs)
     assert abs(sum(r["decode_s"] for r in recs) - s["decode_s"]) < 1e-3  # summary is 3-dp rounded
+
+
+def test_length_bonus_is_lm_cell_only():
+    """Shallow fusion needs an insertion bonus to offset its per-token LM cost,
+    but applying it to the no-LM cells would cause over-generation (measured:
+    bonus 2.0 -> len ratio 1.40). runlog 2026-07-21."""
+    from dcasr.tasks.decode_task import length_bonus_for
+    dc = {"length_bonus": 0.0, "lm_length_bonus": 1.0}
+    assert length_bonus_for({"lm": False}, dc) == 0.0      # aed_beam / joint_beam
+    assert length_bonus_for({"lm": True}, dc) == 1.0       # aed_beam_lm / joint_beam_lm
+    # falls back to length_bonus when lm_length_bonus is absent (back-compat)
+    assert length_bonus_for({"lm": True}, {"length_bonus": 0.4}) == 0.4
+    assert length_bonus_for({"lm": False}, {"length_bonus": 0.4}) == 0.4
+    assert length_bonus_for({"lm": True}, {}) == 0.0       # both absent
+    # a non-LM cell must NEVER pick up the LM bonus
+    assert length_bonus_for({"lm": False}, {"lm_length_bonus": 5.0}) == 0.0

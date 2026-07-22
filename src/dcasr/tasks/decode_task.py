@@ -106,6 +106,26 @@ def load_lm_scorer(decode_cfg: Mapping[str, Any], repo_root: str | Path, tokeniz
     return CausalLMScorer(lmm.lm.to(device).eval())
 
 
+def length_bonus_for(cell: Mapping[str, Any], decode_cfg: Mapping[str, Any]) -> float:
+    """Per-token insertion bonus for a label-synchronous beam cell.
+
+    Shallow fusion adds a per-token LM cost (~lm_weight x |mean LM logprob|)
+    that nothing offsets, so the beam terminates early: at bonus 0 the
+    aed_beam_lm cell emitted 0.34x the reference length with 540/2703 EMPTY
+    hypotheses (70% WER vs 2.7% for the same decoder without the LM). The
+    insertion bonus cancels it (ESPnet calls this `penalty`).
+
+    It MUST be LM-cell-only — applying it to the no-LM cells would push those
+    into over-generation (measured: bonus 2.0 -> length ratio 1.40, WER 47%).
+    So LM cells use `decode.lm_length_bonus` (falling back to `length_bonus`),
+    and non-LM cells always use `decode.length_bonus`. See runlog 2026-07-21.
+    """
+    dc = _plain(decode_cfg)
+    if cell.get("lm"):
+        return float(dc.get("lm_length_bonus", dc.get("length_bonus", 0.0)))
+    return float(dc.get("length_bonus", 0.0))
+
+
 @torch.no_grad()
 def decode_batch(model, tokenizer, batch: dict, cell: Mapping[str, Any],
                  decode_cfg: Mapping[str, Any], device, lm=None) -> list[dict]:
@@ -117,6 +137,7 @@ def decode_batch(model, tokenizer, batch: dict, cell: Mapping[str, Any],
     use_lm = lm if cell["lm"] else None
     if cell["lm"] and (lm is None or lm_weight == 0.0):
         raise ValueError(f"cell {cell['name']} needs decode.lm_checkpoint and lm_weight != 0")
+    length_bonus = length_bonus_for(cell, dc)
 
     feats = batch["feats"].to(device)
     feat_lens = batch["feat_lens"].to(device)
@@ -157,7 +178,7 @@ def decode_batch(model, tokenizer, batch: dict, cell: Mapping[str, Any],
                 ctc_head, model.aed_head, enc.features[i : i + 1, :n],
                 enc.lengths[i : i + 1], beam_size=beam_size, ctc_weight=ctc_w,
                 bos_id=tok.bos_id, eos_id=tok.eos_id, pad_id=tok.pad_id,
-                length_bonus=float(dc.get("length_bonus", 0.0)),
+                length_bonus=length_bonus,
                 pre_beam=(int(pre_beam) if pre_beam else None),
                 lm=use_lm, lm_weight=lm_weight)[0]
             times.append(time.perf_counter() - t0)
