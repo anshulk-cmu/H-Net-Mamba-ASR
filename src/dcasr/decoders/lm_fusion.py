@@ -129,3 +129,47 @@ class CausalLMScorer:
         last = logits[torch.arange(len(prefixes), device=device),
                       torch.tensor(lens, device=device) - 1]   # [n, V] (causal -> padding after is ignored)
         return torch.log_softmax(last.float(), dim=-1)
+
+
+class ILMScorer:
+    """Zero-out estimate of the AED decoder's INTERNAL language model (Meng et al. 2021).
+
+    An autoregressive AED decoder learns an implicit LM over the training transcripts. Naive
+    shallow fusion adds an external LM on top of it, so the language prior is counted twice;
+    the surplus per-token cost makes the beam stop early (deletions, truncated hypotheses).
+    The density-ratio fix subtracts this estimate:
+        score(h) = AED + ctc_weight·CTC + lm_weight·logP_ext(h) - ilm_weight·logP_ILM(h)
+    CTC read-outs need none of this: being conditionally independent per frame, they carry
+    essentially no internal LM, which is why the CTC +LM cells fuse cleanly without any
+    length correction.
+
+    The estimate runs the SAME decoder weights with every cross-attention residual dropped,
+    so nothing about the acoustic input reaches it. Same `next_logprobs` interface as
+    `CausalLMScorer`, so the beam consumes both identically.
+    """
+
+    def __init__(self, aed_head, bos_id: int = 1, pad_id: int = 3):
+        self.head = aed_head
+        self.bos_id = bos_id
+        self.pad_id = pad_id
+        mp = aed_head.mem_proj
+        self.d_memory = mp.in_features if isinstance(mp, nn.Linear) else aed_head.d_model
+
+    @torch.no_grad()
+    def next_logprobs(self, prefixes: list[list[int]], device) -> torch.Tensor:
+        from dcasr.decoders.aed import no_acoustic_context
+        lens = [len(p) + 1 for p in prefixes]              # +1 for bos
+        maxL = max(lens)
+        ys = torch.full((len(prefixes), maxL), self.pad_id, dtype=torch.long, device=device)
+        for i, p in enumerate(prefixes):
+            ys[i, 0] = self.bos_id
+            if p:
+                ys[i, 1 : 1 + len(p)] = torch.tensor(p, device=device)
+        dtype = next(self.head.parameters()).dtype
+        mem = torch.zeros(len(prefixes), 1, self.d_memory, device=device, dtype=dtype)
+        mlen = torch.ones(len(prefixes), dtype=torch.long, device=device)
+        with no_acoustic_context(self.head):
+            logits = self.head.forward(mem, mlen, ys)      # memory is inert inside the block
+        last = logits[torch.arange(len(prefixes), device=device),
+                      torch.tensor(lens, device=device) - 1]
+        return torch.log_softmax(last.float(), dim=-1)

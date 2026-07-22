@@ -86,6 +86,7 @@ class _Hyp:
     aed: float                                             # cumulative AED log-prob
     ctc: float                                             # absolute CTC prefix log-prob
     lm: float = 0.0                                        # cumulative external-LM log-prob
+    ilm: float = 0.0                                       # cumulative internal-LM log-prob
     ctc_state: torch.Tensor | None = None
     score: float = field(default=0.0)
 
@@ -95,12 +96,16 @@ def joint_beam_search(ctc_head, aed_head, memory: torch.Tensor, memory_lengths: 
                       beam_size: int = 10, ctc_weight: float = 0.3, bos_id: int = 1,
                       eos_id: int = 2, pad_id: int = 3, blank_id: int | None = None,
                       max_len_ratio: float = 1.0, length_bonus: float = 0.0,
-                      pre_beam: int | None = None, lm=None, lm_weight: float = 0.0) -> list[list[int]]:
+                      pre_beam: int | None = None, lm=None, lm_weight: float = 0.0,
+                      ilm=None, ilm_weight: float = 0.0) -> list[list[int]]:
     """Joint CTC+AED (+ optional external LM) beam over a batch of encoder outputs.
 
-    score = (1-ctc_weight)·AED + ctc_weight·CTC-prefix + lm_weight·LM + length_bonus·len.
+    score = (1-ctc_weight)·AED + ctc_weight·CTC-prefix + lm_weight·LM - ilm_weight·ILM
+            + length_bonus·len.
     ctc_weight=0 -> pure AED beam (ctc_head may be None); lm (a CausalLMScorer, lm_weight>0)
-    adds shallow fusion. Run heads/LM in eval(). Returns one bare-id list per utterance.
+    adds shallow fusion. ilm (an ILMScorer, ilm_weight>0) subtracts the AED's own internal LM
+    so fusion does not double-count the language prior (density ratio); ilm_weight=0 leaves
+    plain shallow fusion. Run heads/LM in eval(). Returns one bare-id list per utterance.
     """
     B = memory.shape[0]
     V = aed_head.vocab_size
@@ -122,6 +127,7 @@ def joint_beam_search(ctc_head, aed_head, memory: torch.Tensor, memory_lengths: 
         beam = [_Hyp(tokens=[], aed=0.0, ctc=0.0, lm=0.0, ctc_state=init_state, score=0.0)]
         ended: list[_Hyp] = []
         use_lm = lm is not None and lm_weight != 0.0
+        use_ilm = ilm is not None and ilm_weight != 0.0
         max_steps = min(max(1, int(max_len_ratio * Tf)), Tf - 1, aed_head.max_decode_len)
 
         for _step in range(max_steps):
@@ -134,6 +140,8 @@ def joint_beam_search(ctc_head, aed_head, memory: torch.Tensor, memory_lengths: 
             aed_logp[:, bos_id] = _LOGZERO                 # non-emittable; finite so no 0·inf = NaN
             aed_logp[:, pad_id] = _LOGZERO
             lm_logp = lm.next_logprobs([h.tokens for h in beam], memory.device) if use_lm else None
+            ilm_logp = (ilm.next_logprobs([h.tokens for h in beam], memory.device)
+                        if use_ilm else None)
             eos_t = aed_logp.new_tensor([eos_id], dtype=torch.long)
             ext: list[tuple[float, bool, _Hyp]] = []          # all one-token expansions this step
             for i, h in enumerate(beam):
@@ -148,21 +156,54 @@ def joint_beam_search(ctc_head, aed_head, memory: torch.Tensor, memory_lengths: 
                     aed_c = h.aed + float(aed_logp[i, c])
                     ctc_c = float(ctc_scores[j]) if use_ctc else 0.0
                     lm_c = h.lm + float(lm_logp[i, c]) if use_lm else 0.0
+                    ilm_c = h.ilm + float(ilm_logp[i, c]) if use_ilm else 0.0
                     total = ((1.0 - ctc_weight) * aed_c + ctc_weight * ctc_c
-                             + lm_weight * lm_c + length_bonus * len(toks))
+                             + lm_weight * lm_c - ilm_weight * ilm_c
+                             + length_bonus * len(toks))
                     ext.append((total, is_eos,
-                                _Hyp(tokens=toks, aed=aed_c, ctc=ctc_c, lm=lm_c,
+                                _Hyp(tokens=toks, aed=aed_c, ctc=ctc_c, lm=lm_c, ilm=ilm_c,
                                      ctc_state=(ctc_states[j] if (use_ctc and not is_eos) else None),
                                      score=total)))
             ext.sort(key=lambda e: e[0], reverse=True)         # global top-k over all expansions
             beam = []
             for _total, is_eos, hyp in ext[:beam_size]:
                 (ended if is_eos else beam).append(hyp)
-            # partial scores only fall as they grow, so stopping is safe — UNLESS a positive
-            # length_bonus lets a partial overtake a finished hyp later; then search to the cap
-            if (length_bonus <= 0.0 and ended and beam
+            # partial scores only fall as they grow, so stopping is safe — UNLESS a term that
+            # RISES with length lets a partial overtake a finished hyp later; then search to
+            # the cap. Both a positive length_bonus and ILM subtraction do that: -ilm_weight·ILM
+            # adds |ilm_weight·logP_ILM| > 0 per token.
+            if (length_bonus <= 0.0 and ilm_weight <= 0.0 and ended and beam
                     and max(e.score for e in ended) >= max(x.score for x in beam)):
                 break
+        else:
+            # Ran to the step cap without the guard proving a completion dominates. The
+            # surviving partials are the highest-scoring hypotheses we have, but `pool`
+            # below keeps only completions, so they would be silently discarded and the
+            # result handed to whatever ended earliest — an EMPTY hypothesis when one
+            # finished at step 0. Finalize them with their own eos score so they compete.
+            # (Only reachable with a length-rising term: length_bonus > 0 or ilm_weight > 0.
+            # `not beam` breaks out above, so `beam` is non-empty here.)
+            if beam:
+                ys_in = torch.tensor([[bos_id] + h.tokens for h in beam], device=memory.device)
+                logits = aed_head.forward(mem_b.expand(len(beam), -1, -1),
+                                          mlen_b.expand(len(beam)), ys_in)
+                aed_logp = torch.log_softmax(logits[:, -1].float(), dim=-1)
+                lm_logp = (lm.next_logprobs([h.tokens for h in beam], memory.device)
+                           if use_lm else None)
+                ilm_logp = (ilm.next_logprobs([h.tokens for h in beam], memory.device)
+                            if use_ilm else None)
+                eos_t = aed_logp.new_tensor([eos_id], dtype=torch.long)
+                for i, h in enumerate(beam):
+                    aed_c = h.aed + float(aed_logp[i, eos_id])
+                    ctc_c = (float(scorer.score(h.tokens, eos_t, h.ctc_state)[0][0])
+                             if use_ctc else 0.0)
+                    lm_c = h.lm + float(lm_logp[i, eos_id]) if use_lm else 0.0
+                    ilm_c = h.ilm + float(ilm_logp[i, eos_id]) if use_ilm else 0.0
+                    ended.append(_Hyp(
+                        tokens=h.tokens, aed=aed_c, ctc=ctc_c, lm=lm_c, ilm=ilm_c,
+                        score=((1.0 - ctc_weight) * aed_c + ctc_weight * ctc_c
+                               + lm_weight * lm_c - ilm_weight * ilm_c
+                               + length_bonus * len(h.tokens))))
 
         pool = ended if ended else beam
         best = max(pool, key=lambda x: x.score) if pool else _Hyp([], 0.0, 0.0)

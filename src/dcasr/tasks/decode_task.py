@@ -19,7 +19,7 @@ import torch
 
 from dcasr.decoders.ctc import ctc_prefix_beam_search
 from dcasr.decoders.joint import joint_beam_search
-from dcasr.decoders.lm_fusion import CausalLMScorer
+from dcasr.decoders.lm_fusion import CausalLMScorer, ILMScorer
 from dcasr.logging_utils import get_logger
 from dcasr.tasks.build import _plain
 from dcasr.tasks.lm_task import LMModel, build_lm
@@ -126,6 +126,27 @@ def length_bonus_for(cell: Mapping[str, Any], decode_cfg: Mapping[str, Any]) -> 
     return float(dc.get("length_bonus", 0.0))
 
 
+def ilm_weight_for(cell: Mapping[str, Any], decode_cfg: Mapping[str, Any]) -> float:
+    """Internal-LM subtraction weight (alpha) for a label-synchronous +LM beam cell.
+
+    The AED decoder carries its own implicit LM, so shallow fusion counts the
+    language prior twice and the surplus per-token cost truncates hypotheses.
+    Subtracting `alpha x logP_ILM` removes the double count at its source
+    instead of masking it with a tuned insertion bonus.
+
+    Applies to LM cells only, and only on the aed/joint beam: CTC read-outs are
+    conditionally independent per frame, carry essentially no internal LM, and
+    fuse cleanly as-is (measured: ctc_beam 2.82 -> ctc_beam_lm 2.40 with no
+    length correction at all). Measured entropies, dev-clean, 110,132 tokens:
+    H_ILM = 3.55 nats vs H_ext = 2.38, so the length-neutral ray is
+    alpha = lm_weight x H_ext/H_ILM ~ 0.67 x lm_weight. See runlog 2026-07-22.
+    """
+    dc = _plain(decode_cfg)
+    if not cell.get("lm"):
+        return 0.0
+    return float(dc.get("ilm_weight", 0.0))
+
+
 @torch.no_grad()
 def decode_batch(model, tokenizer, batch: dict, cell: Mapping[str, Any],
                  decode_cfg: Mapping[str, Any], device, lm=None) -> list[dict]:
@@ -138,6 +159,7 @@ def decode_batch(model, tokenizer, batch: dict, cell: Mapping[str, Any],
     if cell["lm"] and (lm is None or lm_weight == 0.0):
         raise ValueError(f"cell {cell['name']} needs decode.lm_checkpoint and lm_weight != 0")
     length_bonus = length_bonus_for(cell, dc)
+    ilm_weight = ilm_weight_for(cell, dc)
 
     feats = batch["feats"].to(device)
     feat_lens = batch["feat_lens"].to(device)
@@ -171,6 +193,8 @@ def decode_batch(model, tokenizer, batch: dict, cell: Mapping[str, Any],
     else:                                                # aed / joint label-synchronous beam
         ctc_w = 0.0 if cell["read_out"] == "aed" else float(dc.get("ctc_weight", 0.3))
         ctc_head = model.ctc_head if ctc_w > 0.0 else None
+        ilm = (ILMScorer(model.aed_head, bos_id=tok.bos_id, pad_id=tok.pad_id)
+               if ilm_weight > 0.0 else None)
         for i in range(B):
             n = int(enc.lengths[i])
             t0 = time.perf_counter()
@@ -180,7 +204,8 @@ def decode_batch(model, tokenizer, batch: dict, cell: Mapping[str, Any],
                 bos_id=tok.bos_id, eos_id=tok.eos_id, pad_id=tok.pad_id,
                 length_bonus=length_bonus,
                 pre_beam=(int(pre_beam) if pre_beam else None),
-                lm=use_lm, lm_weight=lm_weight)[0]
+                lm=use_lm, lm_weight=lm_weight,
+                ilm=ilm, ilm_weight=ilm_weight)[0]
             times.append(time.perf_counter() - t0)
             hyps.append(hyp)
 

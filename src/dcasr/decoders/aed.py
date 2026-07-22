@@ -18,6 +18,7 @@ search and +LM fusion come with the decode stage (decode.py, lm_fusion.py).
 from __future__ import annotations
 
 import math
+from contextlib import contextmanager
 
 import torch
 import torch.nn as nn
@@ -118,13 +119,15 @@ class _DecoderLayerQKNorm(nn.Module):
         self.linear2 = nn.Linear(d_ff, d_model)
         self.drop = nn.Dropout(dropout)
         self.act = nn.GELU()
+        self.disable_cross_attn = False        # zero-out ILM estimation; see no_acoustic_context()
 
     def forward(self, x, memory, tgt_mask, memory_key_padding_mask):
         h = self.norm1(x)
         x = x + self.drop(self.self_attn(h, h, h, attn_mask=tgt_mask))
-        h = self.norm2(x)
-        x = x + self.drop(self.cross_attn(h, memory, memory,
-                                          key_padding_mask=memory_key_padding_mask))
+        if not self.disable_cross_attn:
+            h = self.norm2(x)
+            x = x + self.drop(self.cross_attn(h, memory, memory,
+                                              key_padding_mask=memory_key_padding_mask))
         h = self.norm3(x)
         x = x + self.drop(self.linear2(self.drop(self.act(self.linear1(h)))))
         return x
@@ -148,6 +151,27 @@ class _DecoderQKNorm(nn.Module):
         for layer in self.layers:
             x = layer(x, memory, tgt_mask, memory_key_padding_mask)
         return self.norm(x)
+
+
+@contextmanager
+def no_acoustic_context(aed_head):
+    """Run `aed_head` as a pure language model: drop every cross-attention residual so the
+    decoder sees only its causal self-attention pathway.
+
+    This is the zero-out internal-LM estimate (Meng et al. 2021). An AED decoder learns an
+    implicit LM over the training transcripts; naive shallow fusion adds an external LM on
+    top of it and double-counts, which biases the beam toward short hypotheses. Subtracting
+    this estimate (density ratio) removes the double count at its source. `memory` is ignored
+    inside the block, so any correctly-shaped tensor may be passed.
+    """
+    layers = list(aed_head.decoder.layers)
+    for layer in layers:
+        layer.disable_cross_attn = True
+    try:
+        yield aed_head
+    finally:
+        for layer in layers:
+            layer.disable_cross_attn = False
 
 
 class AEDHead(nn.Module):
