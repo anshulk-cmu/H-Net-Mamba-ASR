@@ -18,7 +18,13 @@
 #SBATCH --error=/data/user_data/anshulk/hnet-asr/logs/slurm-cell-%j.err
 #SBATCH --open-mode=append
 #SBATCH --partition=general
-#SBATCH --gres=gpu:4
+# GPU TYPE IS PINNED, and it is load-bearing for the efficiency stage: the
+# 2026-07-20 audit found N1 landed on L40S and N2 on A6000 (~1.34x slower), so
+# the apparent "N=2 is 30% slower" was mostly hardware — same-hardware profiling
+# showed the N=2 encoder is actually 0.8% FASTER. RTF/efficiency numbers are only
+# comparable across grid cells if every cell decodes on the SAME GPU type. L40S
+# also subsumes the old --exclude=babel-w9-32 (an A6000 node). 49 L40S nodes x 8.
+#SBATCH --gres=gpu:L40S:4
 #SBATCH --cpus-per-task=20
 #SBATCH --mem=96G
 #SBATCH --time=48:00:00

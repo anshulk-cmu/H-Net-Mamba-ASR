@@ -18,7 +18,10 @@
 #SBATCH --error=/data/user_data/anshulk/hnet-asr/logs/slurm-asn1-%j.err
 #SBATCH --open-mode=append
 #SBATCH --partition=general
-#SBATCH --gres=gpu:4
+# SUPERSEDED by run_cell_e2e_4gpu.sh (parameterized, used for every grid cell incl.
+# N1). Kept only as the historical launcher; GPU type pinned here too so it can
+# never be used unpinned by mistake — see that script for the rationale.
+#SBATCH --gres=gpu:L40S:4
 #SBATCH --cpus-per-task=20
 #SBATCH --mem=96G
 #SBATCH --time=48:00:00
