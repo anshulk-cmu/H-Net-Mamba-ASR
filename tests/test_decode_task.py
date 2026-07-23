@@ -230,17 +230,49 @@ def test_ctc_beam_projection_time_included(tmp_path, tok):
     assert abs(sum(r["decode_s"] for r in recs) - s["decode_s"]) < 1e-3  # summary is 3-dp rounded
 
 
-def test_length_bonus_is_lm_cell_only():
-    """Shallow fusion needs an insertion bonus to offset its per-token LM cost,
-    but applying it to the no-LM cells would cause over-generation (measured:
-    bonus 2.0 -> len ratio 1.40). runlog 2026-07-21."""
+def test_rescore_length_bonus_reaches_rescorer_but_not_the_beam(tmp_path, tok, lm_scorer):
+    """gamma must be applied at RE-RANK time only. decode.length_bonus feeds the acoustic beam
+    for every cell and over-generates the no-LM cells if positive, so the two must stay separate:
+    a big rescore_length_bonus must change aed_beam_lm and leave aed_beam untouched."""
+    import dcasr.tasks.decode_task as dt
+
+    model = _FakeModel(tok.vocab_size).eval()
+    batch, _ = _batch(tok)
+    base = {"beam_size": 3, "pre_beam": 8, "ctc_weight": 0.3, "lm_weight": 0.3,
+            "length_bonus": 0.0, "rescore_weight": 0.5}
+    seen = {}
+    real = dt.lm_rescore
+
+    def spy(nbest, lm, weight, *, ctc_weight, device, length_bonus=0.0):
+        seen["gamma"] = length_bonus
+        return real(nbest, lm, weight, ctc_weight=ctc_weight, device=device,
+                    length_bonus=length_bonus)
+
+    dt.lm_rescore = spy
+    try:
+        lm_cell = {"read_out": "aed", "search": "beam", "lm": True, "name": "aed_beam_lm"}
+        dt.decode_batch(model, tok, batch, lm_cell, {**base, "rescore_length_bonus": 4.0},
+                        torch.device("cpu"), lm=lm_scorer)
+        assert seen["gamma"] == 4.0                       # gamma reaches the rescorer
+        seen.clear()
+        dt.decode_batch(model, tok, batch, lm_cell, base, torch.device("cpu"), lm=lm_scorer)
+        assert seen["gamma"] == 0.0                       # absent -> 0.0, not lm_weight
+    finally:
+        dt.lm_rescore = real
+
+    # the no-LM cell must be byte-identical regardless of rescore_length_bonus
+    nolm = {"read_out": "aed", "search": "beam", "lm": False, "name": "aed_beam"}
+    a = dt.decode_batch(model, tok, batch, nolm, {**base, "rescore_length_bonus": 4.0},
+                        torch.device("cpu"))
+    b = dt.decode_batch(model, tok, batch, nolm, base, torch.device("cpu"))
+    assert [r["hyp"] for r in a] == [r["hyp"] for r in b]
+
+
+def test_length_bonus_is_uniform_and_defaults_zero():
+    """One insertion bonus for every beam cell (`decode.length_bonus`), default 0.0. The +LM
+    cells no longer need a per-cell bonus: the LM is second-pass rescoring, not in the search,
+    so it cannot truncate. runlog 2026-07-23."""
     from dcasr.tasks.decode_task import length_bonus_for
-    dc = {"length_bonus": 0.0, "lm_length_bonus": 1.0}
-    assert length_bonus_for({"lm": False}, dc) == 0.0      # aed_beam / joint_beam
-    assert length_bonus_for({"lm": True}, dc) == 1.0       # aed_beam_lm / joint_beam_lm
-    # falls back to length_bonus when lm_length_bonus is absent (back-compat)
-    assert length_bonus_for({"lm": True}, {"length_bonus": 0.4}) == 0.4
-    assert length_bonus_for({"lm": False}, {"length_bonus": 0.4}) == 0.4
-    assert length_bonus_for({"lm": True}, {}) == 0.0       # both absent
-    # a non-LM cell must NEVER pick up the LM bonus
-    assert length_bonus_for({"lm": False}, {"lm_length_bonus": 5.0}) == 0.0
+    assert length_bonus_for({"length_bonus": 0.4}) == 0.4
+    assert length_bonus_for({}) == 0.0                     # default: no bonus
+    assert length_bonus_for({"lm_weight": 0.3}) == 0.0     # unrelated keys ignored

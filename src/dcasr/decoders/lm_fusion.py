@@ -1,14 +1,23 @@
-"""External LM shallow fusion for the +LM columns (beam side only, plan §6.3).
+"""External LM integration for the +LM columns (beam side only, plan §6.3).
 
-Shallow fusion adds an external language model's opinion to the beam score:
-    score(h) = (1-ctc_weight)·AED + ctc_weight·CTC-prefix + lm_weight·logP_LM(h)
 The LM is trained separately on the official 810M-word LibriSpeech LM corpus, over the SAME
-BPE vocabulary as the ASR decoder (so fusion is just adding log-probs over identical tokens).
-This module provides a reference decoder-only `TransformerLM` (trained in the external-LM
-step) and `CausalLMScorer`, a thin adapter turning ANY causal LM (`forward(ids)->logits
-[B,T,V]`) into the next-token scorer `joint_beam_search` consumes via `lm=`/`lm_weight=`.
-An n-gram (ARPA/KenLM) scorer implementing the same `next_logprobs` interface is added with
-the external-LM step; +LM lives on the beam side only (no "greedy +LM" cell).
+BPE vocabulary as the ASR decoder (so integration is just adding log-probs over identical
+tokens). It enters decoding two ways, both provided by `CausalLMScorer` (a thin adapter over
+ANY causal LM `forward(ids)->logits [B,T,V]`):
+
+  - CTC prefix beam: FIRST-PASS shallow fusion via `next_logprobs` — CTC is nearly
+    language-blind per frame, so the LM adds real information and fuses cleanly (the
+    ctc_beam_lm cell).
+  - AED / joint beam: SECOND-PASS rescoring via `sequence_logprob` — the acoustic beam runs
+    LM-free, then `joint.lm_rescore` re-ranks the completed n-best by the LM's full-sequence
+    log-prob. An autoregressive AED already carries a strong internal LM and is very
+    low-entropy, so first-pass shallow fusion double-counts the language prior and truncates
+    hypotheses; rescoring re-orders a fixed complete-hyp set and cannot (aed_beam_lm /
+    joint_beam_lm). See runlog 2026-07-23.
+
+This module provides the reference decoder-only `TransformerLM` (trained in the external-LM
+step) and `CausalLMScorer`. An n-gram (ARPA/KenLM) scorer implementing the same interface is
+added with the external-LM step; +LM lives on the beam side only (no "greedy +LM" cell).
 """
 from __future__ import annotations
 
@@ -104,16 +113,22 @@ class TransformerLM(nn.Module):
 
 
 class CausalLMScorer:
-    """Adapts a causal LM into the beam's next-token scorer (shallow fusion).
+    """Adapts a causal LM into the two decode-time LM interfaces.
 
-    `next_logprobs(prefixes, device)` prepends bos to each bare-id prefix, runs the LM, and
-    returns the last-step log-softmax [n, V]. Handles ragged prefixes (pads, gathers the true
-    last position). Recompute-per-step (no kv-cache) — fine for offline decode.
+    `next_logprobs(prefixes, device)` -> [n, V]: the next-token log-softmax after bos+prefix,
+    for FIRST-PASS shallow fusion in the CTC prefix beam. Handles ragged prefixes (pads,
+    gathers the true last position).
+
+    `sequence_logprob(sequences, device)` -> [n]: the full-sequence log-prob of each COMPLETE
+    hypothesis (incl. terminal eos), for SECOND-PASS n-best rescoring of the AED/joint beam.
+
+    Recompute-per-step (no kv-cache) — fine for offline decode.
     """
 
-    def __init__(self, lm, bos_id: int = 1, pad_id: int = 3):
+    def __init__(self, lm, bos_id: int = 1, eos_id: int = 2, pad_id: int = 3):
         self.lm = lm
         self.bos_id = bos_id
+        self.eos_id = eos_id
         self.pad_id = pad_id
 
     @torch.no_grad()
@@ -130,46 +145,32 @@ class CausalLMScorer:
                       torch.tensor(lens, device=device) - 1]   # [n, V] (causal -> padding after is ignored)
         return torch.log_softmax(last.float(), dim=-1)
 
-
-class ILMScorer:
-    """Zero-out estimate of the AED decoder's INTERNAL language model (Meng et al. 2021).
-
-    An autoregressive AED decoder learns an implicit LM over the training transcripts. Naive
-    shallow fusion adds an external LM on top of it, so the language prior is counted twice;
-    the surplus per-token cost makes the beam stop early (deletions, truncated hypotheses).
-    The density-ratio fix subtracts this estimate:
-        score(h) = AED + ctc_weight·CTC + lm_weight·logP_ext(h) - ilm_weight·logP_ILM(h)
-    CTC read-outs need none of this: being conditionally independent per frame, they carry
-    essentially no internal LM, which is why the CTC +LM cells fuse cleanly without any
-    length correction.
-
-    The estimate runs the SAME decoder weights with every cross-attention residual dropped,
-    so nothing about the acoustic input reaches it. Same `next_logprobs` interface as
-    `CausalLMScorer`, so the beam consumes both identically.
-    """
-
-    def __init__(self, aed_head, bos_id: int = 1, pad_id: int = 3):
-        self.head = aed_head
-        self.bos_id = bos_id
-        self.pad_id = pad_id
-        mp = aed_head.mem_proj
-        self.d_memory = mp.in_features if isinstance(mp, nn.Linear) else aed_head.d_model
-
     @torch.no_grad()
-    def next_logprobs(self, prefixes: list[list[int]], device) -> torch.Tensor:
-        from dcasr.decoders.aed import no_acoustic_context
-        lens = [len(p) + 1 for p in prefixes]              # +1 for bos
+    def sequence_logprob(self, sequences: list[list[int]], device) -> torch.Tensor:
+        """Full-sequence LM log-prob of each COMPLETE hypothesis, for second-pass rescoring.
+
+        For a hyp [w_1..w_L] returns Σ_i logP_LM(w_i | bos, w_<i) + logP_LM(eos | bos, w_1..w_L)
+        — the LM likelihood of the whole sentence INCLUDING its terminal eos, matching the LM
+        training contract (bos-wrapped input, eos at the true length). One batched teacher-forced
+        pass; ragged hyps are right-padded and the pad targets masked out. Returns [n]. Summing
+        `next_logprobs` step-by-step over the same tokens (with the final eos) gives the identical
+        value — the two interfaces are the same log-linear LM term, applied per-step vs. post-hoc.
+        """
+        n = len(sequences)
+        lens = [len(s) + 1 for s in sequences]             # scored positions: L tokens + eos
         maxL = max(lens)
-        ys = torch.full((len(prefixes), maxL), self.pad_id, dtype=torch.long, device=device)
-        for i, p in enumerate(prefixes):
-            ys[i, 0] = self.bos_id
-            if p:
-                ys[i, 1 : 1 + len(p)] = torch.tensor(p, device=device)
-        dtype = next(self.head.parameters()).dtype
-        mem = torch.zeros(len(prefixes), 1, self.d_memory, device=device, dtype=dtype)
-        mlen = torch.ones(len(prefixes), dtype=torch.long, device=device)
-        with no_acoustic_context(self.head):
-            logits = self.head.forward(mem, mlen, ys)      # memory is inert inside the block
-        last = logits[torch.arange(len(prefixes), device=device),
-                      torch.tensor(lens, device=device) - 1]
-        return torch.log_softmax(last.float(), dim=-1)
+        ys_in = torch.full((n, maxL), self.pad_id, dtype=torch.long, device=device)
+        ys_out = torch.full((n, maxL), self.pad_id, dtype=torch.long, device=device)
+        for i, s in enumerate(sequences):
+            ys_in[i, 0] = self.bos_id
+            L = len(s)
+            if L:
+                st = torch.tensor(s, dtype=torch.long, device=device)
+                ys_in[i, 1 : 1 + L] = st                   # [bos, w_1..w_L]
+                ys_out[i, :L] = st                         # target: w_1..w_L, then eos at L
+            ys_out[i, L] = self.eos_id
+        logp = torch.log_softmax(self.lm(ys_in).float(), dim=-1)          # [n, maxL, V]
+        tgt = logp.gather(-1, ys_out.unsqueeze(-1)).squeeze(-1)           # [n, maxL] target logp
+        mask = (torch.arange(maxL, device=device)[None, :]
+                < torch.tensor(lens, device=device)[:, None])            # keep positions 0..L
+        return (tgt * mask).sum(-1)                                       # [n]

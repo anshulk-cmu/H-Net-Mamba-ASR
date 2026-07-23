@@ -1,13 +1,10 @@
-"""Unit tests for external-LM shallow fusion (src/dcasr/decoders/lm_fusion.py). CPU-only.
-
-Covers the reference TransformerLM (causal + loss + overfit), the CausalLMScorer adapter
-(incl. ragged prefixes), and that the LM actually shifts the beam decode.
+"""Unit tests for the external LM and its decode-time adapter (src/dcasr/decoders/lm_fusion.py).
+CPU-only. Covers the reference TransformerLM (causal + loss + overfit) and the CausalLMScorer
+`next_logprobs` adapter (incl. ragged prefixes) used for CTC first-pass shallow fusion. The
+second-pass `sequence_logprob` interface and n-best rescoring are covered in test_rescore.py.
 """
 import torch
-import torch.nn as nn
 
-from dcasr.decoders.aed import AEDHead
-from dcasr.decoders.joint import joint_beam_search
 from dcasr.decoders.lm_fusion import CausalLMScorer, TransformerLM
 
 CPU = torch.device("cpu")
@@ -19,24 +16,6 @@ def _lm(V=12, d=16, **kw):
     kw.setdefault("d_ff", 32)
     kw.setdefault("dropout", 0.0)
     return TransformerLM(V, d, bos_id=1, eos_id=2, pad_id=3, **kw)
-
-
-def _aed(V=12, d=16):
-    return AEDHead(V, d, n_layers=2, n_heads=4, d_ff=32, dropout=0.0,
-                  bos_id=1, eos_id=2, pad_id=3).eval()
-
-
-class _FavLM(nn.Module):
-    """Causal LM that always favors token `fav` (fixed logits) — controllable for fusion tests."""
-
-    def __init__(self, vocab, fav):
-        super().__init__()
-        self.vocab, self.fav = vocab, fav
-
-    def forward(self, ids):
-        logits = torch.zeros(*ids.shape, self.vocab)
-        logits[..., self.fav] = 10.0
-        return logits
 
 
 # ── TransformerLM ─────────────────────────────────────────────────────────────
@@ -104,25 +83,3 @@ def test_scorer_empty_prefix():
     got = CausalLMScorer(lm, bos_id=1, pad_id=3).next_logprobs([[]], CPU)
     manual = torch.log_softmax(lm(torch.tensor([[1]]))[:, -1].float(), -1)
     assert torch.allclose(got, manual, atol=1e-5)              # empty prefix == just bos
-
-
-# ── fusion into the beam ─────────────────────────────────────────────────────
-def test_lm_weight_zero_equals_no_lm():
-    torch.manual_seed(0)
-    aed = _aed()
-    mem, ml = torch.randn(1, 8, 16), torch.tensor([8])
-    lm = CausalLMScorer(_FavLM(12, 7), bos_id=1, pad_id=3)
-    a = joint_beam_search(None, aed, mem, ml, beam_size=4, ctc_weight=0.0, lm=lm, lm_weight=0.0)
-    b = joint_beam_search(None, aed, mem, ml, beam_size=4, ctc_weight=0.0)
-    assert a == b                                             # lm_weight=0 -> LM never consulted
-
-
-def test_lm_fusion_shifts_decode():
-    torch.manual_seed(0)
-    aed = _aed()
-    mem, ml = torch.randn(1, 8, 16), torch.tensor([8])
-    fav = 7
-    lm = CausalLMScorer(_FavLM(12, fav), bos_id=1, pad_id=3)
-    out = joint_beam_search(None, aed, mem, ml, beam_size=4, ctc_weight=0.0,
-                            lm=lm, lm_weight=100.0, max_len_ratio=1.0)
-    assert out[0][0] == fav                                   # a strong LM dominates the first token
