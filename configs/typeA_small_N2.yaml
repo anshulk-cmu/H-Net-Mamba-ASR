@@ -139,16 +139,25 @@ decode:
   beam_size: 10                            # plan default; knee sweep {4,8,10,16} on dev pending
   pre_beam: 30                             # joint-beam CTC-prefix pre-pruning width
   ctc_weight: 0.3                          # decode-time joint score weight (Watanabe hybrid)
-  length_bonus: 0.0                        # no-LM beam cells: no insertion bonus
-  lm_length_bonus: 1.0                     # LM cells ONLY: cancels shallow fusion's per-token
-                                           # LM cost. At 0.0 aed_beam_lm collapsed to 70% WER
-                                           # (0.34x ref length, 540/2703 empty); measured on the
-                                           # hardest utts: 0->75%, 1.0->4.1% (len ratio 0.99),
-                                           # 2.0->47% (over-generation). runlog 2026-07-21.
-  lm: shallow_fusion                       # enables the _lm cells alongside every no-LM cell
+  length_bonus: 0.0                        # uniform across beam cells; the +LM cells no longer
+                                           # need an insertion bonus (LM is second-pass, not in
+                                           # the search). A positive value over-generates.
+  lm: enabled                              # enables the _lm cells alongside every no-LM cell
   lm_config: configs/lm_transformer_500.yaml
   lm_checkpoint: checkpoints/lm_transformer_500/valid.loss.ave.pt
-  lm_weight: 0.3                           # sweep 0.2-0.6 on dev before the test decode (plan §6.3)
+  lm_weight: 0.3                           # ctc_beam_lm FIRST-PASS shallow-fusion weight
+                                           # (settled: ctc_beam 2.82 -> ctc_beam_lm 2.40/2.56)
+  # aed/joint SECOND-PASS n-best rescoring: S = S_acoustic + lambda*logP_LM + gamma*len.
+  # Set from the FULL-dev sweep (job 9434116, n=2703/2864, no subsampling). lambda=0.6 was
+  # optimal in all four (model x split) cells; gamma=2.0 optimal in 3/4 and within 0.04 WER of
+  # the 4th (N1 dev-other peaks at 1.5). AED dev WER: N1 2.62->2.20 / 6.54->5.72,
+  # N2 2.84->2.20 / 6.89->5.79. Pure-lambda (gamma=0) is WORTHLESS - best lambda is 0.0 in all
+  # four - so gamma is load-bearing, not cosmetic. The gamma-only control (LM off) buys only
+  # 0.20-0.37, so the rest is genuinely the LM. lambda=0.6 also matches ESPnet's shipped
+  # LibriSpeech lm_weight. See runlog 2026-07-23.
+  rescore_weight: 0.6                      # lambda
+  rescore_length_bonus: 2.0                # gamma, per-token, applied at RE-RANK time only
+                                           # (never in the search - see length_bonus above)
 
 # ── interpretability (plan #12 driver; full production — no subsetting) ──────
 interp:
